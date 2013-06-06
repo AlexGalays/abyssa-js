@@ -885,7 +885,7 @@ test('Reverse routing', function() {
 
 function delay(time, value) {
   var defer = when.defer();
-  setTimeout(defer.resolve, time, value);
+  setTimeout(function() { defer.resolve(value); }, time);
   return defer.promise;
 }
 
