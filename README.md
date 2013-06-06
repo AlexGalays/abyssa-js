@@ -268,5 +268,4 @@ None
 <a name="browser-support"></a>
 # Browser support
 
-Tested with most modern browsers and IE9.  
-Since history.js is used, it should be quite trivial to later support IE8 with just a few code changes.
+Tested with most modern browsers, IE9 and IE8 (with the inclusion of proper es5 shims).  
