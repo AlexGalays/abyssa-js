@@ -49,16 +49,16 @@ Router({
 
   articles: State('articles', {
     item: State(':id?filter', {
-       enterPrereqs: function(params) {
-         return $.getJSON('api/articles/' + params.id);
-       },
-       enter: function(params, article) {
-         // params.id is the article's id
-         // params.filter is the query string value for the key 'filter' (Or undefined if unavailable)
-         // article is the JSON representation of an article, ready to be rendered
-       }
-    }
-  }
+      enterPrereqs: function(params) {
+        return $.getJSON('api/articles/' + params.id);
+      },
+      enter: function(params, article) {
+        // params.id is the article's id
+        // params.filter is the query string value for the key 'filter' (Or undefined if unavailable)
+        // article is the JSON representation of an article, ready to be rendered
+      }
+    })
+  })
 
 }).init();
 
