@@ -17,8 +17,7 @@ A stateful router for single page applications.
 Abyssa is a stateful, hierarchical client side router.  
 It is meant to be used in those single page apps where using a big, comprehensive framework is unwanted: You wish to keep absolute control
 of your data, the DOM, and only willing to use a few libraries at most. 
-This would be applications with a high performance risk (Complex requirements, High frequency of DOM updates (From SSEs, websockets, animations, etc), mobile apps and so on.  
-For straightforward CRUDS and frankly, many other kinds of apps, a good framework like AngularJS will probably make your life easier without much compromises.  
+This would be applications with a high performance risk (Complex requirements, data intensive, High frequency of DOM updates (From SSEs, websockets, animations, etc), mobile apps and so on.  
 
 ## What's so great about (very) stateful clients?
 
