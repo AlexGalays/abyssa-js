@@ -2869,25 +2869,6 @@ function isString(instance) {
 
 function noop() {}
 
-function memoize(func) {
-  return function() {
-    var args  = Array.prototype.slice.call(arguments),
-        hash  = '',
-        i     = args.length,
-        memos = func.__memo || (func.__memo = {}),
-        arg;
-
-    while (i--) {
-      arg = args[i];
-      hash += (arg === Object(arg)) ? JSON.stringify(arg) : arg;
-    }
-
-    return (hash in memos)
-      ? memos[hash]
-      : (memos[hash] = func.apply(this, args));
-  };
-}
-
 function arrayToObject(array) {
   return array.reduce(function(obj, item) {
     obj[item] = 1;
