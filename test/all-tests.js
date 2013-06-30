@@ -883,6 +883,45 @@ test('Reverse routing', function() {
 });
 
 
+test('Both prereqs can be specified on a single state', function() {
+  stop();
+
+  var enterPrereq,
+      exitPrereq;
+
+  var router = Router({
+
+    index: State(),
+
+    one: State('one', {
+      enterPrereqs: function() { return 3; },
+      enter: function(params, _enterPrereq) { enterPrereq = _enterPrereq; },
+
+      exitPrereqs: function() { return 4; },
+      exit: function(_exitPrereq) { exitPrereq = _exitPrereq}
+    })
+
+  }).init('one');
+
+  nextTick()
+    .then(assertions)
+    .then(start);
+
+  function assertions() {
+    enterPrereq = exitPrereq = undefined;
+    // This will cause the state to be both exited and re-entered.
+    router.state('one?filter=1');
+
+    return nextTick().then(function() {
+      equal(enterPrereq, 3);
+      equal(exitPrereq, 4);
+    });
+  }
+
+
+});
+
+
 function delay(time, value) {
   var defer = when.defer();
   setTimeout(function() { defer.resolve(value); }, time);
