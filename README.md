@@ -262,7 +262,7 @@ var state = State('articles': {
 
 Async is a convenient mean to let the router know some async operations tied to the current state are ongoing.  
 The router will ignore (The fulfill/reject handlers will never be called) these promises if the navigation state changes in the meantime.  
-This behavior is useful to prevent states from affecting each other (with side effects such as DOM mutation in the promise success handler)  
+This behavior is useful to prevent states from affecting each other (with side effects such as DOM mutation in the promise handlers)  
 
 `Async` can help implement non-blocking navigation (See next section)  
 
@@ -296,7 +296,7 @@ To implement blocking navigation, specify `enterPrereqs`; The prereqs will be re
 once they are all resolved; If any of the preReqs fail, the state change doesn't occur.
 
 ## Non-blocking
-The navigation occurs immediately, but the data comes later. Non-blocking navigation can feel quicker but also more awkward if  
+The navigation occurs immediately, but the data comes later. Non-blocking navigation can feel quicker but also more awkward if
 the router transitions to a state that is near empty when the data isn't known yet.  
 To implement Non-blocking navigation, do not specify any `enterPrereqs`; instead, wrap your promises (ajax, etc) in `Async` blocks.
 
