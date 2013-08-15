@@ -5,6 +5,7 @@ A stateful router for single page applications.
 * [Introduction](#introduction)
 * [Code examples](#code-examples)
 * [API](#api)
+* [Blocking/Non-blocking navigation](#blocking)
 * [Dependencies](#dependencies)
 * [Browser support](#browser-support)
 
@@ -35,8 +36,16 @@ Read this excellent blog post for an in-depth explanation: [Make the most of you
 <a name="code-examples"></a>
 # Code examples
 
-Simple demo application (the server may take a bit of time to start): [Abyssa demo](http://calm-cove-4493.herokuapp.com/)  
-Source code: [Abyssa demo source](https://github.com/AlexGalays/abyssa-demo/tree/master/public/javascripts)  
+## Demo app with blocking navigation
+
+Demo: [Abyssa demo sync](http://calm-cove-4493.herokuapp.com/)  
+Source: [Abyssa demo sync source](https://github.com/AlexGalays/abyssa-demo/tree/master/public/javascripts)  
+
+## Demo app with non-blocking navigation
+
+Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)  
+Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/public/javascripts)  
+
 
 Example using the monolithic, declarative notation:  
 ```javascript
@@ -248,6 +257,48 @@ var state = State('articles': {
 });
 
 ```
+
+## Async
+
+Async is a convenient mean to let the router know some async operations tied to the current state are ongoing.  
+The router will ignore (The fulfill/reject handlers will never be called) these promises if the navigation state changes in the meantime.  
+This behavior is useful to prevent states from affecting each other (with side effects such as DOM mutation in the promise success handler)  
+
+`Async` can help implement non-blocking navigation (See next section)  
+
+### Example:
+```javascript
+var Async = Abyssa.Async;
+
+var state = State('articles/:id': {
+  
+  enter: function(params) {
+    var data = $.ajax('api/articles/' + params.id);
+
+    Async(data).then(function(article) {
+      // Render article safely; the router is still in the right state.
+    });
+  }
+}
+
+});
+```
+
+<a name="blocking"></a>
+# Blocking/Non-blocking navigation
+
+You can decide to implement your navigation so that it blocks or doesn't:  
+
+## Blocking
+This is close to the traditional client/server website UX: You don't get to see the next page/state till all the data needed to render it is retrieved.  
+Of course, unlike classical websites there is no blank between state transitions and you can give feedback to the user during the transition.  
+To implement blocking navigation, specify `enterPrereqs`; The prereqs will be resolved in parallel and the navigation will only occur
+once they are all resolved; If any of the preReqs fail, the state change doesn't occur.
+
+## Non-blocking
+The navigation occurs immediately, but the data comes later. Non-blocking navigation can feel quicker but also more awkward if  
+the router transitions to a state that is near empty when the data isn't known yet.  
+To implement Non-blocking navigation, do not specify any `enterPrereqs`; instead, wrap your promises (ajax, etc) in `Async` blocks.
 
 
 <a name="dependencies"></a>

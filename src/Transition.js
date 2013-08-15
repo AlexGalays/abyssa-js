@@ -23,6 +23,8 @@ function Transition(fromState, toState, params, paramDiff) {
     if (!cancelled) doTransition(enters, exits, params);
   });
 
+  asyncPromises.newTransitionStarted();
+
   function then(completed, failed) {
     return transition.then(
       function success() { if (!cancelled) completed(); },
@@ -81,9 +83,11 @@ function doTransition(enters, exits, params) {
     state.exit(state._exitPrereqs && state._exitPrereqs.value);
   });
 
+  asyncPromises.allowed = true;
   enters.forEach(function(state) {
     state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
   });
+  asyncPromises.allowed = false;
 }
 
 /*
@@ -129,3 +133,52 @@ function transitionStates(state, root, paramOnlyChange) {
   var inclusive = !root || paramOnlyChange;
   return withParents(state, root || state.root, inclusive);
 }
+
+
+var asyncPromises = (function () {
+
+  var that;
+  var activeDeferreds = [];
+
+  /*
+   * Returns a promise that will not be fullfilled if the navigation context
+   * changes before the wrapped promise is fullfilled. 
+   */
+  function register(promise) {
+    if (!that.allowed)
+      throw new Error('Async can only be called from within state.enter()');
+
+    var defer = when.defer();
+
+    activeDeferreds.push(defer);
+
+    when(promise).then(
+      function(value) {
+        if (activeDeferreds.indexOf(defer) > -1)
+          defer.resolve(value);
+      },
+      function(error) {
+        if (activeDeferreds.indexOf(defer) > -1)
+          defer.reject(error);
+      }
+    );
+
+    return defer.promise;
+  }
+
+  function newTransitionStarted() {
+    activeDeferreds.length = 0;
+  }
+
+  that = {
+    register: register,
+    newTransitionStarted: newTransitionStarted,
+    allowed: false
+  };
+
+  return that;
+
+})();
+
+
+Abyssa.Async = asyncPromises.register;

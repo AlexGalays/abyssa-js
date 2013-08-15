@@ -2,6 +2,9 @@
 /*
 * Create a new Router instance, passing any state defined declaratively.
 * More states can be added using addState() before the router is initialized.
+*
+* Because a router manages global state (The URL), only one instance of Router
+* should be used inside an application.
 */
 function Router(declarativeStates) {
   var router = {},
@@ -73,7 +76,7 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Return the set of all the params that changed (Either added, removed or mutated).
+  * Return the set of all the params that changed (Either added, removed or changed).
   */
   function paramDiff(oldParams, newParams) {
     var diff = {},

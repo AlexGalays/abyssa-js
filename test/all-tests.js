@@ -2,6 +2,7 @@
 
 Router = Abyssa.Router;
 State  = Abyssa.State;
+Async  = Abyssa.Async;
 
 Router.enableLogs();
 Router.ignoreInitialURL = true;
@@ -920,6 +921,118 @@ test('Both prereqs can be specified on a single state', function() {
 
 
 });
+
+
+test('Non blocking promises as an alternative to prereqs', function() {
+  stop();
+
+  var promiseValue = null;
+
+  var router = Router({
+
+    index: State(),
+
+    one: State('one', {
+      enter: function() {
+        Async(successPromise(150, 'value')).then(function(value) {
+          promiseValue = value;
+        });
+      }
+    })
+
+  }).init('one');
+
+
+  delay(200)
+    .then(promiseWasResolved)
+    .then(exitThenReEnterStateOne)
+    .then(cancelNavigation)
+    .then(promiseShouldNotHaveBeenResolved)
+    .then(start);
+
+  function promiseWasResolved() {
+    strictEqual(promiseValue, 'value');
+    promiseValue = null;
+  }
+
+  function exitThenReEnterStateOne() {
+    router.state('index');
+    return nextTick().then(function() {
+      router.state('one');
+    });
+  }
+
+  function cancelNavigation() {
+    return nextTick().then(function() {
+      router.state('index');
+    });
+  }
+
+  function promiseShouldNotHaveBeenResolved() {
+    return delay(200).then(function() {
+      strictEqual(promiseValue, null);
+    });
+  }
+
+});
+
+test('Non blocking rejected promises', function() {
+  stop();
+
+  var promiseValue = null,
+      promiseError = null;
+
+  var router = Router({
+
+    index: State(),
+
+    one: State('one', {
+      enter: function() {
+        Async(failPromise(150)).then(
+          function(value) { promiseValue = value; },
+          function(error) { promiseError = error; }
+        );
+      }
+    })
+
+  }).init('one');
+
+
+  delay(200)
+    .then(promiseWasRejected)
+    .then(exitThenReEnterStateOne)
+    .then(cancelNavigation)
+    .then(promiseShouldNotHaveBeenResolved)
+    .then(start);
+
+  function promiseWasRejected() {
+    strictEqual(promiseValue, null);
+    strictEqual(promiseError, 'error');
+    promiseError = null;
+  }
+
+  function exitThenReEnterStateOne() {
+    router.state('index');
+    return nextTick().then(function() {
+      router.state('one');
+    });
+  }
+
+  function cancelNavigation() {
+    return nextTick().then(function() {
+      router.state('index');
+    });
+  }
+
+  function promiseShouldNotHaveBeenResolved() {
+    return delay(200).then(function() {
+      strictEqual(promiseValue, null);
+      strictEqual(promiseError, null);
+    });
+  }
+
+});
+
 
 
 function delay(time, value) {
