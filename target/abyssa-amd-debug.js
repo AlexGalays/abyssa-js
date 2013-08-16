@@ -1,4 +1,4 @@
-// Abyssa 0.5
+// abyssa-js 1.0.0
 define(function() {
 
 var Abyssa = {};
@@ -2938,6 +2938,7 @@ function Transition(fromState, toState, params, paramDiff) {
   return {
     from: fromState,
     to: toState,
+    toParams: params,
     then: then,
     cancel: cancel
   };
@@ -2949,27 +2950,29 @@ function Transition(fromState, toState, params, paramDiff) {
 function prereqs(enters, exits, params) {
 
   exits.forEach(function(state) {
-    if (state.exitPrereqs)
-      state._exitPrereqs = when(state.exitPrereqs()).then(
-        function success(value) {
-          state._exitPrereqs.value = value;
-        },
-        function fail(cause) {
-          throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
-        }
-      );
+    if (!state.exitPrereqs) return;
+
+    var prereqs = state._exitPrereqs = when(state.exitPrereqs()).then(
+      function success(value) {
+        if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
+      },
+      function fail(cause) {
+        throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
+      }
+    );
   });
 
   enters.forEach(function(state) {
-    if (state.enterPrereqs)
-      state._enterPrereqs = when(state.enterPrereqs(params)).then(
-        function success(value) {
-          state._enterPrereqs.value = value;
-        },
-        function fail(cause) {
-          throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
-        }
-      );
+    if (!state.enterPrereqs) return;
+
+    var prereqs = state._enterPrereqs = when(state.enterPrereqs(params)).then(
+      function success(value) {
+        if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
+      },
+      function fail(cause) {
+        throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
+      }
+    );
   });
 
   return when.all(enters.concat(exits).map(function(state) {
@@ -3353,8 +3356,7 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params) {
-    var diff = paramDiff(currentParams, params);
-    if (currentState == state && objectSize(diff) == 0) return;
+    if (isSameState(state, params)) return;
 
     if (transition) {
       log('Cancelling existing transition from {0} to {1}',
@@ -3363,9 +3365,12 @@ function Router(declarativeStates) {
       router.transition.cancelled.dispatch(transition.from, transition.to);
     }
 
-    log('Starting transition from {0} to {1}', currentState, state);
+    if (logEnabled) log('Starting transition from {0}:{1} to {2}:{3}',
+      currentState, JSON.stringify(currentParams),
+      state, JSON.stringify(params));
+
     router.transition.started.dispatch(currentState, state);
-    transition = Transition(currentState, state, params, diff);
+    transition = Transition(currentState, state, params, paramDiff(currentParams, params));
 
     transition.then(
       function success() {
@@ -3377,8 +3382,8 @@ function Router(declarativeStates) {
         transition = null;
 
         if (!poppedState && !firstTransition) {
-            log('Pushing state: {0}', historyState);
             historyState = ('/' + currentPathQuery).replace('//', '/');
+            log('Pushing state: {0}', historyState);
             history.pushState(historyState, document.title, historyState);
         }
 
@@ -3393,6 +3398,27 @@ function Router(declarativeStates) {
         logError('Transition from {0} to {1} failed: {2}', currentState, state, error);
         router.transition.failed.dispatch(currentState, state);
       });
+  }
+
+  /*
+  * Return whether the passed state is the same as the current one;
+  * in which case the router can ignore the change.
+  */
+  function isSameState(newState, newParams) {
+    var state, params, diff;
+
+    if (transition) {
+      state = transition.to;
+      params = transition.toParams;
+    }
+    else {
+      state = currentState;
+      params = currentParams;
+    }
+
+    diff = paramDiff(params, newParams);
+
+    return (newState == state) && (objectSize(diff) == 0);
   }
 
   /*
@@ -3644,8 +3670,11 @@ function Router(declarativeStates) {
 // Logging
 
 var log = logError = noop;
+var logEnabled = false;
 
 Router.enableLogs = function() {
+  logEnabled = true;
+
   log = function() {
     console.log(getLogMessage(arguments));
   };

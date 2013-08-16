@@ -39,6 +39,7 @@ function Transition(fromState, toState, params, paramDiff) {
   return {
     from: fromState,
     to: toState,
+    toParams: params,
     then: then,
     cancel: cancel
   };
@@ -50,27 +51,29 @@ function Transition(fromState, toState, params, paramDiff) {
 function prereqs(enters, exits, params) {
 
   exits.forEach(function(state) {
-    if (state.exitPrereqs)
-      state._exitPrereqs = when(state.exitPrereqs()).then(
-        function success(value) {
-          state._exitPrereqs.value = value;
-        },
-        function fail(cause) {
-          throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
-        }
-      );
+    if (!state.exitPrereqs) return;
+
+    var prereqs = state._exitPrereqs = when(state.exitPrereqs()).then(
+      function success(value) {
+        if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
+      },
+      function fail(cause) {
+        throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
+      }
+    );
   });
 
   enters.forEach(function(state) {
-    if (state.enterPrereqs)
-      state._enterPrereqs = when(state.enterPrereqs(params)).then(
-        function success(value) {
-          state._enterPrereqs.value = value;
-        },
-        function fail(cause) {
-          throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
-        }
-      );
+    if (!state.enterPrereqs) return;
+
+    var prereqs = state._enterPrereqs = when(state.enterPrereqs(params)).then(
+      function success(value) {
+        if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
+      },
+      function fail(cause) {
+        throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
+      }
+    );
   });
 
   return when.all(enters.concat(exits).map(function(state) {
