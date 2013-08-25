@@ -1033,6 +1033,45 @@ test('Non blocking rejected promises', function() {
 
 });
 
+test('State construction shorthand', function() {
+  stop();
+
+  var passedParams = {};
+  var passedData;
+
+  var router = Router({
+
+    index: State('index/:id', function(params) {
+      var data = successPromise(50, 'data');
+
+      passedParams = params;
+
+      this.async(data).then(function(data) {
+        passedData = data;
+      });
+
+    })
+
+  }).init('index/55?filter=true');
+
+  nextTick()
+    .then(paramsWerePassed)
+    .then(asyncWasCalled)
+    .then(start);
+
+  function paramsWerePassed() {
+    strictEqual(passedParams.id, 55);
+    strictEqual(passedParams.filter, true);
+    strictEqual(passedData, undefined);
+    
+    return delay(80);
+  }
+
+  function asyncWasCalled() {
+    strictEqual(passedData, 'data');
+  }
+
+});
 
 
 function delay(time, value) {

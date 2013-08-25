@@ -1,5 +1,5 @@
 # Abyssa
-A stateful router for single page applications.
+A stateful router library for single page applications, with no dependencies.
 
 # Content
 * [Introduction](#introduction)
@@ -19,6 +19,9 @@ Abyssa is a stateful, hierarchical client side router.
 It is meant to be used in those single page apps where using a big, comprehensive framework is unwanted: You wish to keep absolute control
 of your data, the DOM, and only willing to use a few libraries at most. 
 This would be applications with a high performance risk (Complex requirements, data intensive, High frequency of DOM updates (From SSEs, websockets, animations, etc), mobile apps and so on.  
+
+Abyssa does only one thing: Routing.  
+Upon entering a route, you can render it using any technique: Direct DOM manipulation, client or server side templating, using a binding library, etc.
 
 ## What's so great about (very) stateful clients?
 
@@ -46,16 +49,17 @@ Source: [Abyssa demo sync source](https://github.com/AlexGalays/abyssa-demo/tree
 Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)  
 Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/public/javascripts)  
 
-
-Example using the monolithic, declarative notation:  
+## Example using the declarative notation:  
 ```javascript
 Router({
 
-  home: State({
-    enter: function() { console.log('We are home'); }
-  }),
+  // The state named 'home' maps to the root of your site (no path is specified)
+  home: State('', function() { console.log('We are home'); }),
 
+  // The state named 'articles' maps to /articles
   articles: State('articles', {
+    // The state named 'item' maps to /articles/:id where ':id' is the integer/string identifier of the article.
+    // Additionaly, if the query param named 'filter' changes, 'item' will be exited and reentered.
     item: State(':id?filter', {
       enterPrereqs: function(params) {
         return $.getJSON('api/articles/' + params.id);
@@ -79,7 +83,7 @@ Router({
 ## Router
 
 ### init (initState: String): Router
-Initialize and freeze the router (states can not be added afterwards).  
+Initialize and freeze the router (states can not be updated or added afterwards).  
 The router will immediately initiate a transition to, in order of priority:  
 1) The state captured by the current URL  
 2) The init state passed as an argument  
@@ -131,12 +135,22 @@ Dispatched once after the router successfully reached its initial state.
 
 ### Usage example
 
+#### Declarative construction
+
 ```javascript
 // Create a router with one state named 'index'.
 var router = Router({
   index: State()
 });
 ```
+
+#### Programmatic construction
+
+```javascript
+var router = Router();
+router.addState('index', State());
+```
+
 
 <a name="api-state"></a>
 ## State
@@ -145,11 +159,11 @@ States represent path segments of an url.
 Additionally, a state can own a list of query params: While all states will be able to read these params, isolated changes to these
 will only trigger a transition up to the state owning them (it will be exited and re-entered). The same applies to dynamic query params.   
 How much you decompose your applications into states is completely up to you;  
-For instance you could have just one state (A la stateless):
+For instance you could have just one state:
 ```javascript
 State('some/path/:slug/:id')
 ```
-Just like you could have four different states to break down the complexity of that one path combination:
+Or four different states to represent that path:
 ```javascript
 State('some')
 State('path')
@@ -176,7 +190,7 @@ This is where you could render the data into the DOM or do some general work onc
 
 #### enterPrereqs (params: Object): Any
 Specify a prerequisite that must be satisfied before the state is entered.  
-It can be any value or a promise. Should the promise get rejected, the state will never be entered and the router will remain in its current state.  
+It can be any value or a promise (a thenable object). Should the promise get rejected, the state will never be entered and the router will remain in its current state.  
 Examples of enterPrereqs include fetching an html template file, data via ajax/local cache or get some prerendered html from the server.
 
 #### exit (userData: Any): void
@@ -188,11 +202,12 @@ Same as enterPrereqs but for the exit phase.
 An example of an exitPrereqs would be a prompt (Backed by a promise) asking the user if she wants to leave the screen with unsaved data.
 
 
-
 ### Usage examples
 
+#### Construction
+
 A state represented by the path "articles", with a child state named "item" represented by the dynamic path "id".  
-When the router is in the state "articles.item" with the id param equal to 33, the browser url is http://domain/articles/33  
+When the router is in the state "articles.item" with the id param equal to 33, the browser url is http://yourdomain/articles/33  
 ```javascript
 var router = Router({
   articles: State('articles', {
@@ -202,28 +217,45 @@ var router = Router({
 }).init();
 ```
 
-This is equivalent to:  
+This was the declarative equivalent of:  
 ```javascript
 var router = Router();
 var articles = State('articles');
 articles.addState('item', State(':id'));
 router.init();
-
 ```
 
-A state represented by the path "articles" with a path-less child state named "item"  
-When the router is in the state "articles.show", the browser url is http://domain/articles
+#### Construction shorthand
+
+When using non-blocking navigation, it is common to only have an enter callback for a state so a short way to express it is provided:  
+
+```javascript
+var state = State('articles', function enter(params) {
+  // Do things synchronously here
+
+  this.async(myPromise).then(function(data) {
+    // Do things asynchronously here
+  });
+});
+```
+
+#### Pathless states
+
+A state represented by the path "articles" with a path-less child state named "show"  
+When the router is in the state "articles.show", the browser url is http://yourdomain/articles
 
 ```javascript
 var state = State('articles': {
-  show: State()
+  show: State() // Equivalent to: show: State('', {})
 });
 
 router.addState('articles', state);
 ```
 
+#### Query strings
+
 Now the articles state also tells us it owns the query param named 'filter' in its state hierarchy.  
-This means any isolated change to the filter query param (Added, removed or changed) is going to make that state exit and re-enter so that it can take action with that new filter.
+This means that any isolated change to the filter query param (meaning the filter was added, removed or changed but the path remained the same) is going to make that state exit and re-enter so that it can process the new filter value. If you do not specify which state owns the query param, all states above the currently selected state are exited and reentered, which can be less efficient. 
 ```javascript
 var state = State('articles?filter': {
   show: State()
@@ -231,27 +263,33 @@ var state = State('articles?filter': {
 
 ```
 
-You can set arbitrary data declaratively instead of using the `data()` method by just specifying a custom property in the State options.  
-This data can be read by all descendant states (Using `this.data('myArbitraryData')`) and from signal handlers.
+#### Setting state data
+
+You can set arbitrary data declaratively by just specifying a custom property in the State options.  
+This data can be read by all descendant states (Using `this.data('myArbitraryData')`) and from signal handlers.  
+For more elaborated use cases, you can store the data in a custom external service or model.
 ```javascript
 var state = State('articles?filter': {
   myArbitraryData: 66,
   show: State()
 });
 
+// The data can also be read inside signal handlers
 router.transition.ended.add(function(oldState, newState) {
   // Do something based on newState.data('myArbitraryData')
 });
 ```
 
-Options
+#### Creating a state hierarchy declaratively
+
 ```javascript
-var state = State('articles': {
+var state = State('articles', {
   enter: function(params, ajaxData) { console.log('articles entered'); },
   exit: function() { console.log('articles exit'); },
 
   enterPrereqs: function(params) { return $.ajax(...); },
 
+  // A child state is simply a property of type 'State'
   item: State(':id', {
     enter: function(params) { console.log('item entered with id ' + params.id); }
   })
@@ -259,12 +297,28 @@ var state = State('articles': {
 
 ```
 
+#### Creating a state hierarchy programmatically
+
+```javascript
+var state = State('articles');
+state.enter = function(params, ajaxData) { console.log('articles entered'); };
+state.exit = function() { console.log('articles exit'); };
+state.enterPrereqs = function(params) { return $.ajax(...); };
+
+var item = State(':id');
+item.enter = function(params) { console.log('item entered with id ' + params.id); };
+
+state.item = item;
+```
+
+
 <a name="api-async"></a>
 ## Async
 
 Async is a convenient mean to let the router know some async operations tied to the current state are ongoing.  
 The router will ignore (The fulfill/reject handlers will never be called) these promises if the navigation state changes in the meantime.  
 This behavior is useful to prevent states from affecting each other (with side effects such as DOM mutation in the promise handlers)  
+You can have as many Async blocks as required.
 
 `Async` can help implement non-blocking navigation (See [Blocking/Non-blocking navigation](#blocking))  
 
@@ -277,8 +331,18 @@ var state = State('articles/:id': {
   enter: function(params) {
     var data = $.ajax('api/articles/' + params.id);
 
+    // Do things that should be done synchronously here, like setting up the basic layout.
+
+    // Then load the data and act on it asynchronously.
+
     Async(data).then(function(article) {
       // Render article safely; the router is still in the right state.
+    });
+
+    // Or
+
+    this.async(data).then(function(article) {
+
     });
   }
 }

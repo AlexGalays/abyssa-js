@@ -3136,6 +3136,7 @@ function State() {
     state.children = getChildren();
     state.fullName = getFullName();
     state.root = state.parents[state.parents.length - 1];
+    state.async = Abyssa.Async;
 
     eachChildState(function(name, childState) {
       childState.init(name, state);
@@ -3297,7 +3298,7 @@ function getArgs(args) {
   }
   else if (args.length == 2) {
     result.path = arg1;
-    result.options = arg2;
+    result.options = (typeof arg2 == 'object') ? arg2 : {enter: arg2};
   }
 
   // Extract the query string
