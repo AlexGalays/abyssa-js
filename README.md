@@ -59,17 +59,12 @@ Router({
   // The state named 'articles' maps to /articles
   articles: State('articles', {
     // The state named 'item' maps to /articles/:id where ':id' is the integer/string identifier of the article.
-    // Additionaly, if the query param named 'filter' changes, 'item' will be exited and reentered.
-    item: State(':id?filter', {
-      enterPrereqs: function(params) {
-        return $.getJSON('api/articles/' + params.id);
-      },
-      enter: function(params, article) {
-        // params.id is the article's id
-        // params.filter is the query string value for the key 'filter' (Or undefined if unavailable)
-        // article is the JSON representation of an article, ready to be rendered
-      }
+    item: State(':id?filter', function(params) {
+      this.async($.getJSON('api/articles/' + params.id)).then(function(article) {
+        // Render the article
+      });
     })
+
   })
 
 }).init();
@@ -217,7 +212,7 @@ var router = Router({
 }).init();
 ```
 
-This was the declarative equivalent of:  
+Or using the imperative form:  
 ```javascript
 var router = Router();
 var articles = State('articles');
@@ -308,7 +303,7 @@ state.enterPrereqs = function(params) { return $.ajax(...); };
 var item = State(':id');
 item.enter = function(params) { console.log('item entered with id ' + params.id); };
 
-state.item = item;
+state.addState('item', item);
 ```
 
 
