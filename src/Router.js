@@ -301,7 +301,7 @@ function Router(declarativeStates) {
 
     if (hasQuery) params.query = query;
 
-    return state.route.interpolate(params).replace('/?', '?');
+    return '/' + state.route.interpolate(params).replace('/?', '?');
   }
 
   // Public methods

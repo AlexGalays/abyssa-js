@@ -1,1 +1,1 @@
-// abyssa-js 1.1.1
+// abyssa-js 1.1.2

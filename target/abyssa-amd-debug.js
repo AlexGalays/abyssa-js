@@ -1,4 +1,4 @@
-// abyssa-js 1.1.1
+// abyssa-js 1.1.2
 define(function() {
 
 var Abyssa = {};
@@ -3625,7 +3625,7 @@ function Router(declarativeStates) {
 
     if (hasQuery) params.query = query;
 
-    return state.route.interpolate(params).replace('/?', '?');
+    return '/' + state.route.interpolate(params).replace('/?', '?');
   }
 
   // Public methods

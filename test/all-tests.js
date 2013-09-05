@@ -879,7 +879,7 @@ test('Reverse routing', function() {
   }).init();
 
   var href = router.link('one.two', {id: 33, filter: 'bloup'});
-  equal(href, 'one/33?filter=bloup');
+  equal(href, '/one/33?filter=bloup');
 
 });
 
