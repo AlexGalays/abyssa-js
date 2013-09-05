@@ -27,6 +27,8 @@ function Router(declarativeStates) {
   // Nil transitions are prevented from our side.
   roads.ignoreState = true;
 
+  interceptAnchorClicks(router);
+
   /*
   * Setting a new state will start a transition from the current state to the target state.
   * A successful transition will result in the URL being changed.

@@ -37,7 +37,8 @@ var libFiles = [
   '../src/util.js',
   '../src/Transition.js',
   '../src/State.js',
-  '../src/Router.js'
+  '../src/Router.js',
+  '../src/anchorClicks.js'
 ];
 
 // Global build
