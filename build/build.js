@@ -15,7 +15,16 @@ function concatFiles(opts) {
   console.log(' ' + distPath + ' built.');
 }
 
-function uglify(srcPath, distPath) {
+function uglify_v2(srcPath, distPath) {
+  var uglyfyJS = require('uglify-js'),
+      srcCode = fs.readFileSync(srcPath, FILE_ENCODING),
+      result = uglyfyJS.minify(srcCode, {
+        fromString: true
+      });
+
+  fs.writeFileSync(distPath, result.code, FILE_ENCODING);
+}
+function uglify_v1(srcPath, distPath) {
   var uglyfyJS = require('uglify-js'),
       jsp = uglyfyJS.parser,
       pro = uglyfyJS.uglify,
@@ -25,6 +34,16 @@ function uglify(srcPath, distPath) {
   ast = pro.ast_squeeze(ast);
 
   fs.writeFileSync(distPath, pro.gen_code(ast), FILE_ENCODING);
+}
+function uglify(srcPath, distPath) {
+  var uglyfyJS = require('uglify-js');
+
+  if (uglyfyJS.parser) {
+    uglify_v1(srcPath, distPath);
+  }
+  else {
+    uglify_v2(srcPath, distPath);
+  }
   console.log(' ' + distPath + ' built.');
 }
 
