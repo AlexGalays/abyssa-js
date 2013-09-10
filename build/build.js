@@ -16,18 +16,18 @@ function concatFiles(opts) {
 }
 
 function uglify_v2(srcPath, distPath) {
-  var uglyfyJS = require('uglify-js'),
+  var uglifyJS = require('uglify-js'),
       srcCode = fs.readFileSync(srcPath, FILE_ENCODING),
-      result = uglyfyJS.minify(srcCode, {
+      result = uglifyJS.minify(srcCode, {
         fromString: true
       });
 
   fs.writeFileSync(distPath, result.code, FILE_ENCODING);
 }
 function uglify_v1(srcPath, distPath) {
-  var uglyfyJS = require('uglify-js'),
-      jsp = uglyfyJS.parser,
-      pro = uglyfyJS.uglify,
+  var uglifyJS = require('uglify-js'),
+      jsp = uglifyJS.parser,
+      pro = uglifyJS.uglify,
       ast = jsp.parse(fs.readFileSync(srcPath, FILE_ENCODING));
 
   ast = pro.ast_mangle(ast);
@@ -36,9 +36,9 @@ function uglify_v1(srcPath, distPath) {
   fs.writeFileSync(distPath, pro.gen_code(ast), FILE_ENCODING);
 }
 function uglify(srcPath, distPath) {
-  var uglyfyJS = require('uglify-js');
+  var uglifyJS = require('uglify-js');
 
-  if (uglyfyJS.parser) {
+  if (uglifyJS.parser) {
     uglify_v1(srcPath, distPath);
   }
   else {
