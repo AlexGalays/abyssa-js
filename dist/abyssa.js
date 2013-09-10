@@ -1,7 +1,7 @@
 /** @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.1.2 (2013-09-10T15:42:58.015Z)
+ * v1.1.2 (2013-09-10T15:57:54.923Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -844,9 +844,15 @@ Router.enableLogs = function() {
 
 Abyssa.Router = Router;
 
+function detectLeftButton(evt) {
+    evt = evt || window.event;
+    var button = evt.which || evt.button;
+    return button == 1;
+}
+
 function interceptAnchorClicks(router) {
-  document.addEventListener('click', function(evt) {
-    if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || evt.button == 1) return;
+  function handler(evt) {
+    if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !detectLeftButton(evt)) return;
 
     var anchor = anchorTarget(evt.target);
 
@@ -856,7 +862,10 @@ function interceptAnchorClicks(router) {
 
     evt.preventDefault();
     router.state(anchor.getAttribute('href'));
-  });
+  }
+  
+  if (document.addEventListener) { document.addEventListener('click', handler); }
+  else if (document.attachEvent) { document.attachEvent('onclick', handler); }
 }
 
 

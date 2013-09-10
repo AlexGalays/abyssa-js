@@ -1,7 +1,13 @@
 
+function detectLeftButton(evt) {
+    evt = evt || window.event;
+    var button = evt.which || evt.button;
+    return button == 1;
+}
+
 function interceptAnchorClicks(router) {
-  document.addEventListener('click', function(evt) {
-    if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || evt.button == 1) return;
+  function handler(evt) {
+    if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !detectLeftButton(evt)) return;
 
     var anchor = anchorTarget(evt.target);
 
@@ -11,7 +17,10 @@ function interceptAnchorClicks(router) {
 
     evt.preventDefault();
     router.state(anchor.getAttribute('href'));
-  });
+  }
+  
+  if (document.addEventListener) { document.addEventListener('click', handler); }
+  else if (document.attachEvent) { document.attachEvent('onclick', handler); }
 }
 
 
