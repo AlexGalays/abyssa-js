@@ -4,17 +4,48 @@ var
   Abyssa = global.Abyssa,
   Router, State, Async;
 
+// An option to enable logging at the Router:
+var routerLoggingEnabled = true;
 
+// An option to add logging to the HTML5 History API methods:
+var historyLoggingEnabled = true;
+
+var
+  initialTitle = (window.document && window.document.title),
+  initialUrl = (window.location && window.location.href),
+  pushState = (window.history && window.history.pushState),
+  replaceState = (window.history && window.history.replaceState);
+
+var historyLoggingInstalled;
 QUnit.module('Abyssa', {
   setup: function() {
     if (Router) {
-      Router.enableLogs();
+      if (routerLoggingEnabled) {
+        Router.enableLogs();
+      }
       Router.ignoreInitialURL = true;
     }
 
-    // Stub history:
-    if (window.history) {
-      window.history.pushState = function() {};
+    // Add logging to the HTML5 History API methods:
+    if (window.history && historyLoggingEnabled && !historyLoggingInstalled) {
+      var logState = function(prefix, state, title, url) {
+        window.document.title = initialTitle + " - " + url + "";
+        if (global.console) { global.console.log(prefix + [global.JSON.stringify(url), global.JSON.stringify(title), global.JSON.stringify(state), global.JSON.stringify(window.location.href)].join(' ')); }
+      };
+      
+      window.history.pushState = function(state, title, url) {
+        logState('window.history.pushState ', state, title, url);
+        if (!pushState) { throw new TypeError("window.history.pushState"); }
+        return pushState.apply(window.history, arguments);
+      };
+      
+      window.history.replaceState = function(state, title, url) {
+        logState('window.history.replaceState ', state, title, url);
+        if (!replaceState) { throw new TypeError("window.history.replaceState"); }
+        return replaceState.apply(window.history, arguments);
+      };
+      
+      historyLoggingInstalled = true;
     }
     
     Router = Abyssa.Router;
@@ -23,10 +54,18 @@ QUnit.module('Abyssa', {
   }
 });
 
+QUnit.done(function () {
+  // Change the location bar URL to initial to be able to reload the test page:
+  if (!window.history.emulate) {
+    if (pushState) { pushState.apply(window.history, [null, null, initialUrl]); }
+  }
+});
+
 
 QUnit.test('Dependencies and Globals', function() {
   QUnit.assert.ok(window.history, "window.history");
   QUnit.assert.ok(window.history.pushState, "window.history.pushState");
+  QUnit.assert.ok(window.history.replaceState, "window.history.replaceState");
   QUnit.assert.ok(global.JSON, "JSON");
   QUnit.assert.ok(Abyssa, "Abyssa");
   QUnit.assert.ok(Router, "Abyssa.Router");
