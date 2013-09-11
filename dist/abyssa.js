@@ -1,7 +1,7 @@
 /** @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.1.2 (2013-09-10T15:57:54.923Z)
+ * v1.1.2 (2013-09-11T10:03:00.411Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -512,7 +512,7 @@ function Router(declarativeStates) {
       router.transition.cancelled.dispatch(transition.from, transition.to);
     }
 
-    if (logEnabled) log('Starting transition from {0}:{1} to {2}:{3}',
+    log('Starting transition from {0}:{1} to {2}:{3}',
       currentState, JSON.stringify(currentParams),
       state, JSON.stringify(params));
 
@@ -817,11 +817,8 @@ function Router(declarativeStates) {
 // Logging
 
 var log = logError = noop;
-var logEnabled = false;
 
 Router.enableLogs = function() {
-  logEnabled = true;
-
   log = function() {
     console.log(getLogMessage(arguments));
   };

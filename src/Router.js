@@ -44,7 +44,7 @@ function Router(declarativeStates) {
       router.transition.cancelled.dispatch(transition.from, transition.to);
     }
 
-    if (logEnabled) log('Starting transition from {0}:{1} to {2}:{3}',
+    log('Starting transition from {0}:{1} to {2}:{3}',
       currentState, JSON.stringify(currentParams),
       state, JSON.stringify(params));
 
@@ -349,11 +349,8 @@ function Router(declarativeStates) {
 // Logging
 
 var log = logError = noop;
-var logEnabled = false;
 
 Router.enableLogs = function() {
-  logEnabled = true;
-
   log = function() {
     console.log(getLogMessage(arguments));
   };
