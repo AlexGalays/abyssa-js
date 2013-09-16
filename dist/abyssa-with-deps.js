@@ -1,7 +1,3 @@
-// abyssa-js 1.1.2
-define(function() {
-
-var Abyssa = {};
 /*jslint indent:4, white:true, nomen:true, plusplus:true */
 /*global define:false, require:false, exports:false, module:false, signals:false */
 
@@ -427,6 +423,7 @@ var Signal = (function(global){
     return Signal;
 
 }(this));
+
 /** @license
  * crossroads <http://millermedeiros.github.com/crossroads.js/>
  * Author: Miller Medeiros | MIT License
@@ -1117,6 +1114,7 @@ return factory(window['signals']);
 
 
 }());
+
 
 /** @license MIT License (c) copyright 2011-2013 original author or authors */
 
@@ -1941,7 +1939,8 @@ var when = (function(global) {
   return when;
 
 })(this);
-/*
+
+/*! @license
  * History API JavaScript Library v4.0.0
  *
  * Support: IE8+, FF3+, Opera 9+, Safari, Chrome and other
@@ -2862,6 +2861,14 @@ var when = (function(global) {
     window[dispatchEventName] = dispatchEvent;
 
 })(window);
+/** @license
+ * abyssa <https://github.com/AlexGalays/abyssa-js/>
+ * Author: Alexandre Galays | MIT License
+ * v1.1.2 (2013-09-10T15:42:58.015Z)
+ */
+(function () {
+var factory = function () {
+var Abyssa = {};
 
 function isString(instance) {
    return Object.prototype.toString.call(instance) == '[object String]';
@@ -3722,8 +3729,13 @@ function anchorTarget(target) {
     target = target.parentNode;
   }
 }
-
-
 return Abyssa;
-
-});
+};
+if (typeof define === 'function' && define.amd) {
+define(['abyssa'], factory);
+} else if (typeof module !== 'undefined' && module.exports) { //Node
+module.exports = factory();
+} else {
+/*jshint sub:true */window['Abyssa'] = factory();
+}
+}());

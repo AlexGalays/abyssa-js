@@ -365,15 +365,14 @@ To implement Non-blocking navigation, do not specify any `enterPrereqs`; instead
 <a name="dependencies"></a>
 # Dependencies
 
-## External dependencies (dependencies you must provide to use Abyssa)
-None
+Abyssa uses the following libraries:
 
-## Internal dependencies (dependencies used in the Abyssa's build process)
-**history.js (devote/HTML5-History-API)**: Used to support HTML4 browsers and abstract the HTML5 history implementation differences.  
-**crossroads.js**: A stateless, solid traditional low level router. Abyssa builds on top of it.  
-**signals.js**: A dependency of crossroads.js; Provide an alternative to string based events. Abyssa uses signals instead of events.  
-**when.js**: A small and solid implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
+[**history.js**](https://github.com/devote/HTML5-History-API): Used to support HTML4 browsers and abstract the HTML5 history implementation differences.  
+[**crossroads.js**](https://github.com/millermedeiros/crossroads.js): A stateless, solid traditional low level router. Abyssa builds on top of it.  
+[**signals.js**](https://github.com/millermedeiros/js-signals): A dependency of crossroads.js; Provide an alternative to string based events. Abyssa uses signals instead of events.  
+[**when.js**](https://github.com/cujojs/when): A small and solid implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
 
+Abyssa is compiled in two flavors: with and without dependencies built in. The standalone build may be used if a project already depends on some of these libraries.
 
 
 <a name="browser-support"></a>
