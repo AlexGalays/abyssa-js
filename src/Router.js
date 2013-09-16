@@ -44,9 +44,12 @@ function Router(declarativeStates) {
       router.transition.cancelled.dispatch(transition.from, transition.to);
     }
 
-    log('Starting transition from {0}:{1} to {2}:{3}',
-      currentState, JSON.stringify(currentParams),
-      state, JSON.stringify(params));
+    // Do not evaluate log arguments if logging is disabled:
+    if (log !== noop) {
+      log('Starting transition from {0}:{1} to {2}:{3}',
+        currentState, JSON.stringify(currentParams),
+        state, JSON.stringify(params));
+    }
 
     router.transition.started.dispatch(currentState, state);
     transition = Transition(currentState, state, params, paramDiff(currentParams, params));

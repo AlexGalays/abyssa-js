@@ -2864,7 +2864,7 @@ var when = (function(global) {
 /** @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.1.2 (2013-09-11T10:03:00.411Z)
+ * v1.1.2 (2013-09-16T12:13:03.976Z)
  */
 (function () {
 var factory = function () {
@@ -3375,9 +3375,12 @@ function Router(declarativeStates) {
       router.transition.cancelled.dispatch(transition.from, transition.to);
     }
 
-    log('Starting transition from {0}:{1} to {2}:{3}',
-      currentState, JSON.stringify(currentParams),
-      state, JSON.stringify(params));
+    // Do not evaluate log arguments if logging is disabled:
+    if (log !== noop) {
+      log('Starting transition from {0}:{1} to {2}:{3}',
+        currentState, JSON.stringify(currentParams),
+        state, JSON.stringify(params));
+    }
 
     router.transition.started.dispatch(currentState, state);
     transition = Transition(currentState, state, params, paramDiff(currentParams, params));
