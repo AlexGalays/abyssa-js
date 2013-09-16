@@ -38,7 +38,7 @@ var _fs = require('fs'),
         SIGNALS_JS: readFile(LIB_DIR + '/signals.js'),
         CROSSROADS_JS: readFile(LIB_DIR + '/crossroads.js'),
         WHEN_JS: readFile(LIB_DIR + '/when.js'),
-        HISTORY_JS: readFile(LIB_DIR + '/history.js'),
+        HISTORY_JS: readFile(LIB_DIR + '/history.iegte8.js'),
         
         UTIL_JS: readFile(SRC_DIR + '/util.js'),
         TRANSITION_JS: readFile(SRC_DIR + '/Transition.js'),

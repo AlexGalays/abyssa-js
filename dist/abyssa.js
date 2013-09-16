@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.1.3 (2013-09-16T13:09:37.220Z)
+ * v1.1.4 (2013-09-16T16:31:26.827Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -791,19 +791,19 @@ function Router(declarativeStates) {
 
   router.transition = {
     // Dispatched when a transition started.
-    started:   new Signal(),
+    started:   new signals.Signal(),
     // Dispatched when a transition either completed, failed or got cancelled.
-    ended:     new Signal(),
+    ended:     new signals.Signal(),
     // Dispatched when a transition successfuly completed
-    completed: new Signal(),
+    completed: new signals.Signal(),
     // Dispatched when a transition failed to complete
-    failed:    new Signal(),
+    failed:    new signals.Signal(),
     // Dispatched when a transition got cancelled
-    cancelled: new Signal()
+    cancelled: new signals.Signal()
   };
 
   // Dispatched once after the router successfully reached its initial state.
-  router.initialized = new Signal();
+  router.initialized = new signals.Signal();
 
   router.transition.completed.addOnce(function() {
     router.initialized.dispatch();
