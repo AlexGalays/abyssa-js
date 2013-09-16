@@ -2861,10 +2861,10 @@ var when = (function(global) {
     window[dispatchEventName] = dispatchEvent;
 
 })(window);
-/** @license
+/*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.1.2 (2013-09-16T12:45:55.674Z)
+ * v1.1.3 (2013-09-16T13:09:37.220Z)
  */
 (function () {
 var factory = function () {
