@@ -157,14 +157,13 @@ function uglify(srcPath) {
     var uglifyJS = require('uglify-js'),
         minifiedCode;
 
-    // Add leading semicolon to prevent runtime errors if a script with a closing paren is prepended.
     if (uglifyJS.parser) {
         // Uglify v1 does not preserve the license comments, so we at least add this project license:
-        minifiedCode = (_includes.LICENSE + ';'+ uglify_v1(srcPath));
+        minifiedCode = (_includes.LICENSE + uglify_v1(srcPath));
     }
     else {
         // Uglify v2 is able to preserve the license comments by itself.
-        minifiedCode = (';' + uglify_v2(srcPath));
+        minifiedCode = uglify_v2(srcPath);
     }
     
     return minifiedCode;
