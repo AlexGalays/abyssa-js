@@ -1,18 +1,14 @@
-// abyssa-js 1.1.2
-define(function() {
-
-var Abyssa = {};
-/*jslint indent:4, white:true, nomen:true, plusplus:true */
+/*jslint onevar:true, undef:true, newcap:true, regexp:true, bitwise:true, maxerr:50, indent:4, white:false, nomen:false, plusplus:false */
 /*global define:false, require:false, exports:false, module:false, signals:false */
 
 /** @license
  * JS Signals <http://millermedeiros.github.com/js-signals/>
  * Released under the MIT license
  * Author: Miller Medeiros
- * Version: 0.8.1 - Build: 266 (2012/07/31 03:33 PM)
+ * Version: 1.0.0 - Build: 268 (2012/11/29 05:48 PM)
  */
 
-var Signal = (function(global){
+(function(global){
 
     // SignalBinding -------------------------------------------------
     //================================================================
@@ -119,10 +115,24 @@ var Signal = (function(global){
         },
 
         /**
+         * @return {boolean} If SignalBinding will only be executed once.
+         */
+        isOnce : function () {
+            return this._isOnce;
+        },
+
+        /**
          * @return {Function} Handler function bound to the signal.
          */
         getListener : function () {
             return this._listener;
+        },
+
+        /**
+         * @return {Signal} Signal that listener is currently bound to.
+         */
+        getSignal : function () {
+            return this._signal;
         },
 
         /**
@@ -133,13 +143,6 @@ var Signal = (function(global){
             delete this._signal;
             delete this._listener;
             delete this.context;
-        },
-
-        /**
-         * @return {boolean} If SignalBinding will only be executed once.
-         */
-        isOnce : function () {
-            return this._isOnce;
         },
 
         /**
@@ -177,6 +180,12 @@ var Signal = (function(global){
          */
         this._bindings = [];
         this._prevParams = null;
+
+        // enforce dispatch to aways work on same context (#47)
+        var self = this;
+        this.dispatch = function(){
+            Signal.prototype.dispatch.apply(self, arguments);
+        };
     }
 
     Signal.prototype = {
@@ -186,7 +195,7 @@ var Signal = (function(global){
          * @type String
          * @const
          */
-        VERSION : '0.8.1',
+        VERSION : '1.0.0',
 
         /**
          * If Signal should keep record of previously dispatched parameters and
@@ -421,19 +430,28 @@ var Signal = (function(global){
     signals.Signal = Signal;
 
 
-    global['signals'] = signals;
 
-
-    return Signal;
+    //exports to multiple environments
+    if(typeof define === 'function' && define.amd){ //AMD
+        define(function () { return signals; });
+    } else if (typeof module !== 'undefined' && module.exports){ //node
+        module.exports = signals;
+    } else { //browser
+        //use string because of Google closure compiler ADVANCED_MODE
+        /*jslint sub:true */
+        global['signals'] = signals;
+    }
 
 }(this));
+
+
 /** @license
  * crossroads <http://millermedeiros.github.com/crossroads.js/>
  * Author: Miller Medeiros | MIT License
  * v0.12.0 (2013/01/21 13:47)
  */
 
-var crossroads = (function () {
+(function () {
 var factory = function (signals) {
 
     var crossroads,
@@ -1112,11 +1130,18 @@ var factory = function (signals) {
     return crossroads;
 };
 
-
-return factory(window['signals']);
-
+if (typeof define === 'function' && define.amd) {
+    define(['signals'], factory);
+} else if (typeof module !== 'undefined' && module.exports) { //Node
+    module.exports = factory(require('signals'));
+} else {
+    /*jshint sub:true */
+    window['crossroads'] = factory(window['signals']);
+}
 
 }());
+
+
 
 /** @license MIT License (c) copyright 2011-2013 original author or authors */
 
@@ -1941,8 +1966,9 @@ var when = (function(global) {
   return when;
 
 })(this);
+
 /*
- * History API JavaScript Library v4.0.0
+ * History API JavaScript Library v4.0.5
  *
  * Support: IE8+, FF3+, Opera 9+, Safari, Chrome and other
  *
@@ -1954,15 +1980,17 @@ var when = (function(global) {
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Update: 19.05.13 22:46
+ * Update: 20.08.13 21:16
  */
 (function(window) {
+    // Prevent the code from running if there is no window.history object
+    if (!window.history) return;
     // symlink to document
     var document = window.document;
     // HTML element
     var documentElement = document.documentElement;
     // symlink to sessionStorage
-    var sessionStorage = window['sessionStorage'];
+    var sessionStorage = null;
     // symlink to constructor of Object
     var Object = window['Object'];
     // symlink to JSON Object
@@ -2026,6 +2054,21 @@ var when = (function(global) {
     };
 
     /**
+     * Fix for Chrome in iOS
+     * See https://github.com/devote/HTML5-History-API/issues/29
+     */
+    var fastFixChrome = function(method, args) {
+        var isNeedFix = window.history !== windowHistory;
+        if (isNeedFix) {
+            window.history = windowHistory;
+        }
+        method.apply(windowHistory, args);
+        if (isNeedFix) {
+            window.history = historyObject;
+        }
+    };
+
+    /**
      * Properties that will be replaced/added to object
      * 'window.history', includes the object 'history.location',
      * for a complete the work with the URL address
@@ -2043,20 +2086,18 @@ var when = (function(global) {
             settings["type"] = type = type == null ? settings["type"] : type;
             if (window.top == window.self) {
                 var relative = parseURL(null, false, true)._relative;
-                var search = windowLocation.search;
-                var path = windowLocation.pathname;
+                var path = windowLocation.pathname + windowLocation.search;
                 if (isSupportHistoryAPI) {
+                    path = path.replace(/([^\/])$/, '$1/');
                     if (relative != basepath && (new RegExp("^" + basepath + "$", "i")).test(path)) {
                         windowLocation.replace(relative);
                     }
-                    if ((new RegExp("^" + basepath + "$", "i")).test(path + '/')) {
-                        windowLocation.replace(basepath);
-                    } else if (!(new RegExp("^" + basepath, "i")).test(path)) {
-                        windowLocation.replace(path.replace(/^\//, basepath) + search);
-                    }
                 } else if (path != basepath) {
-                    windowLocation.replace(basepath + '#' + path.
-                        replace(new RegExp("^" + basepath, "i"), type) + search + windowLocation.hash);
+                    path = path.replace(/([^\/])\?/, '$1/?');
+                    if ((new RegExp("^" + basepath, "i")).test(path)) {
+                        windowLocation.replace(basepath + '#' + path.
+                            replace(new RegExp("^" + basepath, "i"), type) + windowLocation.hash);
+                    }
                 }
             }
         },
@@ -2070,7 +2111,7 @@ var when = (function(global) {
          * @param {string} [url]
          */
         pushState: function(state, title, url) {
-            historyPushState && historyPushState.apply(windowHistory, arguments);
+            historyPushState && fastFixChrome(historyPushState, arguments);
             changeState(state, url);
         },
         /**
@@ -2085,7 +2126,7 @@ var when = (function(global) {
          */
         replaceState: function(state, title, url) {
             delete stateStorage[windowLocation.href];
-            historyReplaceState && historyReplaceState.apply(windowHistory, arguments);
+            historyReplaceState && fastFixChrome(historyReplaceState, arguments);
             changeState(state, url, true);
         },
         /**
@@ -2315,7 +2356,7 @@ var when = (function(global) {
     /**
      * Initializing storage for the custom state's object
      */
-    function storageInitialize(JSON) {
+    function storageInitialize() {
         var storage = '';
         if (sessionStorage) {
             // get cache from the storage in browser
@@ -2704,7 +2745,7 @@ var when = (function(global) {
             var current = parseURL();
             var expect = parseURL(target.getAttribute("href", 2));
             var isEqualBaseURL = current._href.split('#').shift() === expect._href.split('#').shift();
-            if (isEqualBaseURL) {
+            if (isEqualBaseURL && expect._hash) {
                 if (current._hash !== expect._hash) {
                     historyObject.location.hash = expect._hash;
                 }
@@ -2747,6 +2788,15 @@ var when = (function(global) {
         arg.replace(/(\w+)(?:=([^&]*))?/g, function(a, key, value) {
             settings[key] = (value || (key === 'basepath' ? '/' : '')).replace(/^(0|false)$/, '');
         });
+
+        /**
+         * sessionStorage throws error when cookies are disabled
+         * Chrome content settings when running the site in a Facebook IFrame.
+         * see: https://github.com/devote/HTML5-History-API/issues/34
+         */
+        try {
+            sessionStorage = window['sessionStorage'];
+        } catch(_e_) {}
 
         /**
          * hang up the event handler to listen to the events hashchange
@@ -2806,7 +2856,7 @@ var when = (function(global) {
 
         // If browser does not support object 'state' in interface 'History'
         if (!isSupportStateObjectInHistory && JSON) {
-            storageInitialize(JSON);
+            storageInitialize();
         }
 
         // track clicks on anchors
@@ -2862,9 +2912,17 @@ var when = (function(global) {
     window[dispatchEventName] = dispatchEvent;
 
 })(window);
+/*! @license
+ * abyssa <https://github.com/AlexGalays/abyssa-js/>
+ * Author: Alexandre Galays | MIT License
+ * v1.1.4 (2013-09-16T16:31:26.827Z)
+ */
+(function () {
+var factory = function () {
+var Abyssa = {};
 
 function isString(instance) {
-   return Object.prototype.toString.call(instance) == '[object String]';
+   return Object.prototype.toString.call(instance) === '[object String]';
 }
 
 function noop() {}
@@ -2898,6 +2956,7 @@ function objectSize(obj) {
   return size;
 }
 
+
 /*
 * Create a new Transition instance.
 */
@@ -2908,7 +2967,7 @@ function Transition(fromState, toState, params, paramDiff) {
       transition,
       exits = [],
       error,
-      paramOnlyChange = (fromState == toState);
+      paramOnlyChange = (fromState === toState);
 
   // The first transition has no fromState.
   if (fromState) {
@@ -2954,7 +3013,7 @@ function prereqs(enters, exits, params) {
 
     var prereqs = state._exitPrereqs = when(state.exitPrereqs()).then(
       function success(value) {
-        if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
+        if (state._exitPrereqs === prereqs) state._exitPrereqs.value = value;
       },
       function fail(cause) {
         throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
@@ -2967,7 +3026,7 @@ function prereqs(enters, exits, params) {
 
     var prereqs = state._enterPrereqs = when(state.enterPrereqs(params)).then(
       function success(value) {
-        if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
+        if (state._enterPrereqs === prereqs) state._enterPrereqs.value = value;
       },
       function fail(cause) {
         throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
@@ -2997,13 +3056,12 @@ function doTransition(enters, exits, params) {
 */
 function transitionRoot(fromState, toState, paramOnlyChange, paramDiff) {
   var root,
-      parent,
-      param;
+      parent;
 
   // For a param-only change, the root is the top-most state owning the param(s),
   if (paramOnlyChange) {
     fromState.parents.slice().reverse().forEach(function(parent) {
-      for (param in paramDiff) {
+      for (var param in paramDiff) {
         if (parent.params[param] || parent.queryParams[param]) {
           root = parent;
           break;
@@ -3084,6 +3142,7 @@ var asyncPromises = (function () {
 
 
 Abyssa.Async = asyncPromises.register;
+
 
 /*
 * Create a new State instance.
@@ -3264,7 +3323,7 @@ function State() {
       );
 
     states[name] = state;
-  };
+  }
 
   function toString() {
     return state.fullName;
@@ -3292,18 +3351,18 @@ function getArgs(args) {
       queryIndex,
       param;
 
-  if (args.length == 1) {
+  if (args.length === 1) {
     if (isString(arg1)) result.path = arg1;
     else result.options = arg1;
   }
-  else if (args.length == 2) {
+  else if (args.length === 2) {
     result.path = arg1;
-    result.options = (typeof arg2 == 'object') ? arg2 : {enter: arg2};
+    result.options = (typeof arg2 === 'object') ? arg2 : {enter: arg2};
   }
 
   // Extract the query string
   queryIndex = result.path.indexOf('?');
-  if (queryIndex != -1) {
+  if (queryIndex !== -1) {
     result.queryParams = result.path.slice(queryIndex + 1);
     result.path = result.path.slice(0, queryIndex);
     result.queryParams = arrayToObject(result.queryParams.split('&'));
@@ -3322,6 +3381,7 @@ function getArgs(args) {
 
 
 Abyssa.State = State;
+
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
@@ -3368,9 +3428,12 @@ function Router(declarativeStates) {
       router.transition.cancelled.dispatch(transition.from, transition.to);
     }
 
-    if (logEnabled) log('Starting transition from {0}:{1} to {2}:{3}',
-      currentState, JSON.stringify(currentParams),
-      state, JSON.stringify(params));
+    // Do not evaluate log arguments if logging is disabled:
+    if (log !== noop) {
+      log('Starting transition from {0}:{1} to {2}:{3}',
+        currentState, JSON.stringify(currentParams),
+        state, JSON.stringify(params));
+    }
 
     router.transition.started.dispatch(currentState, state);
     transition = Transition(currentState, state, params, paramDiff(currentParams, params));
@@ -3421,7 +3484,7 @@ function Router(declarativeStates) {
 
     diff = paramDiff(params, newParams);
 
-    return (newState == state) && (objectSize(diff) == 0);
+    return (newState === state) && (objectSize(diff) === 0);
   }
 
   /*
@@ -3429,13 +3492,15 @@ function Router(declarativeStates) {
   */
   function paramDiff(oldParams, newParams) {
     var diff = {},
-        oldParams = oldParams || {};
+        name;
 
-    for (var name in oldParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
+    oldParams = oldParams || {};
 
-    for (var name in newParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
+    for (name in oldParams)
+      if (oldParams[name] !== newParams[name]) diff[name] = 1;
+
+    for (name in newParams)
+      if (oldParams[name] !== newParams[name]) diff[name] = 1;
 
     return diff;
   }
@@ -3640,19 +3705,19 @@ function Router(declarativeStates) {
 
   router.transition = {
     // Dispatched when a transition started.
-    started:   new Signal(),
+    started:   new signals.Signal(),
     // Dispatched when a transition either completed, failed or got cancelled.
-    ended:     new Signal(),
+    ended:     new signals.Signal(),
     // Dispatched when a transition successfuly completed
-    completed: new Signal(),
+    completed: new signals.Signal(),
     // Dispatched when a transition failed to complete
-    failed:    new Signal(),
+    failed:    new signals.Signal(),
     // Dispatched when a transition got cancelled
-    cancelled: new Signal()
+    cancelled: new signals.Signal()
   };
 
   // Dispatched once after the router successfully reached its initial state.
-  router.initialized = new Signal();
+  router.initialized = new signals.Signal();
 
   router.transition.completed.addOnce(function() {
     router.initialized.dispatch();
@@ -3672,12 +3737,10 @@ function Router(declarativeStates) {
 
 // Logging
 
-var log = logError = noop;
-var logEnabled = false;
+var log = noop;
+var logError = noop;
 
 Router.enableLogs = function() {
-  logEnabled = true;
-
   log = function() {
     console.log(getLogMessage(arguments));
   };
@@ -3700,30 +3763,48 @@ Router.enableLogs = function() {
 
 Abyssa.Router = Router;
 
-function interceptAnchorClicks(router) {
-  document.addEventListener('click', function(evt) {
-    if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || evt.button == 1) return;
+var interceptAnchorClicks = (function (window) {
+  if (!window || !window.document || !window.location) return;
 
-    var anchor = anchorTarget(evt.target);
-
-    if (!anchor) return;
-    if (anchor.getAttribute('target') == '_blank') return;
-    if (anchor.hostname != location.hostname) return;
-
-    evt.preventDefault();
-    router.state(anchor.getAttribute('href'));
-  });
-}
-
-
-function anchorTarget(target) {
-  while (target) {
-    if (target.nodeName == 'A') return target;
-    target = target.parentNode;
+  function detectLeftButton(evt) {
+    evt = evt || window.event;
+    var button = evt.which || evt.button;
+    return (button === 1);
   }
-}
 
+  function anchorTarget(target) {
+    while (target) {
+      if (target.nodeName === 'A') return target;
+      target = target.parentNode;
+    }
+  }
+
+  return function (router) {
+    function handler(evt) {
+      if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !detectLeftButton(evt)) return;
+
+      var anchor = anchorTarget(evt.target);
+
+      if (!anchor) return;
+      if (anchor.getAttribute('target') === '_blank') return;
+      if (anchor.hostname !== window.location.hostname) return;
+
+      evt.preventDefault();
+      router.state(anchor.getAttribute('href'));
+    }
+
+    if (window.document.addEventListener) { window.document.addEventListener('click', handler); }
+    else if (window.document.attachEvent) { window.document.attachEvent('onclick', handler); }
+  };
+}(this));
 
 return Abyssa;
-
-});
+};
+if (typeof define === 'function' && define.amd) {
+define(['abyssa'], factory);
+} else if (typeof module !== 'undefined' && module.exports) { //Node
+module.exports = factory();
+} else {
+/*jshint sub:true */window['Abyssa'] = factory();
+}
+}());

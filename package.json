@@ -1,0 +1,34 @@
+{
+    "name" : "abyssa",
+    "description" : "A stateful router library for single page applications",
+    "keywords" : ["routes", "routing", "router", "hierarchical", "stateful"],
+    "homepage" : "https://github.com/AlexGalays/abyssa-js/",
+    "version" : "1.1.4",
+    "author" : {
+        "name" : "Alexandre Galays",
+        "url" : "https://github.com/AlexGalays/"
+    },
+    "repository" : {
+        "type" : "git",
+        "url" : "https://github.com/AlexGalays/abyssa-js.git"
+    },
+    "main" : "dist/abyssa.js",
+    "bugs" : {
+        "url" : "https://github.com/AlexGalays/abyssa-js/issues"
+    },
+    "licenses" : [
+        {
+            "type" : "MIT",
+            "url" : "http://www.opensource.org/licenses/mit-license.php"
+        }
+    ],
+    "dependencies" : {
+        "signals" : "<2.0",
+        "crossroads" : "<1.0",
+        "when" : "2.1.0",
+        "html5-history-api" : "4.0.0"
+    },
+    "devDependencies" : {
+        "uglify-js" : "~1.2.3"
+    }
+}

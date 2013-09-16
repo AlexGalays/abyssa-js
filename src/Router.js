@@ -44,9 +44,12 @@ function Router(declarativeStates) {
       router.transition.cancelled.dispatch(transition.from, transition.to);
     }
 
-    if (logEnabled) log('Starting transition from {0}:{1} to {2}:{3}',
-      currentState, JSON.stringify(currentParams),
-      state, JSON.stringify(params));
+    // Do not evaluate log arguments if logging is disabled:
+    if (log !== noop) {
+      log('Starting transition from {0}:{1} to {2}:{3}',
+        currentState, JSON.stringify(currentParams),
+        state, JSON.stringify(params));
+    }
 
     router.transition.started.dispatch(currentState, state);
     transition = Transition(currentState, state, params, paramDiff(currentParams, params));
@@ -97,7 +100,7 @@ function Router(declarativeStates) {
 
     diff = paramDiff(params, newParams);
 
-    return (newState == state) && (objectSize(diff) == 0);
+    return (newState === state) && (objectSize(diff) === 0);
   }
 
   /*
@@ -105,13 +108,15 @@ function Router(declarativeStates) {
   */
   function paramDiff(oldParams, newParams) {
     var diff = {},
-        oldParams = oldParams || {};
+        name;
 
-    for (var name in oldParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
+    oldParams = oldParams || {};
 
-    for (var name in newParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
+    for (name in oldParams)
+      if (oldParams[name] !== newParams[name]) diff[name] = 1;
+
+    for (name in newParams)
+      if (oldParams[name] !== newParams[name]) diff[name] = 1;
 
     return diff;
   }
@@ -316,19 +321,19 @@ function Router(declarativeStates) {
 
   router.transition = {
     // Dispatched when a transition started.
-    started:   new Signal(),
+    started:   new signals.Signal(),
     // Dispatched when a transition either completed, failed or got cancelled.
-    ended:     new Signal(),
+    ended:     new signals.Signal(),
     // Dispatched when a transition successfuly completed
-    completed: new Signal(),
+    completed: new signals.Signal(),
     // Dispatched when a transition failed to complete
-    failed:    new Signal(),
+    failed:    new signals.Signal(),
     // Dispatched when a transition got cancelled
-    cancelled: new Signal()
+    cancelled: new signals.Signal()
   };
 
   // Dispatched once after the router successfully reached its initial state.
-  router.initialized = new Signal();
+  router.initialized = new signals.Signal();
 
   router.transition.completed.addOnce(function() {
     router.initialized.dispatch();
@@ -348,12 +353,10 @@ function Router(declarativeStates) {
 
 // Logging
 
-var log = logError = noop;
-var logEnabled = false;
+var log = noop;
+var logError = noop;
 
 Router.enableLogs = function() {
-  logEnabled = true;
-
   log = function() {
     console.log(getLogMessage(arguments));
   };
