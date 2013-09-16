@@ -1,4 +1,0 @@
-
-this.Abyssa = Abyssa;
-
-})();
