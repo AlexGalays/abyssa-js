@@ -1,14 +1,14 @@
 /** @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.1.2 (2013-09-16T12:13:03.976Z)
+ * v1.1.2 (2013-09-16T12:45:55.674Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
 var Abyssa = {};
 
 function isString(instance) {
-   return Object.prototype.toString.call(instance) == '[object String]';
+   return Object.prototype.toString.call(instance) === '[object String]';
 }
 
 function noop() {}
@@ -42,6 +42,7 @@ function objectSize(obj) {
   return size;
 }
 
+
 /*
 * Create a new Transition instance.
 */
@@ -52,7 +53,7 @@ function Transition(fromState, toState, params, paramDiff) {
       transition,
       exits = [],
       error,
-      paramOnlyChange = (fromState == toState);
+      paramOnlyChange = (fromState === toState);
 
   // The first transition has no fromState.
   if (fromState) {
@@ -98,7 +99,7 @@ function prereqs(enters, exits, params) {
 
     var prereqs = state._exitPrereqs = when(state.exitPrereqs()).then(
       function success(value) {
-        if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
+        if (state._exitPrereqs === prereqs) state._exitPrereqs.value = value;
       },
       function fail(cause) {
         throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
@@ -111,7 +112,7 @@ function prereqs(enters, exits, params) {
 
     var prereqs = state._enterPrereqs = when(state.enterPrereqs(params)).then(
       function success(value) {
-        if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
+        if (state._enterPrereqs === prereqs) state._enterPrereqs.value = value;
       },
       function fail(cause) {
         throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
@@ -141,13 +142,12 @@ function doTransition(enters, exits, params) {
 */
 function transitionRoot(fromState, toState, paramOnlyChange, paramDiff) {
   var root,
-      parent,
-      param;
+      parent;
 
   // For a param-only change, the root is the top-most state owning the param(s),
   if (paramOnlyChange) {
     fromState.parents.slice().reverse().forEach(function(parent) {
-      for (param in paramDiff) {
+      for (var param in paramDiff) {
         if (parent.params[param] || parent.queryParams[param]) {
           root = parent;
           break;
@@ -228,6 +228,7 @@ var asyncPromises = (function () {
 
 
 Abyssa.Async = asyncPromises.register;
+
 
 /*
 * Create a new State instance.
@@ -408,7 +409,7 @@ function State() {
       );
 
     states[name] = state;
-  };
+  }
 
   function toString() {
     return state.fullName;
@@ -436,18 +437,18 @@ function getArgs(args) {
       queryIndex,
       param;
 
-  if (args.length == 1) {
+  if (args.length === 1) {
     if (isString(arg1)) result.path = arg1;
     else result.options = arg1;
   }
-  else if (args.length == 2) {
+  else if (args.length === 2) {
     result.path = arg1;
-    result.options = (typeof arg2 == 'object') ? arg2 : {enter: arg2};
+    result.options = (typeof arg2 === 'object') ? arg2 : {enter: arg2};
   }
 
   // Extract the query string
   queryIndex = result.path.indexOf('?');
-  if (queryIndex != -1) {
+  if (queryIndex !== -1) {
     result.queryParams = result.path.slice(queryIndex + 1);
     result.path = result.path.slice(0, queryIndex);
     result.queryParams = arrayToObject(result.queryParams.split('&'));
@@ -466,6 +467,7 @@ function getArgs(args) {
 
 
 Abyssa.State = State;
+
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
@@ -568,7 +570,7 @@ function Router(declarativeStates) {
 
     diff = paramDiff(params, newParams);
 
-    return (newState == state) && (objectSize(diff) == 0);
+    return (newState === state) && (objectSize(diff) === 0);
   }
 
   /*
@@ -576,13 +578,15 @@ function Router(declarativeStates) {
   */
   function paramDiff(oldParams, newParams) {
     var diff = {},
-        oldParams = oldParams || {};
+        name;
 
-    for (var name in oldParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
+    oldParams = oldParams || {};
 
-    for (var name in newParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
+    for (name in oldParams)
+      if (oldParams[name] !== newParams[name]) diff[name] = 1;
+
+    for (name in newParams)
+      if (oldParams[name] !== newParams[name]) diff[name] = 1;
 
     return diff;
   }
@@ -819,7 +823,8 @@ function Router(declarativeStates) {
 
 // Logging
 
-var log = logError = noop;
+var log = noop;
+var logError = noop;
 
 Router.enableLogs = function() {
   log = function() {
@@ -844,37 +849,41 @@ Router.enableLogs = function() {
 
 Abyssa.Router = Router;
 
-function detectLeftButton(evt) {
+var interceptAnchorClicks = (function (window) {
+  if (!window || !window.document || !window.location) return;
+
+  function detectLeftButton(evt) {
     evt = evt || window.event;
     var button = evt.which || evt.button;
-    return button == 1;
-}
-
-function interceptAnchorClicks(router) {
-  function handler(evt) {
-    if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !detectLeftButton(evt)) return;
-
-    var anchor = anchorTarget(evt.target);
-
-    if (!anchor) return;
-    if (anchor.getAttribute('target') == '_blank') return;
-    if (anchor.hostname != location.hostname) return;
-
-    evt.preventDefault();
-    router.state(anchor.getAttribute('href'));
+    return (button === 1);
   }
-  
-  if (document.addEventListener) { document.addEventListener('click', handler); }
-  else if (document.attachEvent) { document.attachEvent('onclick', handler); }
-}
 
-
-function anchorTarget(target) {
-  while (target) {
-    if (target.nodeName == 'A') return target;
-    target = target.parentNode;
+  function anchorTarget(target) {
+    while (target) {
+      if (target.nodeName === 'A') return target;
+      target = target.parentNode;
+    }
   }
-}
+
+  return function (router) {
+    function handler(evt) {
+      if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !detectLeftButton(evt)) return;
+
+      var anchor = anchorTarget(evt.target);
+
+      if (!anchor) return;
+      if (anchor.getAttribute('target') === '_blank') return;
+      if (anchor.hostname !== window.location.hostname) return;
+
+      evt.preventDefault();
+      router.state(anchor.getAttribute('href'));
+    }
+
+    if (window.document.addEventListener) { window.document.addEventListener('click', handler); }
+    else if (window.document.attachEvent) { window.document.attachEvent('onclick', handler); }
+  };
+}(this));
+
 return Abyssa;
 };
 if (typeof define === 'function' && define.amd) {

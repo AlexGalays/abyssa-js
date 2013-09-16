@@ -100,7 +100,7 @@ function Router(declarativeStates) {
 
     diff = paramDiff(params, newParams);
 
-    return (newState == state) && (objectSize(diff) == 0);
+    return (newState === state) && (objectSize(diff) === 0);
   }
 
   /*
@@ -108,13 +108,15 @@ function Router(declarativeStates) {
   */
   function paramDiff(oldParams, newParams) {
     var diff = {},
-        oldParams = oldParams || {};
+        name;
 
-    for (var name in oldParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
+    oldParams = oldParams || {};
 
-    for (var name in newParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
+    for (name in oldParams)
+      if (oldParams[name] !== newParams[name]) diff[name] = 1;
+
+    for (name in newParams)
+      if (oldParams[name] !== newParams[name]) diff[name] = 1;
 
     return diff;
   }
@@ -351,7 +353,8 @@ function Router(declarativeStates) {
 
 // Logging
 
-var log = logError = noop;
+var log = noop;
+var logError = noop;
 
 Router.enableLogs = function() {
   log = function() {

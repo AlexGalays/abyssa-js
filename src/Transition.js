@@ -9,7 +9,7 @@ function Transition(fromState, toState, params, paramDiff) {
       transition,
       exits = [],
       error,
-      paramOnlyChange = (fromState == toState);
+      paramOnlyChange = (fromState === toState);
 
   // The first transition has no fromState.
   if (fromState) {
@@ -55,7 +55,7 @@ function prereqs(enters, exits, params) {
 
     var prereqs = state._exitPrereqs = when(state.exitPrereqs()).then(
       function success(value) {
-        if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
+        if (state._exitPrereqs === prereqs) state._exitPrereqs.value = value;
       },
       function fail(cause) {
         throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
@@ -68,7 +68,7 @@ function prereqs(enters, exits, params) {
 
     var prereqs = state._enterPrereqs = when(state.enterPrereqs(params)).then(
       function success(value) {
-        if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
+        if (state._enterPrereqs === prereqs) state._enterPrereqs.value = value;
       },
       function fail(cause) {
         throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
@@ -98,13 +98,12 @@ function doTransition(enters, exits, params) {
 */
 function transitionRoot(fromState, toState, paramOnlyChange, paramDiff) {
   var root,
-      parent,
-      param;
+      parent;
 
   // For a param-only change, the root is the top-most state owning the param(s),
   if (paramOnlyChange) {
     fromState.parents.slice().reverse().forEach(function(parent) {
-      for (param in paramDiff) {
+      for (var param in paramDiff) {
         if (parent.params[param] || parent.queryParams[param]) {
           root = parent;
           break;

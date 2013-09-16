@@ -178,7 +178,7 @@ function State() {
       );
 
     states[name] = state;
-  };
+  }
 
   function toString() {
     return state.fullName;
@@ -206,18 +206,18 @@ function getArgs(args) {
       queryIndex,
       param;
 
-  if (args.length == 1) {
+  if (args.length === 1) {
     if (isString(arg1)) result.path = arg1;
     else result.options = arg1;
   }
-  else if (args.length == 2) {
+  else if (args.length === 2) {
     result.path = arg1;
-    result.options = (typeof arg2 == 'object') ? arg2 : {enter: arg2};
+    result.options = (typeof arg2 === 'object') ? arg2 : {enter: arg2};
   }
 
   // Extract the query string
   queryIndex = result.path.indexOf('?');
-  if (queryIndex != -1) {
+  if (queryIndex !== -1) {
     result.queryParams = result.path.slice(queryIndex + 1);
     result.path = result.path.slice(0, queryIndex);
     result.queryParams = arrayToObject(result.queryParams.split('&'));

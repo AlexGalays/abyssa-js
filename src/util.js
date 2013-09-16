@@ -1,6 +1,6 @@
 
 function isString(instance) {
-   return Object.prototype.toString.call(instance) == '[object String]';
+   return Object.prototype.toString.call(instance) === '[object String]';
 }
 
 function noop() {}
