@@ -1,25 +1,43 @@
 
-/*
-* Create a new State instance.
-*
-* State() // A state without options and an empty path.
-* State('path', {options}) // A state with a static named path and options
-* State(':path', {options}) // A state with a dynamic named path and options
-* State('path?query', {options}) // Same as above with an optional query string param named 'query'
-* State({options}) // Its path is the empty string.
-*
-* options is an object with the following optional properties:
-* enter, exit, enterPrereqs, exitPrereqs.
-*
-* Child states can also be specified in the options:
-* State({ myChildStateName: State() })
-* This is the declarative equivalent to the addState method.
-*
-* Finally, options can contain any arbitrary data value
-* that will get stored in the state and made available via the data() method:
-* State({myData: 55})
-* This is the declarative equivalent to the data(key, value) method.
-*/
+/**
+ * Creates a new State instance.
+ *
+ * State() // A state without options and an empty path.
+ * State('path', {options}) // A state with a static named path and options
+ * State(':path', {options}) // A state with a dynamic named path and options
+ * State('path?query', {options}) // Same as above with an optional query string param named 'query'
+ * State({options}) // Its path is the empty string.
+ *
+ * options is an object with the following optional properties:
+ * enter, exit, enterPrereqs, exitPrereqs.
+ *
+ * Child states can also be specified in the options:
+ * State({ myChildStateName: State() })
+ * This is the declarative equivalent to the addState method.
+ *
+ * Finally, options can contain any arbitrary data value
+ * that will get stored in the state and made available via the data() method:
+ * State({myData: 55})
+ * This is the declarative equivalent to the data(key, value) method.
+ *
+ * @signature `State(path)`
+ * @param {String} path The state path template.
+ * @return {Abyssa.State}
+ *
+ * @signature `State(options)`
+ * @param {Object} options The options object that includes the callbacks and child states.
+ * @return {Abyssa.State}
+ *
+ * @signature `State(path, options)`
+ * @param {String} path The state path template.
+ * @param {Object} options The options object that includes the callbacks and child states.
+ * @return {Abyssa.State}
+ *
+ * @signature `State(path, enterFn)`
+ * @param {String} path The state path template.
+ * @param {Function} enterFn The state enter function.
+ * @return {Abyssa.State}
+ */
 function State() {
   var state    = { _isState: true },
       args     = getArgs(arguments),
@@ -40,9 +58,12 @@ function State() {
 
   state.ownData = getOwnData(options);
 
-  /*
-  * Initialize and freeze this state.
-  */
+  /**
+   * Initializes and freezes this state.
+   *
+   * @param {String} name
+   * @param {Abyssa.State} parent
+   */
   function init(name, parent) {
     state.name = name;
     state.parent = parent;
@@ -59,10 +80,12 @@ function State() {
     initialized = true;
   }
 
-  /*
-  * The full path, composed of all the individual paths of this state and its parents.
-  */
-  function fullPath() {
+  /**
+   * Builds the full path, composed of all the individual paths of this state and its parents.
+   *
+   * @return {String}
+   */
+  function getFullPath() {
     var result      = state.path,
         stateParent = state.parent;
 
@@ -71,12 +94,14 @@ function State() {
       stateParent = stateParent.parent;
     }
 
-    return result;
+    return normalizePathQuery(result);
   }
 
-  /*
-  * The list of all parents, starting from the closest ones.
-  */
+  /**
+   * Returns the list of all parents, starting from the closest ones.
+   *
+   * @return {Array.<Abyssa.State>}
+   */
   function getParents() {
     var parents = [],
         parent  = state.parent;
@@ -89,9 +114,11 @@ function State() {
     return parents;
   }
 
-  /*
-  * The list of child states as an Array.
-  */
+  /**
+   * Returns the list of child states as an Array.
+   *
+   * @return {Array.<Abyssa.State>}
+   */
   function getChildren() {
     var children = [];
 
@@ -102,9 +129,12 @@ function State() {
     return children;
   }
 
-  /*
-  * The map of child states by name.
-  */
+  /**
+   * Finds the states among the options and returns the map of child states by name.
+   *
+   * @param {Object} options The constructor options, some of them are {Abyssa.State}.
+   * @return {Object.<String,Abyssa.State>}
+   */
   function getStates(options) {
     var states = {};
 
@@ -115,10 +145,12 @@ function State() {
     return states;
   }
 
-  /*
-  * The fully qualified name of this state.
-  * e.g granparentName.parentName.name
-  */
+  /**
+   * Builds the fully qualified name of this state.
+   * e.g granparentName.parentName.name
+   *
+   * @return {String}
+   */
   function getFullName() {
     return state.parents.reduceRight(function(acc, parent) {
       return acc + parent.name + '.';
@@ -137,13 +169,16 @@ function State() {
     return result;
   }
 
-  /*
-  * Get or Set some arbitrary data by key on this state.
-  * child states have access to their parents' data.
-  *
-  * This can be useful when using external models/services
-  * as a mean to communicate between states is not desired.
-  */
+  /**
+   * Gets or Sets some arbitrary data by key on this state.
+   * Child states have access to their parents' data.
+   *
+   * This can be useful when using external models/services
+   * as a mean to communicate between states is not desired.
+   *
+   * @param {String} key The key for the data.
+   * @param {*} value The data to store.
+   */
   function data(key, value) {
     if (value !== undefined) {
       if (state.ownData[key] !== undefined)
@@ -164,9 +199,12 @@ function State() {
     for (var name in states) callback(name, states[name]);
   }
 
-  /*
-  * Add a child state.
-  */
+  /**
+   * Adds a child state.
+   *
+   * @param {String} name The state name.
+   * @param {Abyssa.State} state The state to add.
+   */
   function addState(name, state) {
     if (initialized)
       throw new Error('States can only be added before the Router is initialized');
@@ -178,7 +216,7 @@ function State() {
       );
 
     states[name] = state;
-  };
+  }
 
   function toString() {
     return state.fullName;
@@ -186,7 +224,7 @@ function State() {
 
 
   state.init = init;
-  state.fullPath = fullPath;
+  state.getFullPath = getFullPath;
 
   // Public methods
 
@@ -198,26 +236,33 @@ function State() {
 }
 
 
-// Extract the arguments of the overloaded State "constructor" function.
+/**
+ * Extracts the arguments of the State "constructor" function.
+ *
+ * @param {Arguments}
+ * @return {Object}
+ */
 function getArgs(args) {
   var result  = { path: '', options: {}, params: {}, queryParams: {} },
       arg1    = args[0],
       arg2    = args[1],
-      queryIndex,
-      param;
+      queryIndex;
 
-  if (args.length == 1) {
+  if (args.length === 1) {
     if (isString(arg1)) result.path = arg1;
     else result.options = arg1;
   }
-  else if (args.length == 2) {
+  else if (args.length === 2) {
     result.path = arg1;
-    result.options = (typeof arg2 == 'object') ? arg2 : {enter: arg2};
+    result.options = (typeof arg2 === 'object') ? arg2 : {enter: arg2};
   }
+
+  // Normalize the path, remove the leading slash to allow pathless states
+  result.path = normalizePathQuery(result.path, true);
 
   // Extract the query string
   queryIndex = result.path.indexOf('?');
-  if (queryIndex != -1) {
+  if (queryIndex !== -1) {
     result.queryParams = result.path.slice(queryIndex + 1);
     result.path = result.path.slice(0, queryIndex);
     result.queryParams = arrayToObject(result.queryParams.split('&'));
@@ -225,7 +270,14 @@ function getArgs(args) {
 
   // Replace dynamic params like :id with {id}, which is what crossroads uses,
   // and store them for later lookup.
-  result.path = result.path.replace(/:\w*/g, function(match) {
+  result.path = result.path.replace(/[\:\{][^\/]+/g, function(match) {
+    var lastChar = match.charAt(match.length-1);
+    var param;
+    if (lastChar === '}' || lastChar === ':') {
+      param = match.substring(1, match.length-1);
+      result.params[param] = 1;
+      return match;
+    }
     param = match.substring(1);
     result.params[param] = 1;
     return '{' + param + '}';

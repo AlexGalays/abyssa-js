@@ -78,7 +78,7 @@ Router({
 ## Router
 
 ### init (initState: String): Router
-Initialize and freeze the router (states can not be updated or added afterwards).  
+Initializes and freezes the router (states can not be updated or added afterwards).  
 The router will immediately initiate a transition to, in order of priority:  
 1) The state captured by the current URL  
 2) The init state passed as an argument  
@@ -88,7 +88,7 @@ The router will immediately initiate a transition to, in order of priority:
 Add a new root state to the router.
 
 ### state (pathQueryOrName: String, params: Object): void
-Request a programmatic state change.  
+Requests a programmatic state change.  
 Only leaf states can be transitionned to.  
 While you can change state programmatically, keep in mind the most idiomatic way to do it is using anchor tags with the proper href.  
 
@@ -97,11 +97,11 @@ Two notations are supported:
 // Fully qualified state name
 state('my.target.state', {id: 33, filter: 'desc'})  
 // Path and (optionally) query
-state('target/33?filter=desc')  
+state('/target/33?filter=desc')  
 ```
 
 ### link (stateName: String, params: Object): String
-Compute a link that can be used in anchors' href attributes  
+Computes a link that can be used in anchors' href attributes  
 from a state name and a list of params, a.k.a reverse routing.
 
 ### Signals
@@ -168,11 +168,11 @@ State(':id')
 ```
 
 ### addState (name: String, state: State): void
-Add a child state
+Adds a child state.
 
 ### data (key: String, value: Any): void | Any
-Get or Set some data by key on this state.  
-child states have access to their parents' data.  
+Gets or Sets some data by key on this state.  
+Child states have access to their parents' data.  
 This can be useful when using external models/services as a mean to communicate between states is not desired.  
 
 ### Declarative properties
@@ -365,15 +365,14 @@ To implement Non-blocking navigation, do not specify any `enterPrereqs`; instead
 <a name="dependencies"></a>
 # Dependencies
 
-## External dependencies (dependencies you must provide to use Abyssa)
-None
+Abyssa uses the following libraries:
 
-## Internal dependencies (dependencies used in the Abyssa's build process)
-**history.js (devote/HTML5-History-API)**: Used to support HTML4 browsers and abstract the HTML5 history implementation differences.  
-**crossroads.js**: A stateless, solid traditional low level router. Abyssa builds on top of it.  
-**signals.js**: A dependency of crossroads.js; Provide an alternative to string based events. Abyssa uses signals instead of events.  
-**when.js**: A small and solid implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
+[**history.js**](https://github.com/devote/HTML5-History-API): Used to support HTML4 browsers and abstract the HTML5 history implementation differences.  
+[**crossroads.js**](https://github.com/millermedeiros/crossroads.js): A stateless, solid traditional low level router. Abyssa builds on top of it.  
+[**signals.js**](https://github.com/millermedeiros/js-signals): A dependency of crossroads.js; Provide an alternative to string based events. Abyssa uses signals instead of events.  
+[**when.js**](https://github.com/cujojs/when): A small and solid implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
 
+Abyssa is compiled in two flavors: with and without dependencies built in. The standalone build may be used if a project already depends on some of these libraries.
 
 
 <a name="browser-support"></a>

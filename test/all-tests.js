@@ -1,15 +1,82 @@
+(function (global, QUnit, when, window) {
+
+var
+  Abyssa = global.Abyssa,
+  Router, State, Async;
+
+// An option to enable logging at the Router:
+var routerLoggingEnabled = true;
+
+// An option to add logging to the HTML5 History API methods:
+var historyLoggingEnabled = true;
+
+// An option to enable the HTML5 History API actual URL change:
+var historyApiEnabled = false;
+
+var
+  initialTitle = (window.document && window.document.title),
+  initialUrl = (window.location && window.location.href),
+  pushState = (window.history && window.history.pushState),
+  replaceState = (window.history && window.history.replaceState);
+
+var historyStubsInstalled;
+QUnit.module('Abyssa', {
+  setup: function() {
+    Router = Abyssa.Router;
+    State  = Abyssa.State;
+    Async  = Abyssa.Async;
+
+    if (Router) {
+      if (routerLoggingEnabled) {
+        Router.enableLogs();
+      }
+      Router.ignoreInitialURL = true;
+    }
+
+    // Add logging to the HTML5 History API methods:
+    if (window.history && (historyLoggingEnabled || !historyApiEnabled) && !historyStubsInstalled) {
+      var logState = function(prefix, state, title, url) {
+        window.document.title = initialTitle + " - " + url + "";
+        if (global.console) { global.console.log(prefix + [global.JSON.stringify(url), global.JSON.stringify(title), global.JSON.stringify(state), global.JSON.stringify(window.location.href)].join(' ')); }
+      };
+      
+      window.history.pushState = function(state, title, url) {
+        if (historyLoggingEnabled) { logState('window.history.pushState ', state, title, url); }
+        if (!pushState) { throw new TypeError("window.history.pushState"); }
+        if (historyApiEnabled) { return pushState.apply(window.history, arguments); }
+      };
+      
+      window.history.replaceState = function(state, title, url) {
+        if (historyLoggingEnabled) { logState('window.history.replaceState ', state, title, url); }
+        if (!replaceState) { throw new TypeError("window.history.replaceState"); }
+        if (historyApiEnabled) { return replaceState.apply(window.history, arguments); }
+      };
+      
+      historyStubsInstalled = true;
+    }
+  }
+});
+
+QUnit.done(function () {
+  // Change the location bar URL to initial to be able to reload the test page:
+  if (!window.history.emulate) {
+    if (historyApiEnabled && pushState) { pushState.apply(window.history, [null, null, initialUrl]); }
+  }
+});
 
 
-Router = Abyssa.Router;
-State  = Abyssa.State;
-Async  = Abyssa.Async;
+QUnit.test('Dependencies and Globals', function() {
+  QUnit.assert.ok(window.history, "window.history");
+  QUnit.assert.ok(window.history.pushState, "window.history.pushState");
+  QUnit.assert.ok(window.history.replaceState, "window.history.replaceState");
+  QUnit.assert.ok(global.JSON, "JSON");
+  QUnit.assert.ok(Abyssa, "Abyssa");
+  QUnit.assert.ok(Router, "Abyssa.Router");
+  QUnit.assert.ok(State, "Abyssa.State");
+  QUnit.assert.ok(Async, "Abyssa.Async");
+});
 
-Router.enableLogs();
-Router.ignoreInitialURL = true;
-stubHistory();
-
-
-asyncTest('Simple states', function() {
+QUnit.asyncTest('Simple states', function() {
 
   var events = [],
       lastArticleId,
@@ -50,11 +117,11 @@ asyncTest('Simple states', function() {
     .then(indexWasEntered2)
     .then(goToArticlesWithFilter)
     .then(articlesWasEnteredWithFilter)
-    .then(start);
+    .then(QUnit.start);
 
 
   function indexWasEntered() {
-    deepEqual(events, ['indexEnter']);
+    QUnit.assert.deepEqual(events, ['indexEnter']);
     events = [];
   }
 
@@ -64,9 +131,9 @@ asyncTest('Simple states', function() {
 
   function articlesWasEntered() {
     return nextTick().then(function() {
-      deepEqual(events, ['indexExit', 'articlesEnter']);
-      strictEqual(lastArticleId, 38);
-      strictEqual(lastFilter, 555);
+      QUnit.assert.deepEqual(events, ['indexExit', 'articlesEnter']);
+      QUnit.assert.strictEqual(lastArticleId, 38);
+      QUnit.assert.strictEqual(lastFilter, 555);
       events = [];
     });
   }
@@ -77,63 +144,104 @@ asyncTest('Simple states', function() {
 
   function indexWasEntered2() {
     return nextTick().then(function() {
-      deepEqual(events, ['articlesExit', 'indexEnter']);
+      QUnit.assert.deepEqual(events, ['articlesExit', 'indexEnter']);
       events = [];
     });
   }
 
   function goToArticlesWithFilter() {
-    router.state('articles/44?filter=666');
+    router.state('/articles/44?filter=666');
   }
 
   function articlesWasEnteredWithFilter() {
     return nextTick().then(function() {
-      deepEqual(events, ['indexExit', 'articlesEnter']);
-      strictEqual(lastArticleId, 44);
-      strictEqual(lastFilter, 666);
+      QUnit.assert.deepEqual(events, ['indexExit', 'articlesEnter']);
+      QUnit.assert.strictEqual(lastArticleId, 44);
+      QUnit.assert.strictEqual(lastFilter, 666);
     });
   }
 
 });
 
 
-asyncTest('Custom initial state', function() {
+QUnit.asyncTest('Custom initial state', function() {
 
   var router = Router({
 
     articles: State('articles/:id', {
       edit: State('edit', {
         enter: function() { 
-          ok(true);
-          start();
+          QUnit.assert.ok(true);
+          QUnit.start();
         }
       })
     })
 
-  }).init('articles/33/edit');
+  }).init('/articles/33/edit');
 
 });
 
 
-asyncTest('Multiple dynamic paths', function() {
+QUnit.asyncTest('Multiple dynamic paths', function() {
 
   Router({
     article: State('articles/:slug/:articleId', {
       changeLogs: State('changelogs/:changeLogId', {
         enter: function(params) {
-          equal(params.slug, 'le-roi-est-mort');
-          equal(params.articleId, 127);
-          equal(params.changeLogId, 5);
-          start();
+          QUnit.assert.equal(params.slug, 'le-roi-est-mort');
+          QUnit.assert.equal(params.articleId, 127);
+          QUnit.assert.equal(params.changeLogId, 5);
+          QUnit.start();
         }
       })
     })
-  }).init('articles/le-roi-est-mort/127/changelogs/5');
+  }).init('/articles/le-roi-est-mort/127/changelogs/5');
 
 });
 
 
-asyncTest('Nested state with pathless parents', function() {
+QUnit.asyncTest('Optional path params', function() {
+
+  var lastParams;
+
+  var router = Router({
+    articles: State('articles/:slug:/:articleId:', {
+      enter: function(params) {
+        lastParams = params;
+      }
+    })
+  }).init('/articles');
+
+  nextTick()
+    .then(articlesWasEntered)
+    .then(goToArticlesWithParams)
+    .then(articlesWasEnteredWithParams)
+    .then(QUnit.start);
+
+
+  function goToArticlesWithParams() {
+    router.state('articles', {slug: 'le-roi-est-mort', articleId: 127});
+  }
+
+  function articlesWasEntered() {
+    QUnit.assert.notStrictEqual(lastParams, undefined);
+    QUnit.assert.strictEqual(lastParams.slug, undefined);
+    QUnit.assert.strictEqual(lastParams.articleId, undefined);
+    lastParams = undefined;
+  }
+
+  function articlesWasEnteredWithParams() {
+    return nextTick().then(function() {
+      QUnit.assert.notStrictEqual(lastParams, undefined);
+      QUnit.assert.strictEqual(lastParams.slug, 'le-roi-est-mort');
+      QUnit.assert.strictEqual(lastParams.articleId, 127);
+      lastParams = undefined;
+    });
+  }
+});
+
+
+QUnit.asyncTest('Nested state with pathless parents', function() {
 
   Router({
 
@@ -142,19 +250,19 @@ asyncTest('Nested state with pathless parents', function() {
       nature: State({
         edit: State('articles/nature/:id/edit', {
           enter: function() {
-            ok(true);
-            start();
+            QUnit.assert.ok(true);
+            QUnit.start();
           }
         })
       })
     })
 
-  }).init('articles/nature/88/edit');
+  }).init('/articles/nature/88/edit');
 
 });
 
 
-asyncTest('Missing state with a "notFound" state defined', function() {
+QUnit.asyncTest('Missing state with a "notFound" state defined', function() {
 
   var reachedNotFound;
 
@@ -172,17 +280,17 @@ asyncTest('Missing state with a "notFound" state defined', function() {
       enter: function() { reachedNotFound = true; }
     })
 
-  }).init('articles/naturess/88/edit');
+  }).init('/articles/naturess/88/edit');
 
   nextTick()
     .then(notFoundWasEntered)
     .then(resetToIndex)
     .then(goToWrongState)
     .then(notFoundWasEntered2)
-    .then(start);
+    .then(QUnit.start);
 
   function notFoundWasEntered() {
-    ok(reachedNotFound);
+    QUnit.assert.ok(reachedNotFound);
   }
 
   function resetToIndex() {
@@ -199,14 +307,14 @@ asyncTest('Missing state with a "notFound" state defined', function() {
 
   function notFoundWasEntered2() {
     return nextTick().then(function() {
-      ok(reachedNotFound);
+      QUnit.assert.ok(reachedNotFound);
     });
   }
 
 });
 
 
-asyncTest('Missing state without a "notFound" state defined', function() {
+QUnit.asyncTest('Missing state without a "notFound" state defined', function() {
 
   var router = Router({
 
@@ -214,29 +322,29 @@ asyncTest('Missing state without a "notFound" state defined', function() {
 
     articles: State({
       nature: State({
-        edit: State('articles/nature/:id/edit')
+        edit: State('/articles/nature/:id/edit')
       })
-    }),
+    })
 
   }).init();
 
   router.initialized.addOnce(function() {
-    throws(function() {
-      router.state('articles/naturess/88/edit');
+    QUnit.assert.throws(function() {
+      router.state('/articles/naturess/88/edit');
     });
 
     // Also work with the reverse routing notation
-    throws(function() {
+    QUnit.assert.throws(function() {
       router.state('articles.naturess.edit', {id: 88});
     });
 
-    start();
+    QUnit.start();
   });
 
 });
 
 
-asyncTest('The router can be built bit by bit', function() {
+QUnit.asyncTest('The router can be built bit by bit', function() {
 
   var reachedArticlesEdit,
       router = Router(),
@@ -254,32 +362,32 @@ asyncTest('The router can be built bit by bit', function() {
   router.init('articles.edit');
 
   router.initialized.addOnce(function() {
-    ok(reachedArticlesEdit);
-    start();
+    QUnit.assert.ok(reachedArticlesEdit);
+    QUnit.start();
   });
   
 });
 
 
-test('State names must be unique among siblings', function() {
+QUnit.test('State names must be unique among siblings', function() {
   var router, root;
 
   router = Router();
   router.addState('root', State());
-  throws(function() {
+  QUnit.assert.throws(function() {
     router.addState('root', State());
   });
 
   root = State();
   root.addState('child', State());
-  throws(function() {
+  QUnit.assert.throws(function() {
     root.addState('child', State());
   });
 
 });
 
 
-asyncTest('Only leaf states are addressable', function() {
+QUnit.asyncTest('Only leaf states are addressable', function() {
 
   var router = Router({
     index: State(),
@@ -290,16 +398,16 @@ asyncTest('Only leaf states are addressable', function() {
   });
 
   nextTick().then(function() {
-    throws(function() {
+    QUnit.assert.throws(function() {
       router.state('articles');
     });
-    start();
+    QUnit.start();
   });
 
 });
 
 
-asyncTest('No transition occurs when going to the same state', function() {
+QUnit.asyncTest('No transition occurs when going to the same state', function() {
 
   var events = [];
   var router = Router({
@@ -314,22 +422,22 @@ asyncTest('No transition occurs when going to the same state', function() {
       })
     })
 
-  }).init('articles/33/today');
+  }).init('/articles/33/today');
 
   router.initialized.addOnce(function() {
     events = [];
-    router.state('articles/33/today');
+    router.state('/articles/33/today');
 
     nextTick().then(function() {
-      deepEqual(events, []);
-      start();
+      QUnit.assert.deepEqual(events, []);
+      QUnit.start();
     });
   });
 
 });
 
 
-asyncTest('Async enter transitions', function() {
+QUnit.asyncTest('Async enter transitions', function() {
 
   var events = [];
   var router = Router({
@@ -346,7 +454,7 @@ asyncTest('Async enter transitions', function() {
 
     news: State('news', {
       enter: function(params, data) {
-        strictEqual(data, 'data');
+        QUnit.assert.strictEqual(data, 'data');
         events.push('newsEnter');
       },
       enterPrereqs: function() {
@@ -360,7 +468,7 @@ asyncTest('Async enter transitions', function() {
 
       today: State('today', {
         enter: function(params, data) {
-          strictEqual(data, 48);
+          QUnit.assert.strictEqual(data, 48);
           events.push('todayEnter');
         },
         enterPrereqs: function() {
@@ -403,7 +511,7 @@ asyncTest('Async enter transitions', function() {
 
   router.initialized.addOnce(function() {
     events = [];
-    router.state('news/today');
+    router.state('/news/today');
 
     // The news's enterPrereqs has been resolved but not today's.
     // No transition occured as we wait for all the prereqs to be resolved.
@@ -417,25 +525,25 @@ asyncTest('Async enter transitions', function() {
       .then(resetToIndex)
       .then(goToFailChild)
       .then(failChildWasNotEntered)
-      .then(start)
+      .then(QUnit.start);
   });
 
   function notYetEntered() {
-    deepEqual(events, []);
+    QUnit.assert.deepEqual(events, []);
   }
 
   function todayWasEntered() {
-    deepEqual(events, ['indexExit', 'newsEnter', 'todayEnter']);
+    QUnit.assert.deepEqual(events, ['indexExit', 'newsEnter', 'todayEnter']);
     events = [];
   }
 
   function goToThisWeek() {
-    router.state('news/thisWeek');
+    router.state('/news/thisWeek');
   }
 
   function thisWeekWasEntered() {
     return nextTick().then(function() {
-      deepEqual(events, ['todayExit', 'thisWeekEnter']);
+      QUnit.assert.deepEqual(events, ['todayExit', 'thisWeekEnter']);
       events = [];
     });
   }
@@ -449,20 +557,20 @@ asyncTest('Async enter transitions', function() {
   }
 
   function goToFailChild() {
-    router.state('fail/child');
+    router.state('/fail/child');
   }
 
   // In case of an async failure, the transition must not occur.
   function failChildWasNotEntered() {
     return delay(100).then(function() {
-      deepEqual(events, []);
+      QUnit.assert.deepEqual(events, []);
     });
   }
 
 });
 
 
-asyncTest('prereqs can return non promise values', function() {
+QUnit.asyncTest('prereqs can return non promise values', function() {
 
   Router({
     index: State({
@@ -470,8 +578,8 @@ asyncTest('prereqs can return non promise values', function() {
         return 3;
       },
       enter: function(params, value) {
-        equal(value, 3);
-        start();
+        QUnit.assert.equal(value, 3);
+        QUnit.start();
       }
     })
   }).init();
@@ -479,7 +587,7 @@ asyncTest('prereqs can return non promise values', function() {
 });
 
 
-asyncTest('Async exit transitions', function() {
+QUnit.asyncTest('Async exit transitions', function() {
 
   var events = [];
   var router = Router({
@@ -512,10 +620,10 @@ asyncTest('Async exit transitions', function() {
       })
     })
 
-  }).init('details/edit');
+  }).init('/details/edit');
 
   nextTick().then(function() {
-    deepEqual(events, ['detailsEnter', 'editEnter']);
+    QUnit.assert.deepEqual(events, ['detailsEnter', 'editEnter']);
     events = [];
     router.state('');
 
@@ -524,21 +632,21 @@ asyncTest('Async exit transitions', function() {
 
     delay(200)
       .then(exited)
-      .then(start);
+      .then(QUnit.start);
   });
 
   function notYetExited() {
-    deepEqual(events, []);
+    QUnit.assert.deepEqual(events, []);
   }
 
   function exited() {
-    deepEqual(events, ['editExit', 'detailsExit']);
+    QUnit.assert.deepEqual(events, ['editExit', 'detailsExit']);
   }
 
 });
 
 
-asyncTest('Cancelling an async transition', function() {
+QUnit.asyncTest('Cancelling an async transition', function() {
 
   var events = [];
   var router = Router({
@@ -574,7 +682,7 @@ asyncTest('Cancelling an async transition', function() {
 
     })
 
-  }).init('news/today');
+  }).init('/news/today');
 
 
   delay(40)
@@ -582,35 +690,35 @@ asyncTest('Cancelling an async transition', function() {
     .then(cancelAndGoToThisWeek)
     .then(thisWeekWasEntered)
     .then(todayWasNeverEntered)
-    .then(start);
+    .then(QUnit.start);
 
   function todayNotEnteredYet() {
     // The 'today' section is still being transitionned to
-    deepEqual(events, []);
+    QUnit.assert.deepEqual(events, []);
   }
 
   function cancelAndGoToThisWeek() {
     // But we change our mind and go to the 'thisWeek' (synchronous) section
-    router.state('news/thisWeek');
+    router.state('/news/thisWeek');
   }
 
   function thisWeekWasEntered() {
     return nextTick().then(function() {
-      deepEqual(events, ['newsEnter', 'thisWeekEnter']);
+      QUnit.assert.deepEqual(events, ['newsEnter', 'thisWeekEnter']);
       events = [];
     });
   }
 
   function todayWasNeverEntered() {
     return delay(100).then(function() {
-      deepEqual(events, []);
+      QUnit.assert.deepEqual(events, []);
     });
   }
 
 });
 
 
-asyncTest('Param and query changes should trigger a transition', function() {
+QUnit.asyncTest('Param and query changes should trigger a transition', function() {
 
   var events = [],
       lastArticleId;
@@ -652,7 +760,7 @@ asyncTest('Param and query changes should trigger a transition', function() {
 
     })
 
-  }).init('blog/articles/33/edit');
+  }).init('/blog/articles/33/edit');
 
 
   nextTick()
@@ -662,42 +770,42 @@ asyncTest('Param and query changes should trigger a transition', function() {
     .then(stateWasFullyReEntered)
     .then(changeQueryStringValue)
     .then(stateWasFullyReEntered)
-    .then(start);
+    .then(QUnit.start);
 
 
   function changeParamOnly() {
-    router.state('blog/articles/44/edit');
+    router.state('/blog/articles/44/edit');
     events = [];
   }
 
   // The transition only goes up to the state owning the param
   function stateWasReEntered() {
     return nextTick().then(function() {
-      deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
+      QUnit.assert.deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
       events = [];
     });
   }
 
   function addQueryString() {
-    router.state('blog/articles/44/edit?filter=1');
+    router.state('/blog/articles/44/edit?filter=1');
   }
 
   // By default, a change in the query will result in a complete transition to the root state and back.
   function stateWasFullyReEntered() {
     return nextTick().then(function() {
-      deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
+      QUnit.assert.deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
       events = [];
     });
   }
 
   function changeQueryStringValue() {
-    router.state('blog/articles/44/edit?filter=2');
+    router.state('/blog/articles/44/edit?filter=2');
   }
 
 });
 
 
-asyncTest('Query-only transitions', function() {
+QUnit.asyncTest('Query-only transitions', function() {
 
   var events = [];
 
@@ -733,7 +841,7 @@ asyncTest('Query-only transitions', function() {
         })
       })
     })
-  }).init('blog/articles/33/edit');
+  }).init('/blog/articles/33/edit');
 
 
   nextTick()
@@ -745,45 +853,45 @@ asyncTest('Query-only transitions', function() {
     .then(onlyExitedUpToStateOwningFilter)
     .then(removeFilterQuery)
     .then(onlyExitedUpToStateOwningFilter)
-    .then(start);
+    .then(QUnit.start);
 
 
   function setSomeUnknownQuery() {
-    router.state('blog/articles/33/edit?someQuery=true');
+    router.state('/blog/articles/33/edit?someQuery=true');
     events = [];
   }
 
   function fullTransitionOccurred() {
     return nextTick().then(function() {
-      deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
+      QUnit.assert.deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
     });
   }
 
   function setFilterQuery() {
-    router.state('blog/articles/33/edit?filter=33');
+    router.state('/blog/articles/33/edit?filter=33');
     events = [];
   }
 
   function onlyExitedUpToStateOwningFilter() {
     return nextTick().then(function() {
-      deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
+      QUnit.assert.deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
     });
   }
   
   function swapFilterValue() {
-    router.state('blog/articles/33/edit?filter=34');
+    router.state('/blog/articles/33/edit?filter=34');
     events = [];
   }
 
   function removeFilterQuery() {
-    router.state('blog/articles/33/edit');
+    router.state('/blog/articles/33/edit');
     events = [];
   }
 
 });
 
 
-asyncTest('The query string is provided to all states', function() {
+QUnit.asyncTest('The query string is provided to all states', function() {
 
   Router({
     one: State('one/:one', {
@@ -799,43 +907,43 @@ asyncTest('The query string is provided to all states', function() {
         three: State('three/:three', {
           enter: function(param) {
             assertions(param.three, 33, param);
-            start();
+            QUnit.start();
           }
         })
       })
     })
-  }).init('one/44/two/bla/three/33?filter1=123&filter2=456');
+  }).init('/one/44/two/bla/three/33?filter1=123&filter2=456');
 
 
   function assertions(param, expectedParam, queryObj) {
-    equal(param, expectedParam);
-    equal(queryObj.filter1, 123);
-    equal(queryObj.filter2, 456);
+    QUnit.assert.equal(param, expectedParam);
+    QUnit.assert.equal(queryObj.filter1, 123);
+    QUnit.assert.equal(queryObj.filter2, 456);
   }
 
 });
 
 
-asyncTest('Prereqs also get params', function() {
+QUnit.asyncTest('Prereqs also get params', function() {
 
   Router({
 
     articles: State('articles', {
       item: State(':id', {
         enterPrereqs: function(params) {
-          equal(params.id, 56);
-          start();
+          QUnit.assert.equal(params.id, 56);
+          QUnit.start();
           return 'dummy';
         }
       })
     })
 
-  }).init('articles/56');
+  }).init('/articles/56');
 
 });
 
 
-asyncTest('Data can be stored on states and later retrieved', function() {
+QUnit.asyncTest('Data can be stored on states and later retrieved', function() {
 
   var router = Router({
 
@@ -855,19 +963,19 @@ asyncTest('Data can be stored on states and later retrieved', function() {
   router.transition.completed.add(function(oldState, newState) {
 
     // A child state can see the data of its parent
-    equal(newState.data('someArbitraryData'), 3);
-    equal(newState.data('otherData'), 5);
+    QUnit.assert.equal(newState.data('someArbitraryData'), 3);
+    QUnit.assert.equal(newState.data('otherData'), 5);
 
     // The parent can see its own data
-    equal(newState.parent.data('someArbitraryData'), 3);
+    QUnit.assert.equal(newState.parent.data('someArbitraryData'), 3);
 
-    start();
+    QUnit.start();
   });
 
 });
 
 
-test('Reverse routing', function() {
+QUnit.test('Reverse routing', function() {
   var router = Router({
 
     index: State(),
@@ -879,13 +987,13 @@ test('Reverse routing', function() {
   }).init();
 
   var href = router.link('one.two', {id: 33, filter: 'bloup'});
-  equal(href, '/one/33?filter=bloup');
+  QUnit.assert.equal(href, '/one/33?filter=bloup');
 
 });
 
 
-test('Both prereqs can be specified on a single state', function() {
-  stop();
+QUnit.test('Both prereqs can be specified on a single state', function() {
+  QUnit.stop();
 
   var enterPrereq,
       exitPrereq;
@@ -899,23 +1007,23 @@ test('Both prereqs can be specified on a single state', function() {
       enter: function(params, _enterPrereq) { enterPrereq = _enterPrereq; },
 
       exitPrereqs: function() { return 4; },
-      exit: function(_exitPrereq) { exitPrereq = _exitPrereq}
+      exit: function(_exitPrereq) { exitPrereq = _exitPrereq; }
     })
 
   }).init('one');
 
   nextTick()
     .then(assertions)
-    .then(start);
+    .then(QUnit.start);
 
   function assertions() {
     enterPrereq = exitPrereq = undefined;
     // This will cause the state to be both exited and re-entered.
-    router.state('one?filter=1');
+    router.state('/one?filter=1');
 
     return nextTick().then(function() {
-      equal(enterPrereq, 3);
-      equal(exitPrereq, 4);
+      QUnit.assert.equal(enterPrereq, 3);
+      QUnit.assert.equal(exitPrereq, 4);
     });
   }
 
@@ -923,8 +1031,8 @@ test('Both prereqs can be specified on a single state', function() {
 });
 
 
-test('Non blocking promises as an alternative to prereqs', function() {
-  stop();
+QUnit.test('Non blocking promises as an alternative to prereqs', function() {
+  QUnit.stop();
 
   var promiseValue = null;
 
@@ -943,15 +1051,15 @@ test('Non blocking promises as an alternative to prereqs', function() {
   }).init('one');
 
 
-  delay(200)
+  delay(300)
     .then(promiseWasResolved)
     .then(exitThenReEnterStateOne)
     .then(cancelNavigation)
     .then(promiseShouldNotHaveBeenResolved)
-    .then(start);
+    .then(QUnit.start);
 
   function promiseWasResolved() {
-    strictEqual(promiseValue, 'value');
+    QUnit.assert.strictEqual(promiseValue, 'value');
     promiseValue = null;
   }
 
@@ -970,14 +1078,14 @@ test('Non blocking promises as an alternative to prereqs', function() {
 
   function promiseShouldNotHaveBeenResolved() {
     return delay(200).then(function() {
-      strictEqual(promiseValue, null);
+      QUnit.assert.strictEqual(promiseValue, null);
     });
   }
 
 });
 
-test('Non blocking rejected promises', function() {
-  stop();
+QUnit.test('Non blocking rejected promises', function() {
+  QUnit.stop();
 
   var promiseValue = null,
       promiseError = null;
@@ -1003,11 +1111,11 @@ test('Non blocking rejected promises', function() {
     .then(exitThenReEnterStateOne)
     .then(cancelNavigation)
     .then(promiseShouldNotHaveBeenResolved)
-    .then(start);
+    .then(QUnit.start);
 
   function promiseWasRejected() {
-    strictEqual(promiseValue, null);
-    strictEqual(promiseError, 'error');
+    QUnit.assert.strictEqual(promiseValue, null);
+    QUnit.assert.strictEqual(promiseError, 'error');
     promiseError = null;
   }
 
@@ -1026,15 +1134,15 @@ test('Non blocking rejected promises', function() {
 
   function promiseShouldNotHaveBeenResolved() {
     return delay(200).then(function() {
-      strictEqual(promiseValue, null);
-      strictEqual(promiseError, null);
+      QUnit.assert.strictEqual(promiseValue, null);
+      QUnit.assert.strictEqual(promiseError, null);
     });
   }
 
 });
 
-test('State construction shorthand', function() {
-  stop();
+QUnit.test('State construction shorthand', function() {
+  QUnit.stop();
 
   var passedParams = {};
   var passedData;
@@ -1052,23 +1160,23 @@ test('State construction shorthand', function() {
 
     })
 
-  }).init('index/55?filter=true');
+  }).init('/index/55?filter=true');
 
   nextTick()
     .then(paramsWerePassed)
     .then(asyncWasCalled)
-    .then(start);
+    .then(QUnit.start);
 
   function paramsWerePassed() {
-    strictEqual(passedParams.id, 55);
-    strictEqual(passedParams.filter, true);
-    strictEqual(passedData, undefined);
+    QUnit.assert.strictEqual(passedParams.id, 55);
+    QUnit.assert.strictEqual(passedParams.filter, true);
+    QUnit.assert.strictEqual(passedData, undefined);
     
     return delay(80);
   }
 
   function asyncWasCalled() {
-    strictEqual(passedData, 'data');
+    QUnit.assert.strictEqual(passedData, 'data');
   }
 
 });
@@ -1076,7 +1184,9 @@ test('State construction shorthand', function() {
 
 function delay(time, value) {
   var defer = when.defer();
-  setTimeout(function() { defer.resolve(value); }, time);
+  global.setTimeout(function() {
+    defer.resolve(value);
+  }, time);
   return defer.promise;
 }
 
@@ -1085,7 +1195,9 @@ function successPromise(time, value) {
 }
 
 function failPromise(time) {
-  return delay(time).then(function() { throw 'error'; });
+  return delay(time).then(function() {
+    throw 'error';
+  });
 }
 
 function nextTick() {
@@ -1093,6 +1205,4 @@ function nextTick() {
 }
 
 
-function stubHistory() {
-  window.history.pushState = function() {}; 
-}
+}(this, this.QUnit, this.when, this.window));

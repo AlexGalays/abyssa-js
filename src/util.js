@@ -1,6 +1,6 @@
 
 function isString(instance) {
-   return Object.prototype.toString.call(instance) == '[object String]';
+   return Object.prototype.toString.call(instance) === '[object String]';
 }
 
 function noop() {}
@@ -32,4 +32,55 @@ function objectSize(obj) {
   var size = 0;
   for (var key in obj) size++;
   return size;
+}
+
+/**
+ * Returns the set of all the params that changed (either added, removed or value changed).
+ *
+ * @param {Object} oldParams The original params.
+ * @param {Object} newParams The updated params.
+ * @return {Object} The object contains only the keys that have been updated.
+ */
+function getParamDiff(oldParams, newParams) {
+  var diff = {},
+      name;
+
+  oldParams = oldParams || {};
+
+  for (name in oldParams)
+    if (oldParams[name] !== newParams[name]) diff[name] = 1;
+
+  for (name in newParams)
+    if (oldParams[name] !== newParams[name]) diff[name] = 1;
+
+  return diff;
+}
+
+/**
+ * Normalizes leading and trailing slashes.
+ * Removes the leading slash, if required.
+ * 
+ * @param {String} pathQuery Path with optional query string.
+ * @param {Boolean} [removeLeadingSlash=false] If true, the leading slash will not be prepended.
+ * @return {String} Normalized path and query string.
+ */
+function normalizePathQuery(pathQuery, removeLeadingSlash) {
+  return ((removeLeadingSlash ? '' : '/') + pathQuery.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\/+\?/, '?'));
+}
+
+/**
+ * Returns the path and query string from a full URL.
+ * Uses the path in the hash like `#/path/?query`, if present.
+ * The returned value may be passed into router.state().
+ * 
+ * @param {{href:String,pathname:String,search:String}} [urlObject=window.location] Parsed URL (may be a Location or an HTMLAnchorElement).
+ * @return {String} Extracted path and query.
+ */
+function urlPathQuery(urlObject) {
+  urlObject = urlObject || window.location;
+  var hashSlash = urlObject.href.indexOf('#/');
+  return normalizePathQuery(urlObject.pathname + '/' + (hashSlash > -1
+    ? (urlObject.href.slice(hashSlash + 2))
+    : (urlObject.search)
+  ));
 }
