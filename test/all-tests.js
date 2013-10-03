@@ -10,15 +10,22 @@ var routerLoggingEnabled = true;
 // An option to add logging to the HTML5 History API methods:
 var historyLoggingEnabled = true;
 
+// An option to enable the HTML5 History API actual URL change:
+var historyApiEnabled = false;
+
 var
   initialTitle = (window.document && window.document.title),
   initialUrl = (window.location && window.location.href),
   pushState = (window.history && window.history.pushState),
   replaceState = (window.history && window.history.replaceState);
 
-var historyLoggingInstalled;
+var historyStubsInstalled;
 QUnit.module('Abyssa', {
   setup: function() {
+    Router = Abyssa.Router;
+    State  = Abyssa.State;
+    Async  = Abyssa.Async;
+
     if (Router) {
       if (routerLoggingEnabled) {
         Router.enableLogs();
@@ -27,37 +34,33 @@ QUnit.module('Abyssa', {
     }
 
     // Add logging to the HTML5 History API methods:
-    if (window.history && historyLoggingEnabled && !historyLoggingInstalled) {
+    if (window.history && (historyLoggingEnabled || !historyApiEnabled) && !historyStubsInstalled) {
       var logState = function(prefix, state, title, url) {
         window.document.title = initialTitle + " - " + url + "";
         if (global.console) { global.console.log(prefix + [global.JSON.stringify(url), global.JSON.stringify(title), global.JSON.stringify(state), global.JSON.stringify(window.location.href)].join(' ')); }
       };
       
       window.history.pushState = function(state, title, url) {
-        logState('window.history.pushState ', state, title, url);
+        if (historyLoggingEnabled) { logState('window.history.pushState ', state, title, url); }
         if (!pushState) { throw new TypeError("window.history.pushState"); }
-        return pushState.apply(window.history, arguments);
+        if (historyApiEnabled) { return pushState.apply(window.history, arguments); }
       };
       
       window.history.replaceState = function(state, title, url) {
-        logState('window.history.replaceState ', state, title, url);
+        if (historyLoggingEnabled) { logState('window.history.replaceState ', state, title, url); }
         if (!replaceState) { throw new TypeError("window.history.replaceState"); }
-        return replaceState.apply(window.history, arguments);
+        if (historyApiEnabled) { return replaceState.apply(window.history, arguments); }
       };
       
-      historyLoggingInstalled = true;
+      historyStubsInstalled = true;
     }
-    
-    Router = Abyssa.Router;
-    State  = Abyssa.State;
-    Async  = Abyssa.Async;
   }
 });
 
 QUnit.done(function () {
   // Change the location bar URL to initial to be able to reload the test page:
   if (!window.history.emulate) {
-    if (pushState) { pushState.apply(window.history, [null, null, initialUrl]); }
+    if (historyApiEnabled && pushState) { pushState.apply(window.history, [null, null, initialUrl]); }
   }
 });
 
@@ -147,7 +150,7 @@ QUnit.asyncTest('Simple states', function() {
   }
 
   function goToArticlesWithFilter() {
-    router.state('articles/44?filter=666');
+    router.state('/articles/44?filter=666');
   }
 
   function articlesWasEnteredWithFilter() {
@@ -174,7 +177,7 @@ QUnit.asyncTest('Custom initial state', function() {
       })
     })
 
-  }).init('articles/33/edit');
+  }).init('/articles/33/edit');
 
 });
 
@@ -192,8 +195,49 @@ QUnit.asyncTest('Multiple dynamic paths', function() {
         }
       })
     })
-  }).init('articles/le-roi-est-mort/127/changelogs/5');
+  }).init('/articles/le-roi-est-mort/127/changelogs/5');
 
+});
+
+
+QUnit.asyncTest('Optional path params', function() {
+
+  var lastParams;
+
+  var router = Router({
+    articles: State('articles/:slug:/:articleId:', {
+      enter: function(params) {
+        lastParams = params;
+      }
+    })
+  }).init('/articles');
+
+  nextTick()
+    .then(articlesWasEntered)
+    .then(goToArticlesWithParams)
+    .then(articlesWasEnteredWithParams)
+    .then(QUnit.start);
+
+
+  function goToArticlesWithParams() {
+    router.state('articles', {slug: 'le-roi-est-mort', articleId: 127});
+  }
+
+  function articlesWasEntered() {
+    QUnit.assert.notStrictEqual(lastParams, undefined);
+    QUnit.assert.strictEqual(lastParams.slug, undefined);
+    QUnit.assert.strictEqual(lastParams.articleId, undefined);
+    lastParams = undefined;
+  }
+
+  function articlesWasEnteredWithParams() {
+    return nextTick().then(function() {
+      QUnit.assert.notStrictEqual(lastParams, undefined);
+      QUnit.assert.strictEqual(lastParams.slug, 'le-roi-est-mort');
+      QUnit.assert.strictEqual(lastParams.articleId, 127);
+      lastParams = undefined;
+    });
+  }
 });
 
 
@@ -213,7 +257,7 @@ QUnit.asyncTest('Nested state with pathless parents', function() {
       })
     })
 
-  }).init('articles/nature/88/edit');
+  }).init('/articles/nature/88/edit');
 
 });
 
@@ -236,7 +280,7 @@ QUnit.asyncTest('Missing state with a "notFound" state defined', function() {
       enter: function() { reachedNotFound = true; }
     })
 
-  }).init('articles/naturess/88/edit');
+  }).init('/articles/naturess/88/edit');
 
   nextTick()
     .then(notFoundWasEntered)
@@ -278,7 +322,7 @@ QUnit.asyncTest('Missing state without a "notFound" state defined', function() {
 
     articles: State({
       nature: State({
-        edit: State('articles/nature/:id/edit')
+        edit: State('/articles/nature/:id/edit')
       })
     })
 
@@ -286,7 +330,7 @@ QUnit.asyncTest('Missing state without a "notFound" state defined', function() {
 
   router.initialized.addOnce(function() {
     QUnit.assert.throws(function() {
-      router.state('articles/naturess/88/edit');
+      router.state('/articles/naturess/88/edit');
     });
 
     // Also work with the reverse routing notation
@@ -378,11 +422,11 @@ QUnit.asyncTest('No transition occurs when going to the same state', function() 
       })
     })
 
-  }).init('articles/33/today');
+  }).init('/articles/33/today');
 
   router.initialized.addOnce(function() {
     events = [];
-    router.state('articles/33/today');
+    router.state('/articles/33/today');
 
     nextTick().then(function() {
       QUnit.assert.deepEqual(events, []);
@@ -467,7 +511,7 @@ QUnit.asyncTest('Async enter transitions', function() {
 
   router.initialized.addOnce(function() {
     events = [];
-    router.state('news/today');
+    router.state('/news/today');
 
     // The news's enterPrereqs has been resolved but not today's.
     // No transition occured as we wait for all the prereqs to be resolved.
@@ -494,7 +538,7 @@ QUnit.asyncTest('Async enter transitions', function() {
   }
 
   function goToThisWeek() {
-    router.state('news/thisWeek');
+    router.state('/news/thisWeek');
   }
 
   function thisWeekWasEntered() {
@@ -513,7 +557,7 @@ QUnit.asyncTest('Async enter transitions', function() {
   }
 
   function goToFailChild() {
-    router.state('fail/child');
+    router.state('/fail/child');
   }
 
   // In case of an async failure, the transition must not occur.
@@ -576,7 +620,7 @@ QUnit.asyncTest('Async exit transitions', function() {
       })
     })
 
-  }).init('details/edit');
+  }).init('/details/edit');
 
   nextTick().then(function() {
     QUnit.assert.deepEqual(events, ['detailsEnter', 'editEnter']);
@@ -638,7 +682,7 @@ QUnit.asyncTest('Cancelling an async transition', function() {
 
     })
 
-  }).init('news/today');
+  }).init('/news/today');
 
 
   delay(40)
@@ -655,7 +699,7 @@ QUnit.asyncTest('Cancelling an async transition', function() {
 
   function cancelAndGoToThisWeek() {
     // But we change our mind and go to the 'thisWeek' (synchronous) section
-    router.state('news/thisWeek');
+    router.state('/news/thisWeek');
   }
 
   function thisWeekWasEntered() {
@@ -716,7 +760,7 @@ QUnit.asyncTest('Param and query changes should trigger a transition', function(
 
     })
 
-  }).init('blog/articles/33/edit');
+  }).init('/blog/articles/33/edit');
 
 
   nextTick()
@@ -730,7 +774,7 @@ QUnit.asyncTest('Param and query changes should trigger a transition', function(
 
 
   function changeParamOnly() {
-    router.state('blog/articles/44/edit');
+    router.state('/blog/articles/44/edit');
     events = [];
   }
 
@@ -743,7 +787,7 @@ QUnit.asyncTest('Param and query changes should trigger a transition', function(
   }
 
   function addQueryString() {
-    router.state('blog/articles/44/edit?filter=1');
+    router.state('/blog/articles/44/edit?filter=1');
   }
 
   // By default, a change in the query will result in a complete transition to the root state and back.
@@ -755,7 +799,7 @@ QUnit.asyncTest('Param and query changes should trigger a transition', function(
   }
 
   function changeQueryStringValue() {
-    router.state('blog/articles/44/edit?filter=2');
+    router.state('/blog/articles/44/edit?filter=2');
   }
 
 });
@@ -797,7 +841,7 @@ QUnit.asyncTest('Query-only transitions', function() {
         })
       })
     })
-  }).init('blog/articles/33/edit');
+  }).init('/blog/articles/33/edit');
 
 
   nextTick()
@@ -813,7 +857,7 @@ QUnit.asyncTest('Query-only transitions', function() {
 
 
   function setSomeUnknownQuery() {
-    router.state('blog/articles/33/edit?someQuery=true');
+    router.state('/blog/articles/33/edit?someQuery=true');
     events = [];
   }
 
@@ -824,7 +868,7 @@ QUnit.asyncTest('Query-only transitions', function() {
   }
 
   function setFilterQuery() {
-    router.state('blog/articles/33/edit?filter=33');
+    router.state('/blog/articles/33/edit?filter=33');
     events = [];
   }
 
@@ -835,12 +879,12 @@ QUnit.asyncTest('Query-only transitions', function() {
   }
   
   function swapFilterValue() {
-    router.state('blog/articles/33/edit?filter=34');
+    router.state('/blog/articles/33/edit?filter=34');
     events = [];
   }
 
   function removeFilterQuery() {
-    router.state('blog/articles/33/edit');
+    router.state('/blog/articles/33/edit');
     events = [];
   }
 
@@ -868,7 +912,7 @@ QUnit.asyncTest('The query string is provided to all states', function() {
         })
       })
     })
-  }).init('one/44/two/bla/three/33?filter1=123&filter2=456');
+  }).init('/one/44/two/bla/three/33?filter1=123&filter2=456');
 
 
   function assertions(param, expectedParam, queryObj) {
@@ -894,7 +938,7 @@ QUnit.asyncTest('Prereqs also get params', function() {
       })
     })
 
-  }).init('articles/56');
+  }).init('/articles/56');
 
 });
 
@@ -975,7 +1019,7 @@ QUnit.test('Both prereqs can be specified on a single state', function() {
   function assertions() {
     enterPrereq = exitPrereq = undefined;
     // This will cause the state to be both exited and re-entered.
-    router.state('one?filter=1');
+    router.state('/one?filter=1');
 
     return nextTick().then(function() {
       QUnit.assert.equal(enterPrereq, 3);
@@ -1007,7 +1051,7 @@ QUnit.test('Non blocking promises as an alternative to prereqs', function() {
   }).init('one');
 
 
-  delay(200)
+  delay(300)
     .then(promiseWasResolved)
     .then(exitThenReEnterStateOne)
     .then(cancelNavigation)
@@ -1116,7 +1160,7 @@ QUnit.test('State construction shorthand', function() {
 
     })
 
-  }).init('index/55?filter=true');
+  }).init('/index/55?filter=true');
 
   nextTick()
     .then(paramsWerePassed)
@@ -1140,7 +1184,9 @@ QUnit.test('State construction shorthand', function() {
 
 function delay(time, value) {
   var defer = when.defer();
-  global.setTimeout(function() { defer.resolve(value); }, time);
+  global.setTimeout(function() {
+    defer.resolve(value);
+  }, time);
   return defer.promise;
 }
 
@@ -1149,7 +1195,9 @@ function successPromise(time, value) {
 }
 
 function failPromise(time) {
-  return delay(time).then(function() { throw 'error'; });
+  return delay(time).then(function() {
+    throw 'error';
+  });
 }
 
 function nextTick() {

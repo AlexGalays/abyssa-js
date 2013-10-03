@@ -1,14 +1,20 @@
 
-/*
-* Create a new Transition instance.
-*/
-function Transition(fromState, toState, params, paramDiff) {
+/**
+ * Creates a new Transition instance.
+ *
+ * @param {Abyssa.State} fromState The original state.
+ * @param {Abyssa.State} toState The target state.
+ * @param {Object} fromParams The original params.
+ * @param {Object} toParams The target params.
+ * @return {Abyssa.Transition}
+ */
+function Transition(fromState, toState, fromParams, toParams) {
   var root,
       cancelled,
       enters,
       transition,
       exits = [],
-      error,
+      paramDiff = getParamDiff(fromParams, toParams),
       paramOnlyChange = (fromState === toState);
 
   // The first transition has no fromState.
@@ -19,8 +25,8 @@ function Transition(fromState, toState, params, paramDiff) {
 
   enters = transitionStates(toState, root, paramOnlyChange).reverse();
 
-  transition = prereqs(enters, exits, params).then(function() {
-    if (!cancelled) doTransition(enters, exits, params);
+  transition = prereqs(enters, exits, toParams).then(function() {
+    if (!cancelled) doTransition(enters, exits, toParams);
   });
 
   asyncPromises.newTransitionStarted();
@@ -38,16 +44,22 @@ function Transition(fromState, toState, params, paramDiff) {
 
   return {
     from: fromState,
+    fromParams: fromParams,
     to: toState,
-    toParams: params,
+    toParams: toParams,
     then: then,
     cancel: cancel
   };
 }
 
-/*
-* Return the promise of the prerequisites for all the states involved in the transition.
-*/
+/**
+ * Returns the promise of the prerequisites for all the states involved in the transition.
+ * 
+ * @param {Array} enters The set of states that are entered.
+ * @param {Array} exits The set of states that are exited.
+ * @param {Object} params The params for the next state.
+ * @param {Promise}
+ */
 function prereqs(enters, exits, params) {
 
   exits.forEach(function(state) {
@@ -58,7 +70,9 @@ function prereqs(enters, exits, params) {
         if (state._exitPrereqs === prereqs) state._exitPrereqs.value = value;
       },
       function fail(cause) {
-        throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
+        var error = new Error('Failed to resolve EXIT prereqs of state "' + state.fullName + '"');
+        error.inner = cause;
+        throw error;
       }
     );
   });
@@ -71,7 +85,9 @@ function prereqs(enters, exits, params) {
         if (state._enterPrereqs === prereqs) state._enterPrereqs.value = value;
       },
       function fail(cause) {
-        throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
+        var error = new Error('Failed to resolve ENTER prereqs of state "' + state.fullName + '"');
+        error.inner = cause;
+        throw error;
       }
     );
   });
@@ -93,9 +109,15 @@ function doTransition(enters, exits, params) {
   asyncPromises.allowed = false;
 }
 
-/*
-* The top-most current state's parent that must be exited.
-*/
+/**
+ * Finds the top-most current state's parent that must be exited.
+ *
+ * @param {Abyssa.State} fromState The original state.
+ * @param {Abyssa.State} toState The target state.
+ * @param {Boolean} paramOnlyChange Whether the states are equal, so only the params have changed.
+ * @param {Object} paramDiff The difference between the params of the original and target state.
+ * @return {Abyssa.State}
+ */
 function transitionRoot(fromState, toState, paramOnlyChange, paramDiff) {
   var root,
       parent;
@@ -142,9 +164,12 @@ var asyncPromises = (function () {
   var that;
   var activeDeferreds = [];
 
-  /*
+  /**
    * Returns a promise that will not be fullfilled if the navigation context
-   * changes before the wrapped promise is fullfilled. 
+   * changes before the wrapped promise is fullfilled.
+   *
+   * @param {Promise}
+   * @return {Promise}
    */
   function register(promise) {
     if (!that.allowed)

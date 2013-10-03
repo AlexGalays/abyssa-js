@@ -78,7 +78,7 @@ Router({
 ## Router
 
 ### init (initState: String): Router
-Initialize and freeze the router (states can not be updated or added afterwards).  
+Initializes and freezes the router (states can not be updated or added afterwards).  
 The router will immediately initiate a transition to, in order of priority:  
 1) The state captured by the current URL  
 2) The init state passed as an argument  
@@ -88,7 +88,7 @@ The router will immediately initiate a transition to, in order of priority:
 Add a new root state to the router.
 
 ### state (pathQueryOrName: String, params: Object): void
-Request a programmatic state change.  
+Requests a programmatic state change.  
 Only leaf states can be transitionned to.  
 While you can change state programmatically, keep in mind the most idiomatic way to do it is using anchor tags with the proper href.  
 
@@ -97,11 +97,11 @@ Two notations are supported:
 // Fully qualified state name
 state('my.target.state', {id: 33, filter: 'desc'})  
 // Path and (optionally) query
-state('target/33?filter=desc')  
+state('/target/33?filter=desc')  
 ```
 
 ### link (stateName: String, params: Object): String
-Compute a link that can be used in anchors' href attributes  
+Computes a link that can be used in anchors' href attributes  
 from a state name and a list of params, a.k.a reverse routing.
 
 ### Signals
@@ -168,11 +168,11 @@ State(':id')
 ```
 
 ### addState (name: String, state: State): void
-Add a child state
+Adds a child state.
 
 ### data (key: String, value: Any): void | Any
-Get or Set some data by key on this state.  
-child states have access to their parents' data.  
+Gets or Sets some data by key on this state.  
+Child states have access to their parents' data.  
 This can be useful when using external models/services as a mean to communicate between states is not desired.  
 
 ### Declarative properties
