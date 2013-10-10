@@ -2915,7 +2915,7 @@ var when = (function(global) {
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.0 (2013-10-03T13:10:03.831Z)
+ * v1.2.1 (2013-10-10T14:17:44.761Z)
  */
 (function () {
 var factory = function () {
@@ -3913,10 +3913,14 @@ Abyssa.Router = Router;
 var interceptAnchorClicks = (function (window) {
   if (!window || !window.document || !window.location) return;
 
-  function detectLeftButton(evt) {
-    evt = evt || window.event;
-    var button = evt.which || evt.button;
-    return (button === 1);
+  function detectLeftButton(event) {
+    // Normalize mouse button for click event: 1 === left; 2 === middle; 3 === right
+    var which = event.which, button = event.button;
+    if ( !which && typeof button !== 'undefined' ) {
+      // Note that in IE, 'click' event only fires from the left mouse button, so we fall back to 1 below:
+      which = ( button & 1 ? 1 : ( button & 2 ? 3 : ( button & 4 ? 2 : 1 ) ) );
+    }
+    return (which === 1);
   }
 
   function anchorTarget(target) {
@@ -3927,10 +3931,19 @@ var interceptAnchorClicks = (function (window) {
   }
 
   return function (router) {
-    function handler(evt) {
-      if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !detectLeftButton(evt)) return;
+    function handler(e) {
+      var event = e || window.event;
+      var target = event.target || event.srcElement;
+      var defaultPrevented = "defaultPrevented" in event ? event['defaultPrevented'] : event.returnValue === false;
+      if (
+        defaultPrevented ||
+        event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||
+        !detectLeftButton(event)
+      ) {
+        return;
+      }
 
-      var anchor = anchorTarget(evt.target);
+      var anchor = anchorTarget(target);
 
       // Check if we can navigate in-page:
       if (
@@ -3941,7 +3954,8 @@ var interceptAnchorClicks = (function (window) {
         || /([a-z0-9_\-]+\:)?\/\/[^@]+@/.test(anchor.href) //< Non-empty username/password.
       ) { return; }
 
-      evt.preventDefault();
+      if (event.preventDefault) { event.preventDefault(); }
+      else { event.returnValue = false; }
       router.state(urlPathQuery(anchor));
     }
 
