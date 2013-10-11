@@ -18,15 +18,33 @@ var interceptAnchorClicks = (function (window) {
     }
   }
 
+  function matchProtocolHostAgainstLocation(anchor) {
+    var protocol = anchor.protocol, host = anchor.host;
+
+    /* IE can lose the `protocol`, `host`, `port`, `hostname` properties when setting a relative href from JS.
+     * We use a temporary anchor to restore the values from `href` which is always absolute.
+     * @see http://stackoverflow.com/questions/10755943/ie-forgets-an-a-tags-hostname-after-changing-href
+     */
+    var tempAnchor = window.document.createElement("A");
+    tempAnchor.href = anchor.href;
+
+    protocol = (protocol && protocol !== ':' ? protocol : tempAnchor.protocol);
+    host = host || tempAnchor.host;
+
+    // Compare protocol scheme, hostname and port:
+    return (protocol === window.location.protocol && host === window.location.host);
+  }
+
   return function (router) {
     function handler(e) {
       var event = e || window.event;
       var target = event.target || event.srcElement;
       var defaultPrevented = "defaultPrevented" in event ? event['defaultPrevented'] : event.returnValue === false;
+
       if (
-        defaultPrevented ||
-        event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||
-        !detectLeftButton(event)
+        defaultPrevented
+        || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+        || !detectLeftButton(event)
       ) {
         return;
       }
@@ -37,13 +55,15 @@ var interceptAnchorClicks = (function (window) {
       if (
         !anchor
         || anchor.getAttribute('target') //< Non-empty target.
-        || anchor.host !== window.location.host //< Different host (including port).
-        || anchor.protocol !== window.location.protocol //< Different protocol scheme.
+        || !matchProtocolHostAgainstLocation(anchor) //< Different protocol scheme, hostname or port.
         || /([a-z0-9_\-]+\:)?\/\/[^@]+@/.test(anchor.href) //< Non-empty username/password.
-      ) { return; }
+      ) {
+        return;
+      }
 
       if (event.preventDefault) { event.preventDefault(); }
       else { event.returnValue = false; }
+
       router.state(urlPathQuery(anchor));
     }
 
