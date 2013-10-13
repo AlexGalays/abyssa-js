@@ -1,4 +1,4 @@
-// abyssa-js 1.1.2
+// abyssa-js 1.1.3
 define(function() {
 
 var Abyssa = {};
@@ -3715,7 +3715,7 @@ function anchorClickHandler(evt) {
 
   if (!anchor) return;
   if (anchor.getAttribute('target') == '_blank') return;
-  if (getHostname(anchor) != location.hostname) return;
+  if (!isLocalLink(anchor)) return;
 
   evt.preventDefault();
   router.state(anchor.getAttribute('href'));
@@ -3734,13 +3734,17 @@ function anchorTarget(target) {
   }
 }
 
-function getHostname(anchor) {
-  if (anchor.hostname) return anchor.hostname;
+function isLocalLink(anchor) {
+  var host = anchor.host;
 
-  // IE can lose the hostname property when setting a relative href from JS.
-  var tempAnchor = document.createElement("a");
-  tempAnchor.href = anchor.href;
-  return tempAnchor.hostname;
+  // IE10 and below can lose the host property when setting a relative href from JS
+  if (!host) {
+    var tempAnchor = document.createElement("a");
+    tempAnchor.href = anchor.href;
+    host = tempAnchor.host;
+  }
+
+  return (host == location.host);
 }
 
 
