@@ -50,7 +50,8 @@ var interceptAnchorClicks = (function (window) {
       // Check if we can navigate in-page:
       if (
         !anchor
-        || anchor.getAttribute('target') //< Non-empty target.
+        || !anchor.getAttribute('href', 2) //< Empty href attribute.
+        || anchor.getAttribute('target') //< Non-empty target attribute.
         || !matchProtocolHostAgainstLocation(anchor) //< Different protocol scheme, hostname or port.
         || /([a-z0-9_\-]+\:)?\/\/[^@]+@/.test(anchor.href) //< Non-empty username/password.
       ) {

@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.2 (2013-10-11T12:53:04.662Z)
+ * v1.2.3 (2013-10-17T13:46:58.898Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -1048,7 +1048,8 @@ var interceptAnchorClicks = (function (window) {
       // Check if we can navigate in-page:
       if (
         !anchor
-        || anchor.getAttribute('target') //< Non-empty target.
+        || !anchor.getAttribute('href', 2) //< Empty href attribute.
+        || anchor.getAttribute('target') //< Non-empty target attribute.
         || !matchProtocolHostAgainstLocation(anchor) //< Different protocol scheme, hostname or port.
         || /([a-z0-9_\-]+\:)?\/\/[^@]+@/.test(anchor.href) //< Non-empty username/password.
       ) {
