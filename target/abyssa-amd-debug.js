@@ -1,4 +1,4 @@
-// abyssa-js 1.1.4
+// abyssa-js 1.1.5
 define(function() {
 
 var Abyssa = {};
@@ -3593,6 +3593,11 @@ function Router(declarativeStates) {
     });
 
     if (query) mergeObjects(params, query);
+
+    // Decode all params
+    for (var i in params) {
+      if (isString(params[i])) params[i] = decodeURIComponent(params[i]);
+    }
 
     return params;
   }

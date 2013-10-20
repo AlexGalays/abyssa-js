@@ -3593,6 +3593,11 @@ function Router(declarativeStates) {
 
     if (query) mergeObjects(params, query);
 
+    // Decode all params
+    for (var i in params) {
+      if (isString(params[i])) params[i] = decodeURIComponent(params[i]);
+    }
+
     return params;
   }
 

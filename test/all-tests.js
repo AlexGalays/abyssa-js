@@ -1074,6 +1074,30 @@ test('State construction shorthand', function() {
 });
 
 
+test('params should be decoded automatically', function() {
+  stop();
+
+  var passedParams;
+
+  var router = Router({
+
+    index: State('index/:id/:filter', function(params) {
+      passedParams = params;
+    })
+
+  }).init('index/The%20midget%20%40/a%20b%20c');
+
+  nextTick().then(paramsWereDecoded);
+
+  function paramsWereDecoded() {
+    equal(passedParams.id, 'The midget @');
+    equal(passedParams.filter, 'a b c');
+    start();
+  }
+
+});
+
+
 function delay(time, value) {
   var defer = when.defer();
   setTimeout(function() { defer.resolve(value); }, time);
