@@ -6,9 +6,9 @@ var interceptAnchorClicks = (function() {
   function anchorClickHandler(evt) {
     evt = evt || window.event;
 
-    var defaultPrevented = ('defaultPrevented' in event)
-      ? event.defaultPrevented
-      : (event.returnValue === false);
+    var defaultPrevented = ('defaultPrevented' in evt)
+      ? evt.defaultPrevented
+      : (evt.returnValue === false);
 
     if (defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButtonClick(evt)) return;
 

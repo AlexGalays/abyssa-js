@@ -1,4 +1,4 @@
-// abyssa-js 1.1.5
+// abyssa-js 1.1.6
 define(function() {
 
 var Abyssa = {};
@@ -3336,6 +3336,10 @@ function Router(declarativeStates) {
       // Abyssa internally depends on the lower-level crossroads.js router.
       roads  = crossroads.create(),
       firstTransition = true,
+      initOptions = {
+        enableLogs: false,
+        interceptAnchorClicks: true
+      },
       currentPathQuery,
       currentState,
       currentParams,
@@ -3350,8 +3354,6 @@ function Router(declarativeStates) {
   roads.shouldTypecast = true;
   // Nil transitions are prevented from our side.
   roads.ignoreState = true;
-
-  interceptAnchorClicks(router);
 
   /*
   * Setting a new state will start a transition from the current state to the target state.
@@ -3452,6 +3454,14 @@ function Router(declarativeStates) {
   }
 
   /*
+  * Configure the router before its initialization.
+  */
+  function configure(options) {
+    mergeObjects(initOptions, options);
+    return router;
+  }
+
+  /*
   * Initialize and freeze the router (states can not be added afterwards).
   * The router will immediately initiate a transition to, in order of priority:
   * 1) The state captured by the current URL
@@ -3459,6 +3469,12 @@ function Router(declarativeStates) {
   * 3) The default state (pathless and queryless)
   */
   function init(initState) {
+    if (initOptions.enableLogs)
+      Router.enableLogs();
+
+    if (initOptions.interceptAnchorClicks)
+      interceptAnchorClicks(router);
+
     log('Router init');
     initStates();
 
@@ -3635,6 +3651,7 @@ function Router(declarativeStates) {
 
   // Public methods
 
+  router.configure = configure;
   router.init = init;
   router.state = state;
   router.addState = addState;
@@ -3712,9 +3729,9 @@ var interceptAnchorClicks = (function() {
   function anchorClickHandler(evt) {
     evt = evt || window.event;
 
-    var defaultPrevented = ('defaultPrevented' in event)
-      ? event.defaultPrevented
-      : (event.returnValue === false);
+    var defaultPrevented = ('defaultPrevented' in evt)
+      ? evt.defaultPrevented
+      : (evt.returnValue === false);
 
     if (defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButtonClick(evt)) return;
 
