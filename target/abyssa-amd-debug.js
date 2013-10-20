@@ -1,4 +1,4 @@
-// abyssa-js 1.1.3
+// abyssa-js 1.1.4
 define(function() {
 
 var Abyssa = {};
@@ -3700,52 +3700,81 @@ Router.enableLogs = function() {
 
 Abyssa.Router = Router;
 
-function interceptAnchorClicks(router) {
-  if (document.addEventListener)
-    document.addEventListener('click', anchorClickHandler);
-  else
-    document.attachEvent('onclick', anchorClickHandler);
-}
+var interceptAnchorClicks = (function() {
 
-function anchorClickHandler(evt) {
-  evt = evt || window.event;
-  if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButtonClick(evt)) return;
+  var ieButton;
 
-  var anchor = anchorTarget(evt.target);
+  function anchorClickHandler(evt) {
+    evt = evt || window.event;
 
-  if (!anchor) return;
-  if (anchor.getAttribute('target') == '_blank') return;
-  if (!isLocalLink(anchor)) return;
+    var defaultPrevented = ('defaultPrevented' in event)
+      ? event.defaultPrevented
+      : (event.returnValue === false);
 
-  evt.preventDefault();
-  router.state(anchor.getAttribute('href'));
-}
+    if (defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButtonClick(evt)) return;
 
-function isLeftButtonClick(evt) {
-  evt = evt || window.event;
-  var button = (evt.which !== undefined) ? evt.which : evt.button;
-  return button == 1;
-}
+    var target = evt.target || evt.srcElement;
+    var anchor = anchorTarget(target);
+    if (!anchor) return;
 
-function anchorTarget(target) {
-  while (target) {
-    if (target.nodeName == 'A') return target;
-    target = target.parentNode;
-  }
-}
+    var href = anchor.getAttribute('href');
 
-function isLocalLink(anchor) {
-  var host = anchor.host;
+    if (href.charAt(0) == '#') return;
+    if (anchor.getAttribute('target') == '_blank') return;
+    if (!isLocalLink(anchor)) return;
 
-  // IE10 and below can lose the host property when setting a relative href from JS
-  if (!host) {
-    var tempAnchor = document.createElement("a");
-    tempAnchor.href = anchor.href;
-    host = tempAnchor.host;
+    if (evt.preventDefault)
+      evt.preventDefault();
+    else
+      evt.returnValue = false;
+
+    router.state(href);
   }
 
-  return (host == location.host);
-}
+  function isLeftButtonClick(evt) {
+    evt = evt || window.event;
+    var button = (evt.which !== undefined) ? evt.which : ieButton;
+    return button == 1;
+  }
+
+  function anchorTarget(target) {
+    while (target) {
+      if (target.nodeName == 'A') return target;
+      target = target.parentNode;
+    }
+  }
+
+  // IE does not provide the correct event.button information on 'onclick' handlers 
+  // but it does on mousedown/mouseup handlers.
+  function rememberIeButton(evt) {
+    ieButton = (evt || window.event).button;
+  }
+
+  function isLocalLink(anchor) {
+    var host = anchor.host;
+
+    // IE10 and below can lose the host property when setting a relative href from JS
+    if (!host) {
+      var tempAnchor = document.createElement("a");
+      tempAnchor.href = anchor.href;
+      host = tempAnchor.host;
+    }
+
+    return (host == location.host);
+  }
+
+
+  return function (router) {
+    if (document.addEventListener)
+      document.addEventListener('click', anchorClickHandler);
+    else {
+      document.attachEvent('onmousedown', rememberIeButton);
+      document.attachEvent('onclick', anchorClickHandler);
+    }
+  };
+
+
+})();
 
 
 return Abyssa;
