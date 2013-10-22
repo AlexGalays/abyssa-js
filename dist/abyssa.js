@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.3 (2013-10-17T13:46:58.898Z)
+ * v1.2.4 (2013-10-22T22:53:32.412Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -65,6 +65,17 @@ function getParamDiff(oldParams, newParams) {
 }
 
 /**
+ * Gets the browser location object in a compatible way.
+ * We use devote/HTML5-History-API which provides its own (patched) location object.
+ * 
+ * @return {Location}
+ */
+function getLocationObject() {
+  if (!window || !window.history || !window.document) { throw new Error('Browser location object cannot be obtained.'); }
+  return (window.history.location || window.document.location);
+}
+
+/**
  * Normalizes leading and trailing slashes.
  * Removes the leading slash, if required.
  * 
@@ -81,11 +92,11 @@ function normalizePathQuery(pathQuery, removeLeadingSlash) {
  * Uses the path in the hash like `#/path/?query`, if present.
  * The returned value may be passed into router.state().
  * 
- * @param {{href:String,pathname:String,search:String}} [urlObject=window.location] Parsed URL (may be a Location or an HTMLAnchorElement).
+ * @param {{href:String,pathname:String,search:String}} [urlObject=location] Parsed URL (may be a Location or an HTMLAnchorElement).
  * @return {String} Extracted path and query.
  */
 function urlPathQuery(urlObject) {
-  urlObject = urlObject || window.location;
+  urlObject = urlObject || getLocationObject();
   var hashSlash = urlObject.href.indexOf('#/');
   return normalizePathQuery(urlObject.pathname + '/' + (hashSlash > -1
     ? (urlObject.href.slice(hashSlash + 2))
@@ -997,7 +1008,9 @@ Router.enableLogs = function() {
 Abyssa.Router = Router;
 
 var interceptAnchorClicks = (function (window) {
-  if (!window || !window.document || !window.location) return;
+  if (!window || !window.document) return;
+
+  var location = getLocationObject();
 
   function detectLeftButton(event) {
     // Normalize mouse button for click event: 1 === left; 2 === middle; 3 === right
@@ -1026,7 +1039,7 @@ var interceptAnchorClicks = (function (window) {
     tempAnchor.href = anchor.href;
 
     // Compare protocol scheme, hostname and port:
-    return (tempAnchor.protocol === window.location.protocol && tempAnchor.host === window.location.host);
+    return (tempAnchor.protocol === location.protocol && tempAnchor.host === location.host);
   }
 
   return function (router) {

@@ -1,5 +1,7 @@
 var interceptAnchorClicks = (function (window) {
-  if (!window || !window.document || !window.location) return;
+  if (!window || !window.document) return;
+
+  var location = getLocationObject();
 
   function detectLeftButton(event) {
     // Normalize mouse button for click event: 1 === left; 2 === middle; 3 === right
@@ -28,7 +30,7 @@ var interceptAnchorClicks = (function (window) {
     tempAnchor.href = anchor.href;
 
     // Compare protocol scheme, hostname and port:
-    return (tempAnchor.protocol === window.location.protocol && tempAnchor.host === window.location.host);
+    return (tempAnchor.protocol === location.protocol && tempAnchor.host === location.host);
   }
 
   return function (router) {

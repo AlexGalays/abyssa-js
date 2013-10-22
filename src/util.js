@@ -57,6 +57,17 @@ function getParamDiff(oldParams, newParams) {
 }
 
 /**
+ * Gets the browser location object in a compatible way.
+ * We use devote/HTML5-History-API which provides its own (patched) location object.
+ * 
+ * @return {Location}
+ */
+function getLocationObject() {
+  if (!window || !window.history || !window.document) { throw new Error('Browser location object cannot be obtained.'); }
+  return (window.history.location || window.document.location);
+}
+
+/**
  * Normalizes leading and trailing slashes.
  * Removes the leading slash, if required.
  * 
@@ -73,11 +84,11 @@ function normalizePathQuery(pathQuery, removeLeadingSlash) {
  * Uses the path in the hash like `#/path/?query`, if present.
  * The returned value may be passed into router.state().
  * 
- * @param {{href:String,pathname:String,search:String}} [urlObject=window.location] Parsed URL (may be a Location or an HTMLAnchorElement).
+ * @param {{href:String,pathname:String,search:String}} [urlObject=location] Parsed URL (may be a Location or an HTMLAnchorElement).
  * @return {String} Extracted path and query.
  */
 function urlPathQuery(urlObject) {
-  urlObject = urlObject || window.location;
+  urlObject = urlObject || getLocationObject();
   var hashSlash = urlObject.href.indexOf('#/');
   return normalizePathQuery(urlObject.pathname + '/' + (hashSlash > -1
     ? (urlObject.href.slice(hashSlash + 2))
