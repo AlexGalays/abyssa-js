@@ -2915,7 +2915,7 @@ var when = (function(global) {
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.5 (2013-10-25T09:44:58.844Z)
+ * v1.2.6 (2013-10-25T10:30:44.185Z)
  */
 (function () {
 var factory = function () {
@@ -3954,8 +3954,14 @@ var interceptAnchorClicks = (function (window) {
     var tempAnchor = window.document.createElement("A");
     tempAnchor.href = anchor.href;
 
+    /* In IE, the temporary anchor is discovered to have `port` === "80" by default,
+     * the `host` therefore contains ":80" part;
+     * the location object has got `port` === "" by default and port specification is missing from the `host` value.
+     * So, we cannot compare `host` and have to compare `hostname` and `port` separately.
+     */
+
     // Compare protocol scheme, hostname and port:
-    return (tempAnchor.protocol === location.protocol && tempAnchor.host === location.host);
+    return (tempAnchor.protocol === location.protocol && tempAnchor.hostname === location.hostname && (tempAnchor.port || '80') === (location.port || '80'));
   }
 
   return function (router) {
