@@ -163,7 +163,7 @@ function Router(declarativeStates) {
     state(initState, initParams);
 
     window.onpopstate = function(evt) {
-      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
+      // devote/HTML5-History-API will dispatch fake popstate events on HTML4 browsers' hash changes;
       // in these cases, evt.state is null.
       var newState = evt.state || urlPathQuery();
 
