@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.6 (2013-10-25T10:30:44.185Z)
+ * v1.2.7 (2013-10-30T09:32:05.712Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -693,7 +693,7 @@ function Router(declarativeStates) {
         transition = null;
 
         logError('Transition from {0} to {1} failed: {2}', currentState, state, error);
-        router.transition.failed.dispatch(currentState, state, currentParams, params);
+        router.transition.failed.dispatch(currentState, state, currentParams, params, error);
       });
   }
 

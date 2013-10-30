@@ -1181,6 +1181,95 @@ QUnit.test('State construction shorthand', function() {
 
 });
 
+QUnit.asyncTest('Transition failed handler receives error thrown from enter', function() {
+  var testError = new Error();
+
+  var router = Router({
+
+    failed: State('failed', {
+      enter: function() {
+        throw testError;
+      }
+    })
+
+  });
+
+  router.transition.failed.add(function(oldState, newState, oldParams, newParams, error) {
+
+    QUnit.assert.ok(error, "error parameter is not empty");
+
+    // The error is the one that was thrown from the enter function
+    QUnit.assert.strictEqual(error, testError, "error equals the original error");
+
+    QUnit.start();
+
+  });
+
+  router.init('failed');
+});
+
+QUnit.asyncTest('Transition failed handler receives rejection from enterPrereqs', function() {
+  var testError = new Error();
+
+  var router = Router({
+
+    failed: State('failed', {
+      enterPrereqs: function() {
+        return when.defer().reject(testError);
+      }
+    })
+
+  });
+
+  router.transition.failed.add(function(oldState, newState, oldParams, newParams, error) {
+
+    // The error is about prereqs
+    QUnit.assert.ok(error, "error parameter is not empty");
+
+    // The inner error is the one that was wrapped into the rejection
+    QUnit.assert.strictEqual(error.inner, testError, "error.inner equals the original error");
+
+    QUnit.start();
+
+  });
+
+  router.init('failed');
+});
+
+QUnit.asyncTest('Transition failed handler receives rejection from exitPrereqs', function() {
+  var testError = new Error();
+
+  var router = Router({
+
+    failed: State('failed', {
+      exitPrereqs: function() {
+        return when.defer().reject(testError);
+      }
+    }),
+
+    success: State('success')
+
+  });
+
+  router.transition.failed.add(function(oldState, newState, oldParams, newParams, error) {
+
+    // The error is about prereqs
+    QUnit.assert.ok(error, "error parameter is not empty");
+
+    // The inner error is the one that was wrapped into the rejection
+    QUnit.assert.strictEqual(error.inner, testError, "error.inner equals the original error");
+
+    QUnit.start();
+
+  });
+
+  router.init('failed');
+
+  nextTick().then(function() {
+    router.state('success');
+  });
+});
+
 
 function delay(time, value) {
   var defer = when.defer();

@@ -82,7 +82,7 @@ function Router(declarativeStates) {
         transition = null;
 
         logError('Transition from {0} to {1} failed: {2}', currentState, state, error);
-        router.transition.failed.dispatch(currentState, state, currentParams, params);
+        router.transition.failed.dispatch(currentState, state, currentParams, params, error);
       });
   }
 
