@@ -570,7 +570,7 @@ QUnit.asyncTest('Async enter transitions', function() {
 });
 
 
-QUnit.asyncTest('prereqs can return non promise values', function() {
+QUnit.asyncTest('Prereqs can return non promise values', function() {
 
   Router({
     index: State({
@@ -1244,6 +1244,68 @@ QUnit.asyncTest('Transition failed handler receives rejection from exitPrereqs',
     failed: State('failed', {
       exitPrereqs: function() {
         return when.defer().reject(testError);
+      }
+    }),
+
+    success: State('success')
+
+  });
+
+  router.transition.failed.add(function(oldState, newState, oldParams, newParams, error) {
+
+    // The error is about prereqs
+    QUnit.assert.ok(error, "error parameter is not empty");
+
+    // The inner error is the one that was wrapped into the rejection
+    QUnit.assert.strictEqual(error.inner, testError, "error.inner equals the original error");
+
+    QUnit.start();
+
+  });
+
+  router.init('failed');
+
+  nextTick().then(function() {
+    router.state('success');
+  });
+});
+
+QUnit.asyncTest('Transition failed handler receives error thrown from enterPrereqs', function() {
+  var testError = new Error();
+
+  var router = Router({
+
+    failed: State('failed', {
+      enterPrereqs: function() {
+        throw testError;
+      }
+    })
+
+  });
+
+  router.transition.failed.add(function(oldState, newState, oldParams, newParams, error) {
+
+    // The error is about prereqs
+    QUnit.assert.ok(error, "error parameter is not empty");
+
+    // The inner error is the one that was wrapped into the rejection
+    QUnit.assert.strictEqual(error.inner, testError, "error.inner equals the original error");
+
+    QUnit.start();
+
+  });
+
+  router.init('/failed');
+});
+
+QUnit.asyncTest('Transition failed handler receives error thrown from exitPrereqs', function() {
+  var testError = new Error();
+
+  var router = Router({
+
+    failed: State('failed', {
+      exitPrereqs: function() {
+        throw testError;
       }
     }),
 

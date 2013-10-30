@@ -97,3 +97,22 @@ function urlPathQuery(urlObject) {
     : (urlObject.pathname + urlObject.search)
   ));
 }
+
+/**
+ * Returns a promise of a function call wrapped in a try...catch block.
+ * If the call succeeds, the return value is wrapped with a promise.
+ * If the call throws, the promise is rejected with the exception.
+ *
+ * @param {Function} fn
+ * @return {Promise}
+ */
+function whenTryCatch(fn) {
+  var ret;
+  try {
+    ret = when(fn());
+  }
+  catch (ex) {
+    ret = when.defer().reject(ex);
+  }
+  return ret;
+}

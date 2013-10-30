@@ -2915,7 +2915,7 @@ var when = (function(global) {
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.7 (2013-10-30T09:32:05.712Z)
+ * v1.2.8 (2013-10-30T10:23:05.610Z)
  */
 (function () {
 var factory = function () {
@@ -3020,6 +3020,25 @@ function urlPathQuery(urlObject) {
   ));
 }
 
+/**
+ * Returns a promise of a function call wrapped in a try...catch block.
+ * If the call succeeds, the return value is wrapped with a promise.
+ * If the call throws, the promise is rejected with the exception.
+ *
+ * @param {Function} fn
+ * @return {Promise}
+ */
+function whenTryCatch(fn) {
+  var ret;
+  try {
+    ret = when(fn());
+  }
+  catch (ex) {
+    ret = when.defer().reject(ex);
+  }
+  return ret;
+}
+
 
 /**
  * Creates a new Transition instance.
@@ -3087,7 +3106,7 @@ function prereqs(enters, exits, params) {
   exits.forEach(function(state) {
     if (!state.exitPrereqs) return;
 
-    var prereqs = state._exitPrereqs = when(state.exitPrereqs()).then(
+    var prereqs = state._exitPrereqs = whenTryCatch(function () { return state.exitPrereqs(); }).then(
       function success(value) {
         if (state._exitPrereqs === prereqs) state._exitPrereqs.value = value;
       },
@@ -3102,7 +3121,7 @@ function prereqs(enters, exits, params) {
   enters.forEach(function(state) {
     if (!state.enterPrereqs) return;
 
-    var prereqs = state._enterPrereqs = when(state.enterPrereqs(params)).then(
+    var prereqs = state._enterPrereqs = whenTryCatch(function () { return state.enterPrereqs(params); }).then(
       function success(value) {
         if (state._enterPrereqs === prereqs) state._enterPrereqs.value = value;
       },

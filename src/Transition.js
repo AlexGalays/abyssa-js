@@ -65,7 +65,7 @@ function prereqs(enters, exits, params) {
   exits.forEach(function(state) {
     if (!state.exitPrereqs) return;
 
-    var prereqs = state._exitPrereqs = when(state.exitPrereqs()).then(
+    var prereqs = state._exitPrereqs = whenTryCatch(function () { return state.exitPrereqs(); }).then(
       function success(value) {
         if (state._exitPrereqs === prereqs) state._exitPrereqs.value = value;
       },
@@ -80,7 +80,7 @@ function prereqs(enters, exits, params) {
   enters.forEach(function(state) {
     if (!state.enterPrereqs) return;
 
-    var prereqs = state._enterPrereqs = when(state.enterPrereqs(params)).then(
+    var prereqs = state._enterPrereqs = whenTryCatch(function () { return state.enterPrereqs(params); }).then(
       function success(value) {
         if (state._enterPrereqs === prereqs) state._enterPrereqs.value = value;
       },
