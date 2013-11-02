@@ -259,6 +259,8 @@ function Router(declarativeStates) {
     log('Adding state {0}', name);
 
     states[name] = state;
+
+    return router;
   }
 
   function urlPathQuery() {

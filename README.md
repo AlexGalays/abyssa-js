@@ -84,8 +84,9 @@ The router will immediately initiate a transition to, in order of priority:
 2) The init state passed as an argument  
 3) The default state (pathless and queryless)  
 
-### addState (name: String, state: State): void
-Add a new root state to the router.
+### addState (name: String, state: State): Router
+Add a new root state to the router.  
+Returns the router to allow chaining.
 
 ### state (pathQueryOrName: String, params: Object): void
 Request a programmatic state change.  
@@ -170,13 +171,15 @@ State(':id')
 
 ```
 
-### addState (name: String, state: State): void
-Add a child state
+### addState (name: String, state: State): State
+Add a child state.  
+Returns the current state to allow chaining.
 
-### data (key: String, value: Any): void | Any
+### data (key: String, value: Any): Any | State
 Get or Set some data by key on this state.  
 child states have access to their parents' data.  
 This can be useful when using external models/services as a mean to communicate between states is not desired.  
+Returns the state to allow chaining.
 
 ### Declarative properties
 

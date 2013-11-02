@@ -1,4 +1,4 @@
-// abyssa-js 1.1.6
+// abyssa-js 1.1.8
 define(function() {
 
 var Abyssa = {};
@@ -3240,7 +3240,7 @@ function State() {
       if (state.ownData[key] !== undefined)
         throw new Error('State ' + state.fullName + ' already has data with the key ' + key);
       state.ownData[key] = value;
-      return;
+      return state;
     }
 
     var currentState = state;
@@ -3258,7 +3258,7 @@ function State() {
   /*
   * Add a child state.
   */
-  function addState(name, state) {
+  function addState(name, childState) {
     if (initialized)
       throw new Error('States can only be added before the Router is initialized');
 
@@ -3268,7 +3268,9 @@ function State() {
         .replace('{1}', name)
       );
 
-    states[name] = state;
+    states[name] = childState;
+
+    return state;
   };
 
   function toString() {
@@ -3588,6 +3590,8 @@ function Router(declarativeStates) {
     log('Adding state {0}', name);
 
     states[name] = state;
+
+    return router;
   }
 
   function urlPathQuery() {
