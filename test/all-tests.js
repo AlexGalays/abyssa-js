@@ -1098,6 +1098,37 @@ test('params should be decoded automatically', function() {
 });
 
 
+test('Redirects', function() {
+  stop();
+
+  var oldRouteChildEntered;
+  var newRouteEntered;
+
+  var router = Router({
+
+    oldRoute: State('oldRoute', {
+      enter: function() { router.redirect('newRoute'); },
+
+      oldRouteChild: State('child', function() { oldRouteChildEntered = true; })
+    }),
+
+    newRoute: State('newRoute', function() { newRouteEntered = true; })
+
+  }).init('oldRoute.oldRouteChild');
+
+  nextTick().then(assertions);
+
+  function assertions() {
+    ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered');
+    ok(newRouteEntered);
+
+    start();
+  }
+
+});
+
+
+
 function delay(time, value) {
   var defer = when.defer();
   setTimeout(function() { defer.resolve(value); }, time);

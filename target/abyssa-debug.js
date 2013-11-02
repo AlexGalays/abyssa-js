@@ -2918,7 +2918,7 @@ function Transition(fromState, toState, params, paramDiff) {
   enters = transitionStates(toState, root, paramOnlyChange).reverse();
 
   transition = prereqs(enters, exits, params).then(function() {
-    if (!cancelled) doTransition(enters, exits, params);
+    if (!cancelled) doTransition(enters, exits, params, isCancelled);
   });
 
   asyncPromises.newTransitionStarted();
@@ -2932,6 +2932,10 @@ function Transition(fromState, toState, params, paramDiff) {
 
   function cancel() {
     cancelled = true;
+  }
+
+  function isCancelled() {
+    return cancelled;
   }
 
   return {
@@ -2979,14 +2983,15 @@ function prereqs(enters, exits, params) {
   }));
 }
 
-function doTransition(enters, exits, params) {
+function doTransition(enters, exits, params, isCancelled) {
   exits.forEach(function(state) {
     state.exit(state._exitPrereqs && state._exitPrereqs.value);
   });
 
   asyncPromises.allowed = true;
   enters.forEach(function(state) {
-    state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
+    if (!isCancelled())
+      state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
   });
   asyncPromises.allowed = false;
 }
@@ -3653,6 +3658,7 @@ function Router(declarativeStates) {
   router.configure = configure;
   router.init = init;
   router.state = state;
+  router.redirect = state;
   router.addState = addState;
   router.link = link;
 

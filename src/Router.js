@@ -330,6 +330,7 @@ function Router(declarativeStates) {
   router.configure = configure;
   router.init = init;
   router.state = state;
+  router.redirect = state;
   router.addState = addState;
   router.link = link;
 
