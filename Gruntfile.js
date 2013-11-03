@@ -6,7 +6,7 @@ module.exports = function(grunt) {
     'lib/signals.js',
     'lib/crossroads.js',
     'lib/when.js',
-    'lib/history.js',
+    'lib/history.iegte8.js',
   ];
 
   var srcFiles = [

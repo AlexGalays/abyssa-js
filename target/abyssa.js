@@ -1119,11 +1119,6 @@ return factory(window['signals']);
 /** @license MIT License (c) copyright 2011-2013 original author or authors */
 
 /**
-* Gaebolg note: The original when.js cannot be used outside amd/commonJS, so it was modified
-* to be used inline in our file appending build, for the sake of simplicity.
-*/
-
-/**
  * A lightweight CommonJS Promises/A and when() implementation
  * when is part of the cujo.js family of libraries (http://cujojs.com/)
  *
@@ -1132,15 +1127,18 @@ return factory(window['signals']);
  *
  * @author Brian Cavalier
  * @author John Hann
- * @version 2.1.0
+ * @version 2.5.1
  */
-var when = (function(global) {
+var when = (function(global) { 'use strict';
+
+  var require;
 
   // Public API
 
-  when.defer     = defer;      // Create a deferred
+  when.promise   = promise;    // Create a pending promise
   when.resolve   = resolve;    // Create a resolved promise
   when.reject    = reject;     // Create a rejected promise
+  when.defer     = defer;      // Create a {promise, resolver} pair
 
   when.join      = join;       // Join 2 or more promises
 
@@ -1152,9 +1150,8 @@ var when = (function(global) {
   when.any       = any;        // One-winner race
   when.some      = some;       // Multi-winner race
 
-  when.isPromise = isPromise;  // Determine if a thing is a promise
-
-  when.promise   = promise;    // EXPERIMENTAL: May change. Use at your own risk
+  when.isPromise = isPromiseLike;  // DEPRECATED: use isPromiseLike
+  when.isPromiseLike = isPromiseLike; // Is something promise-like, aka thenable
 
   /**
    * Register an observer for a promise or immediate value.
@@ -1174,7 +1171,11 @@ var when = (function(global) {
   function when(promiseOrValue, onFulfilled, onRejected, onProgress) {
     // Get a trusted promise for the input promiseOrValue, and then
     // register promise handlers
-    return resolve(promiseOrValue).then(onFulfilled, onRejected, onProgress);
+    return cast(promiseOrValue).then(onFulfilled, onRejected, onProgress);
+  }
+
+  function cast(x) {
+    return x instanceof Promise ? x : resolve(x);
   }
 
   /**
@@ -1182,14 +1183,35 @@ var when = (function(global) {
    * a trusted when.js promise.  Any other duck-typed promise is considered
    * untrusted.
    * @constructor
+   * @param {function} sendMessage function to deliver messages to the promise's handler
+   * @param {function?} inspect function that reports the promise's state
    * @name Promise
    */
-  function Promise(then, inspect) {
-    this.then = then;
+  function Promise(sendMessage, inspect) {
+    this._message = sendMessage;
     this.inspect = inspect;
   }
 
   Promise.prototype = {
+    /**
+     * Register handlers for this promise.
+     * @param [onFulfilled] {Function} fulfillment handler
+     * @param [onRejected] {Function} rejection handler
+     * @param [onProgress] {Function} progress handler
+     * @return {Promise} new Promise
+     */
+    then: function(onFulfilled, onRejected, onProgress) {
+      /*jshint unused:false*/
+      var args, sendMessage;
+
+      args = arguments;
+      sendMessage = this._message;
+
+      return _promise(function(resolve, reject, notify) {
+        sendMessage('when', args, resolve, notify);
+      }, this._status && this._status.observed());
+    },
+
     /**
      * Register a rejection handler.  Shortcut for .then(undefined, onRejected)
      * @param {function?} onRejected
@@ -1210,7 +1232,9 @@ var when = (function(global) {
      * @returns {Promise}
      */
     ensure: function(onFulfilledOrRejected) {
-      return this.then(injectHandler, injectHandler).yield(this);
+      return typeof onFulfilledOrRejected === 'function'
+        ? this.then(injectHandler, injectHandler)['yield'](this)
+        : this;
 
       function injectHandler() {
         return resolve(onFulfilledOrRejected());
@@ -1229,6 +1253,16 @@ var when = (function(global) {
       return this.then(function() {
         return value;
       });
+    },
+
+    /**
+     * Runs a side effect when this promise fulfills, without changing the
+     * fulfillment value.
+     * @param {function} onFulfilledSideEffect
+     * @returns {Promise}
+     */
+    tap: function(onFulfilledSideEffect) {
+      return this.then(onFulfilledSideEffect)['yield'](this);
     },
 
     /**
@@ -1286,10 +1320,10 @@ var when = (function(global) {
   }
 
   /**
-   * Creates a new Deferred with fully isolated resolver and promise parts,
-   * either or both of which may be given out safely to consumers.
+   * Creates a {promise, resolver} pair, either or both of which
+   * may be given out safely to consumers.
    * The resolver has resolve, reject, and progress.  The promise
-   * only has then.
+   * has then plus extended promise API.
    *
    * @return {{
    * promise: Promise,
@@ -1343,12 +1377,26 @@ var when = (function(global) {
 
   /**
    * Creates a new promise whose fate is determined by resolver.
-   * @private (for now)
    * @param {function} resolver function(resolve, reject, notify)
    * @returns {Promise} promise whose fate is determine by resolver
    */
   function promise(resolver) {
-    var value, handlers = [];
+    return _promise(resolver, monitorApi.PromiseStatus && monitorApi.PromiseStatus());
+  }
+
+  /**
+   * Creates a new promise, linked to parent, whose fate is determined
+   * by resolver.
+   * @param {function} resolver function(resolve, reject, notify)
+   * @param {Promise?} status promise from which the new promise is begotten
+   * @returns {Promise} promise whose fate is determine by resolver
+   * @private
+   */
+  function _promise(resolver, status) {
+    var self, value, consumers = [];
+
+    self = new Promise(_message, inspect);
+    self._status = status;
 
     // Call the provider resolver to seal the promise's fate
     try {
@@ -1358,31 +1406,32 @@ var when = (function(global) {
     }
 
     // Return the promise
-    return new Promise(then, inspect);
+    return self;
 
     /**
-     * Register handlers for this promise.
-     * @param [onFulfilled] {Function} fulfillment handler
-     * @param [onRejected] {Function} rejection handler
-     * @param [onProgress] {Function} progress handler
-     * @return {Promise} new Promise
+     * Private message delivery. Queues and delivers messages to
+     * the promise's ultimate fulfillment value or rejection reason.
+     * @private
+     * @param {String} type
+     * @param {Array} args
+     * @param {Function} resolve
+     * @param {Function} notify
      */
-    function then(onFulfilled, onRejected, onProgress) {
-      return promise(function(resolve, reject, notify) {
-        handlers
-        // Call handlers later, after resolution
-        ? handlers.push(function(value) {
-          value.then(onFulfilled, onRejected, onProgress)
-            .then(resolve, reject, notify);
-        })
-        // Call handlers soon, but not in the current stack
-        : enqueue(function() {
-          value.then(onFulfilled, onRejected, onProgress)
-            .then(resolve, reject, notify);
-        });
-      });
+    function _message(type, args, resolve, notify) {
+      consumers ? consumers.push(deliver) : enqueue(function() { deliver(value); });
+
+      function deliver(p) {
+        p._message(type, args, resolve, notify);
+      }
     }
 
+    /**
+     * Returns a snapshot of the promise's state at the instant inspect()
+     * is called. The returned object is not live and will not update as
+     * the promise's state changes.
+     * @returns {{ state:String, value?:*, reason?:* }} status snapshot
+     *  of the promise.
+     */
     function inspect() {
       return value ? value.inspect() : toPendingState();
     }
@@ -1393,14 +1442,21 @@ var when = (function(global) {
      * @param {*|Promise} val resolution value
      */
     function promiseResolve(val) {
-      if(!handlers) {
+      if(!consumers) {
         return;
       }
 
-      value = coerce(val);
-      scheduleHandlers(handlers, value);
+      var queue = consumers;
+      consumers = undef;
 
-      handlers = undef;
+      enqueue(function () {
+        value = coerce(self, val);
+        if(status) {
+          updateStatus(value, status);
+        }
+        runHandlers(queue, value);
+      });
+
     }
 
     /**
@@ -1416,94 +1472,67 @@ var when = (function(global) {
      * @param {*} update progress event payload to pass to all listeners
      */
     function promiseNotify(update) {
-      if(handlers) {
-        scheduleHandlers(handlers, progressing(update));
+      if(consumers) {
+        var queue = consumers;
+        enqueue(function () {
+          runHandlers(queue, progressed(update));
+        });
       }
     }
   }
 
   /**
-   * Coerces x to a trusted Promise
-   *
-   * @private
-   * @param {*} x thing to coerce
-   * @returns {Promise} Guaranteed to return a trusted Promise.  If x
-   *   is trusted, returns x, otherwise, returns a new, trusted, already-resolved
-   *   Promise whose resolution value is:
-   *   * the resolution value of x if it's a foreign promise, or
-   *   * x if it's a value
+   * Run a queue of functions as quickly as possible, passing
+   * value to each.
    */
-  function coerce(x) {
-    if(x instanceof Promise) {
-      return x;
+  function runHandlers(queue, value) {
+    for (var i = 0; i < queue.length; i++) {
+      queue[i](value);
     }
-
-    if (!(x === Object(x) && 'then' in x)) {
-      return fulfilled(x);
-    }
-
-    return promise(function(resolve, reject, notify) {
-      enqueue(function() {
-        try {
-          // We must check and assimilate in the same tick, but not the
-          // current tick, careful only to access promiseOrValue.then once.
-          var untrustedThen = x.then;
-
-          if(typeof untrustedThen === 'function') {
-            fcall(untrustedThen, x, resolve, reject, notify);
-          } else {
-            // It's a value, create a fulfilled wrapper
-            resolve(fulfilled(x));
-          }
-
-        } catch(e) {
-          // Something went wrong, reject
-          reject(e);
-        }
-      });
-    });
   }
 
   /**
-   * Create an already-fulfilled promise for the supplied value
-   * @private
-   * @param {*} value
-   * @return {Promise} fulfilled promise
+   * Creates a fulfilled, local promise as a proxy for a value
+   * NOTE: must never be exposed
+   * @param {*} value fulfillment value
+   * @returns {Promise}
    */
   function fulfilled(value) {
-    var self = new Promise(function (onFulfilled) {
-      try {
-        return typeof onFulfilled == 'function'
-          ? coerce(onFulfilled(value)) : self;
-      } catch (e) {
-        return rejected(e);
-      }
-    }, function() {
-      return toFulfilledState(value);
-    });
-
-    return self;
+    return near(
+      new NearFulfilledProxy(value),
+      function() { return toFulfilledState(value); }
+    );
   }
 
   /**
-   * Create an already-rejected promise with the supplied rejection reason.
-   * @private
-   * @param {*} reason
-   * @return {Promise} rejected promise
+   * Creates a rejected, local promise with the supplied reason
+   * NOTE: must never be exposed
+   * @param {*} reason rejection reason
+   * @returns {Promise}
    */
   function rejected(reason) {
-    var self = new Promise(function (_, onRejected) {
-      try {
-        return typeof onRejected == 'function'
-          ? coerce(onRejected(reason)) : self;
-      } catch (e) {
-        return rejected(e);
-      }
-    }, function() {
-      return toRejectedState(reason);
-    });
+    return near(
+      new NearRejectedProxy(reason),
+      function() { return toRejectedState(reason); }
+    );
+  }
 
-    return self;
+  /**
+   * Creates a near promise using the provided proxy
+   * NOTE: must never be exposed
+   * @param {object} proxy proxy for the promise's ultimate value or reason
+   * @param {function} inspect function that returns a snapshot of the
+   *  returned near promise's state
+   * @returns {Promise}
+   */
+  function near(proxy, inspect) {
+    return new Promise(function (type, args, resolve) {
+      try {
+        resolve(proxy[type].apply(proxy, args));
+      } catch(e) {
+        resolve(rejected(e));
+      }
+    }, inspect);
   }
 
   /**
@@ -1512,43 +1541,105 @@ var when = (function(global) {
    * @param {*} update
    * @return {Promise} progress promise
    */
-  function progressing(update) {
-    var self = new Promise(function (_, __, onProgress) {
+  function progressed(update) {
+    return new Promise(function (type, args, _, notify) {
+      var onProgress = args[2];
       try {
-        return typeof onProgress == 'function'
-          ? progressing(onProgress(update)) : self;
-      } catch (e) {
-        return progressing(e);
-      }
-    });
-
-    return self;
-  }
-
-  /**
-   * Schedule a task that will process a list of handlers
-   * in the next queue drain run.
-   * @private
-   * @param {Array} handlers queue of handlers to execute
-   * @param {*} value passed as the only arg to each handler
-   */
-  function scheduleHandlers(handlers, value) {
-    enqueue(function() {
-      var handler, i = 0;
-      while (handler = handlers[i++]) {
-        handler(value);
+        notify(typeof onProgress === 'function' ? onProgress(update) : update);
+      } catch(e) {
+        notify(e);
       }
     });
   }
 
   /**
-   * Determines if promiseOrValue is a promise or not
-   *
-   * @param {*} promiseOrValue anything
-   * @returns {boolean} true if promiseOrValue is a {@link Promise}
+   * Coerces x to a trusted Promise
+   * @param {*} x thing to coerce
+   * @returns {*} Guaranteed to return a trusted Promise.  If x
+   *   is trusted, returns x, otherwise, returns a new, trusted, already-resolved
+   *   Promise whose resolution value is:
+   *   * the resolution value of x if it's a foreign promise, or
+   *   * x if it's a value
    */
-  function isPromise(promiseOrValue) {
-    return promiseOrValue && typeof promiseOrValue.then === 'function';
+  function coerce(self, x) {
+    if (x === self) {
+      return rejected(new TypeError());
+    }
+
+    if (x instanceof Promise) {
+      return x;
+    }
+
+    try {
+      var untrustedThen = x === Object(x) && x.then;
+
+      return typeof untrustedThen === 'function'
+        ? assimilate(untrustedThen, x)
+        : fulfilled(x);
+    } catch(e) {
+      return rejected(e);
+    }
+  }
+
+  /**
+   * Safely assimilates a foreign thenable by wrapping it in a trusted promise
+   * @param {function} untrustedThen x's then() method
+   * @param {object|function} x thenable
+   * @returns {Promise}
+   */
+  function assimilate(untrustedThen, x) {
+    return promise(function (resolve, reject) {
+      fcall(untrustedThen, x, resolve, reject);
+    });
+  }
+
+  /**
+   * Proxy for a near, fulfilled value
+   * @param {*} value
+   * @constructor
+   */
+  function NearFulfilledProxy(value) {
+    this.value = value;
+  }
+
+  NearFulfilledProxy.prototype.when = function(onResult) {
+    return typeof onResult === 'function' ? onResult(this.value) : this.value;
+  };
+
+  /**
+   * Proxy for a near rejection
+   * @param {*} reason
+   * @constructor
+   */
+  function NearRejectedProxy(reason) {
+    this.reason = reason;
+  }
+
+  NearRejectedProxy.prototype.when = function(_, onError) {
+    if(typeof onError === 'function') {
+      return onError(this.reason);
+    } else {
+      throw this.reason;
+    }
+  };
+
+  function updateStatus(value, status) {
+    value.then(statusFulfilled, statusRejected);
+
+    function statusFulfilled() { status.fulfilled(); }
+    function statusRejected(r) { status.rejected(r); }
+  }
+
+  /**
+   * Determines if x is promise-like, i.e. a thenable object
+   * NOTE: Will return true for *any thenable object*, and isn't truly
+   * safe, since it may attempt to access the `then` property of x (i.e.
+   *  clever/malicious getters may do weird things)
+   * @param {*} x anything
+   * @returns {boolean} true if x is promise-like
+   */
+  function isPromiseLike(x) {
+    return x && typeof x.then === 'function';
   }
 
   /**
@@ -1708,10 +1799,10 @@ var when = (function(global) {
   function _map(array, mapFunc, fallback) {
     return when(array, function(array) {
 
-      return promise(resolveMap);
+      return _promise(resolveMap);
 
       function resolveMap(resolve, reject, notify) {
-        var results, len, toResolve, resolveOne, i;
+        var results, len, toResolve, i;
 
         // Since we know the resulting length, we can preallocate the results
         // array to avoid array expansions.
@@ -1723,16 +1814,6 @@ var when = (function(global) {
           return;
         }
 
-        resolveOne = function(item, i) {
-          when(item, mapFunc, fallback).then(function(mapped) {
-            results[i] = mapped;
-
-            if(!--toResolve) {
-              resolve(results);
-            }
-          }, reject, notify);
-        };
-
         // Since mapFunc may be async, get all invocations of it into flight
         for(i = 0; i < len; i++) {
           if(i in array) {
@@ -1740,6 +1821,16 @@ var when = (function(global) {
           } else {
             --toResolve;
           }
+        }
+
+        function resolveOne(item, i) {
+          when(item, mapFunc, fallback).then(function(mapped) {
+            results[i] = mapped;
+
+            if(!--toResolve) {
+              resolve(results);
+            }
+          }, reject, notify);
         }
       }
     });
@@ -1812,11 +1903,14 @@ var when = (function(global) {
   }
 
   //
-  // Utilities, etc.
+  // Internals, utilities, etc.
   //
 
   var reduceArray, slice, fcall, nextTick, handlerQueue,
-    setTimeout, funcProto, call, arrayProto, undef;
+    setTimeout, funcProto, call, arrayProto, monitorApi,
+    cjsRequire, MutationObserver, undef;
+
+  cjsRequire = require;
 
   //
   // Shared handler queue processing
@@ -1834,15 +1928,8 @@ var when = (function(global) {
    */
   function enqueue(task) {
     if(handlerQueue.push(task) === 1) {
-      scheduleDrainQueue();
+      nextTick(drainQueue);
     }
-  }
-
-  /**
-   * Schedule the queue to be drained after the stack has cleared.
-   */
-  function scheduleDrainQueue() {
-    nextTick(drainQueue);
   }
 
   /**
@@ -1851,27 +1938,44 @@ var when = (function(global) {
    * processing until it is truly empty.
    */
   function drainQueue() {
-    var task, i = 0;
-
-    while(task = handlerQueue[i++]) {
-      task();
-    }
-
+    runHandlers(handlerQueue);
     handlerQueue = [];
   }
 
-  //
-  // Capture function and array utils
-  //
-  /*global setImmediate,process,vertx*/
-
-  // capture setTimeout to avoid being caught by fake timers used in time based tests
+  // capture setTimeout to avoid being caught by fake timers
+  // used in time based tests
   setTimeout = global.setTimeout;
-  // Prefer setImmediate, cascade to node, vertx and finally setTimeout
-  nextTick = typeof setImmediate === 'function' ? setImmediate.bind(global)
-    : typeof process === 'object' && process.nextTick ? process.nextTick
-    : typeof vertx === 'object' ? vertx.runOnLoop // vert.x
-      : function(task) { setTimeout(task, 0); }; // fallback
+
+  // Allow attaching the monitor to when() if env has no console
+  monitorApi = typeof console != 'undefined' ? console : when;
+
+  // Sniff "best" async scheduling option
+  // Prefer process.nextTick or MutationObserver, then check for
+  // vertx and finally fall back to setTimeout
+  /*global process*/
+  if (typeof process === 'object' && process.nextTick) {
+    nextTick = process.nextTick;
+  } else if(MutationObserver = global.MutationObserver || global.WebKitMutationObserver) {
+    nextTick = (function(document, MutationObserver, drainQueue) {
+      var el = document.createElement('div');
+      new MutationObserver(drainQueue).observe(el, { attributes: true });
+
+      return function() {
+        el.setAttribute('x', 'x');
+      };
+    }(document, MutationObserver, drainQueue));
+  } else {
+    try {
+      // vert.x 1.x || 2.x
+      nextTick = cjsRequire('vertx').runOnLoop || cjsRequire('vertx').runOnContext;
+    } catch(ignore) {
+      nextTick = function(t) { setTimeout(t, 0); };
+    }
+  }
+
+  //
+  // Capture/polyfill function and array utils
+  //
 
   // Safe function calls
   funcProto = Function.prototype;
@@ -1937,10 +2041,10 @@ var when = (function(global) {
   }
 
   return when;
-
 })(this);
-/*
- * History API JavaScript Library v4.0.0
+
+/*!
+ * History API JavaScript Library v4.0.8
  *
  * Support: IE8+, FF3+, Opera 9+, Safari, Chrome and other
  *
@@ -1952,15 +2056,17 @@ var when = (function(global) {
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Update: 19.05.13 22:46
+ * Update: 2013-10-31 16:06
  */
 (function(window) {
+    // Prevent the code from running if there is no window.history object
+    if (!window.history) return;
     // symlink to document
     var document = window.document;
     // HTML element
     var documentElement = document.documentElement;
     // symlink to sessionStorage
-    var sessionStorage = window['sessionStorage'];
+    var sessionStorage = null;
     // symlink to constructor of Object
     var Object = window['Object'];
     // symlink to JSON Object
@@ -2011,6 +2117,8 @@ var when = (function(global) {
     var stateStorage = {};
     // in this object will be stored custom handlers
     var eventsList = {};
+    // stored last title
+    var lastTitle = document.title;
 
     /**
      * Properties that will be replaced in the global
@@ -2021,6 +2129,21 @@ var when = (function(global) {
     var eventsDescriptors = {
         "onhashchange": null,
         "onpopstate": null
+    };
+
+    /**
+     * Fix for Chrome in iOS
+     * See https://github.com/devote/HTML5-History-API/issues/29
+     */
+    var fastFixChrome = function(method, args) {
+        var isNeedFix = window.history !== windowHistory;
+        if (isNeedFix) {
+            window.history = windowHistory;
+        }
+        method.apply(windowHistory, args);
+        if (isNeedFix) {
+            window.history = historyObject;
+        }
     };
 
     /**
@@ -2041,20 +2164,18 @@ var when = (function(global) {
             settings["type"] = type = type == null ? settings["type"] : type;
             if (window.top == window.self) {
                 var relative = parseURL(null, false, true)._relative;
-                var search = windowLocation.search;
-                var path = windowLocation.pathname;
+                var path = windowLocation.pathname + windowLocation.search;
                 if (isSupportHistoryAPI) {
+                    path = path.replace(/([^\/])$/, '$1/');
                     if (relative != basepath && (new RegExp("^" + basepath + "$", "i")).test(path)) {
                         windowLocation.replace(relative);
                     }
-                    if ((new RegExp("^" + basepath + "$", "i")).test(path + '/')) {
-                        windowLocation.replace(basepath);
-                    } else if (!(new RegExp("^" + basepath, "i")).test(path)) {
-                        windowLocation.replace(path.replace(/^\//, basepath) + search);
-                    }
                 } else if (path != basepath) {
-                    windowLocation.replace(basepath + '#' + path.
-                        replace(new RegExp("^" + basepath, "i"), type) + search + windowLocation.hash);
+                    path = path.replace(/([^\/])\?/, '$1/?');
+                    if ((new RegExp("^" + basepath, "i")).test(path)) {
+                        windowLocation.replace(basepath + '#' + path.
+                            replace(new RegExp("^" + basepath, "i"), type) + windowLocation.hash);
+                    }
                 }
             }
         },
@@ -2068,8 +2189,14 @@ var when = (function(global) {
          * @param {string} [url]
          */
         pushState: function(state, title, url) {
-            historyPushState && historyPushState.apply(windowHistory, arguments);
+            var t = document.title;
+            if (lastTitle != null) {
+                document.title = lastTitle;
+            }
+            historyPushState && fastFixChrome(historyPushState, arguments);
             changeState(state, url);
+            document.title = t;
+            lastTitle = title;
         },
         /**
          * The method updates the state object,
@@ -2082,9 +2209,15 @@ var when = (function(global) {
          * @param {string} [url]
          */
         replaceState: function(state, title, url) {
+            var t = document.title;
+            if (lastTitle != null) {
+                document.title = lastTitle;
+            }
             delete stateStorage[windowLocation.href];
-            historyReplaceState && historyReplaceState.apply(windowHistory, arguments);
+            historyReplaceState && fastFixChrome(historyReplaceState, arguments);
             changeState(state, url, true);
+            document.title = t;
+            lastTitle = title;
         },
         /**
          * Object 'history.location' is similar to the
@@ -2258,8 +2391,10 @@ var when = (function(global) {
      */
     function parseURL(href, isWindowLocation, isNotAPI) {
         var re = /(?:([\w0-9]+:))?(?:\/\/(?:[^@]*@)?([^\/:\?#]+)(?::([0-9]+))?)?([^\?#]*)(?:(\?[^#]+)|\?)?(?:(#.*))?/;
-        if (href && !isWindowLocation) {
+        if (href != null && href !== '' && !isWindowLocation) {
             var current = parseURL(), _pathname = current._pathname, _protocol = current._protocol;
+            // convert to type of string
+            href = '' + href;
             // convert relative link to the absolute
             href = /^(?:[\w0-9]+\:)?\/\//.test(href) ? href.indexOf("/") === 0
                 ? _protocol + href : href : _protocol + "//" + current._host + (
@@ -2313,7 +2448,7 @@ var when = (function(global) {
     /**
      * Initializing storage for the custom state's object
      */
-    function storageInitialize(JSON) {
+    function storageInitialize() {
         var storage = '';
         if (sessionStorage) {
             // get cache from the storage in browser
@@ -2690,19 +2825,32 @@ var when = (function(global) {
     }
 
     /**
-     * handler url with anchor for non-HTML5 browsers
+     * Finds the closest ancestor anchor element (including the target itself).
      *
-     * @param e
+     * @param {HTMLElement} target The element to start scanning from.
+     * @return {HTMLElement} An element which is the closest ancestor anchor.
+     */
+    function anchorTarget(target) {
+        while (target) {
+            if (target.nodeName === 'A') return target;
+            target = target.parentNode;
+        }
+    }
+
+    /**
+     * Handles anchor elements with a hash fragment for non-HTML5 browsers
+     *
+     * @param {Event} e
      */
     function onAnchorClick(e) {
         var event = e || window.event;
-        var target = event.target || event.srcElement;
+        var target = anchorTarget(event.target || event.srcElement);
         var defaultPrevented = "defaultPrevented" in event ? event['defaultPrevented'] : event.returnValue === false;
         if (target && target.nodeName === "A" && !defaultPrevented) {
             var current = parseURL();
             var expect = parseURL(target.getAttribute("href", 2));
             var isEqualBaseURL = current._href.split('#').shift() === expect._href.split('#').shift();
-            if (isEqualBaseURL) {
+            if (isEqualBaseURL && expect._hash) {
                 if (current._hash !== expect._hash) {
                     historyObject.location.hash = expect._hash;
                 }
@@ -2745,6 +2893,15 @@ var when = (function(global) {
         arg.replace(/(\w+)(?:=([^&]*))?/g, function(a, key, value) {
             settings[key] = (value || (key === 'basepath' ? '/' : '')).replace(/^(0|false)$/, '');
         });
+
+        /**
+         * sessionStorage throws error when cookies are disabled
+         * Chrome content settings when running the site in a Facebook IFrame.
+         * see: https://github.com/devote/HTML5-History-API/issues/34
+         */
+        try {
+            sessionStorage = window['sessionStorage'];
+        } catch(_e_) {}
 
         /**
          * hang up the event handler to listen to the events hashchange
@@ -2804,7 +2961,7 @@ var when = (function(global) {
 
         // If browser does not support object 'state' in interface 'History'
         if (!isSupportStateObjectInHistory && JSON) {
-            storageInitialize(JSON);
+            storageInitialize();
         }
 
         // track clicks on anchors
