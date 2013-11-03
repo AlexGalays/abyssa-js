@@ -103,7 +103,7 @@ function State() {
   }
 
   /*
-  * The map of child states by name.
+  * The map of initial child states by name.
   */
   function getStates(options) {
     var states = {};

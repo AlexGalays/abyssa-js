@@ -164,11 +164,13 @@ State('some/path/:slug/:id')
 ```
 Or four different states to represent that path:
 ```javascript
-State('some')
-State('path')
-State(':slug')
-State(':id')
-
+State('some', {
+  child: State('path', {
+    grandchild: State(':slug', {
+      grandgrandchild: State(':id')
+    })
+  })
+})
 ```
 
 ### addState (name: String, state: State): State
@@ -221,8 +223,10 @@ var router = Router({
 Or using the imperative form:  
 ```javascript
 var router = Router();
-var articles = State('articles');
+var articles = State('articles');  
+
 articles.addState('item', State(':id'));
+router.addState(articles);
 router.init();
 ```
 
