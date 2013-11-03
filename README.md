@@ -1,4 +1,6 @@
-# Abyssa
+
+![abyssa-logo](http://i171.photobucket.com/albums/u320/boubiyeah/abyssa-logo_zps745ae9eb.png)
+
 A stateful router library for single page applications, with no dependencies.
 
 # Content
