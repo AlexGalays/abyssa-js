@@ -6,10 +6,20 @@ function Transition(fromState, toState, params, paramDiff) {
   var root,
       cancelled,
       enters,
-      transition,
+      transitionPromise,
       exits = [],
       error,
       paramOnlyChange = (fromState == toState);
+
+  var transition = {
+    from: fromState,
+    to: toState,
+    toParams: params,
+    then: then,
+    cancel: cancel,
+    cancelled: cancelled,
+    currentState: fromState
+  };
 
   // The first transition has no fromState.
   if (fromState) {
@@ -19,34 +29,24 @@ function Transition(fromState, toState, params, paramDiff) {
 
   enters = transitionStates(toState, root, paramOnlyChange).reverse();
 
-  transition = prereqs(enters, exits, params).then(function() {
-    if (!cancelled) doTransition(enters, exits, params, isCancelled);
+  transitionPromise = prereqs(enters, exits, params).then(function() {
+    if (!cancelled) doTransition(enters, exits, params, transition);
   });
 
   asyncPromises.newTransitionStarted();
 
   function then(completed, failed) {
-    return transition.then(
+    return transitionPromise.then(
       function success() { if (!cancelled) completed(); },
       function fail(error) { if (!cancelled) failed(error); }
     );
   }
 
   function cancel() {
-    cancelled = true;
+    cancelled = transition.cancelled = true;
   }
 
-  function isCancelled() {
-    return cancelled;
-  }
-
-  return {
-    from: fromState,
-    to: toState,
-    toParams: params,
-    then: then,
-    cancel: cancel
-  };
+  return transition;
 }
 
 /*
@@ -85,16 +85,22 @@ function prereqs(enters, exits, params) {
   }));
 }
 
-function doTransition(enters, exits, params, isCancelled) {
+function doTransition(enters, exits, params, transition) {
   exits.forEach(function(state) {
     state.exit(state._exitPrereqs && state._exitPrereqs.value);
   });
 
+  // Async promises are only allowed in 'enter' hooks.
+  // Make it explicit to prevent programming errors.
   asyncPromises.allowed = true;
+
   enters.forEach(function(state) {
-    if (!isCancelled())
+    if (!transition.cancelled) {
+      transition.currentState = state;
       state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
+    }
   });
+
   asyncPromises.allowed = false;
 }
 

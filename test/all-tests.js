@@ -1102,12 +1102,14 @@ test('Redirects', function() {
   stop();
 
   var oldRouteChildEntered;
+  var oldRouteExited;
   var newRouteEntered;
 
   var router = Router({
 
     oldRoute: State('oldRoute', {
       enter: function() { router.redirect('newRoute'); },
+      exit: function() { oldRouteExited = true; },
 
       oldRouteChild: State('child', function() { oldRouteChildEntered = true; })
     }),
@@ -1119,6 +1121,7 @@ test('Redirects', function() {
   nextTick().then(assertions);
 
   function assertions() {
+    ok(oldRouteExited, 'Any entered state should be exited, even if it simply redirected');
     ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered');
     ok(newRouteEntered);
 

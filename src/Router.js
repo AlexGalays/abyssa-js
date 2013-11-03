@@ -39,24 +39,27 @@ function Router(declarativeStates) {
   function setState(state, params) {
     if (isSameState(state, params)) return;
 
+    var fromState = currentState;
+
     if (transition) {
       log('Cancelling existing transition from {0} to {1}',
         transition.from, transition.to);
+
       transition.cancel();
       router.transition.cancelled.dispatch(transition.from, transition.to);
+      fromState = transition.currentState;
     }
 
     if (logEnabled) log('Starting transition from {0}:{1} to {2}:{3}',
-      currentState, JSON.stringify(currentParams),
+      fromState, JSON.stringify(currentParams),
       state, JSON.stringify(params));
 
-    router.transition.started.dispatch(currentState, state);
-    transition = Transition(currentState, state, params, paramDiff(currentParams, params));
+    router.transition.started.dispatch(fromState, state);
+    transition = Transition(fromState, state, params, paramDiff(currentParams, params));
 
     transition.then(
       function success() {
-        var oldState = currentState,
-            historyState;
+        var historyState;
 
         currentState = state;
         currentParams = params;
@@ -68,16 +71,16 @@ function Router(declarativeStates) {
             history.pushState(historyState, document.title, historyState);
         }
 
-        log('Transition from {0} to {1} completed', oldState, state);
-        router.transition.completed.dispatch(oldState, currentState);
+        log('Transition from {0} to {1} completed', fromState, state);
+        router.transition.completed.dispatch(fromState, state);
 
         firstTransition = false;
       },
       function fail(error) {
         transition = null;
 
-        logError('Transition from {0} to {1} failed: {2}', currentState, state, error);
-        router.transition.failed.dispatch(currentState, state);
+        logError('Transition from {0} to {1} failed: {2}', fromState, state, error);
+        router.transition.failed.dispatch(fromState, state);
       });
   }
 
@@ -228,6 +231,14 @@ function Router(declarativeStates) {
     else setStateForPathQuery(pathQueryOrName);
   }
 
+  /*
+  * An alias of 'state'. You can use 'redirect' when it makes more sense semantically.
+  */
+  function redirect(pathQueryOrName, params) {
+    log('Redirecting...');
+    state(pathQueryOrName, params);
+  }
+
   function setStateForPathQuery(pathQuery) {
     currentPathQuery = pathQuery;
     stateFound = false;
@@ -332,7 +343,7 @@ function Router(declarativeStates) {
   router.configure = configure;
   router.init = init;
   router.state = state;
-  router.redirect = state;
+  router.redirect = redirect;
   router.addState = addState;
   router.link = link;
 

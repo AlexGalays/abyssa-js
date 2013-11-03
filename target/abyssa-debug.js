@@ -2904,10 +2904,20 @@ function Transition(fromState, toState, params, paramDiff) {
   var root,
       cancelled,
       enters,
-      transition,
+      transitionPromise,
       exits = [],
       error,
       paramOnlyChange = (fromState == toState);
+
+  var transition = {
+    from: fromState,
+    to: toState,
+    toParams: params,
+    then: then,
+    cancel: cancel,
+    cancelled: cancelled,
+    currentState: fromState
+  };
 
   // The first transition has no fromState.
   if (fromState) {
@@ -2917,34 +2927,24 @@ function Transition(fromState, toState, params, paramDiff) {
 
   enters = transitionStates(toState, root, paramOnlyChange).reverse();
 
-  transition = prereqs(enters, exits, params).then(function() {
-    if (!cancelled) doTransition(enters, exits, params, isCancelled);
+  transitionPromise = prereqs(enters, exits, params).then(function() {
+    if (!cancelled) doTransition(enters, exits, params, transition);
   });
 
   asyncPromises.newTransitionStarted();
 
   function then(completed, failed) {
-    return transition.then(
+    return transitionPromise.then(
       function success() { if (!cancelled) completed(); },
       function fail(error) { if (!cancelled) failed(error); }
     );
   }
 
   function cancel() {
-    cancelled = true;
+    cancelled = transition.cancelled = true;
   }
 
-  function isCancelled() {
-    return cancelled;
-  }
-
-  return {
-    from: fromState,
-    to: toState,
-    toParams: params,
-    then: then,
-    cancel: cancel
-  };
+  return transition;
 }
 
 /*
@@ -2983,16 +2983,22 @@ function prereqs(enters, exits, params) {
   }));
 }
 
-function doTransition(enters, exits, params, isCancelled) {
+function doTransition(enters, exits, params, transition) {
   exits.forEach(function(state) {
     state.exit(state._exitPrereqs && state._exitPrereqs.value);
   });
 
+  // Async promises are only allowed in 'enter' hooks.
+  // Make it explicit to prevent programming errors.
   asyncPromises.allowed = true;
+
   enters.forEach(function(state) {
-    if (!isCancelled())
+    if (!transition.cancelled) {
+      transition.currentState = state;
       state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
+    }
   });
+
   asyncPromises.allowed = false;
 }
 
@@ -3193,7 +3199,7 @@ function State() {
   }
 
   /*
-  * The map of child states by name.
+  * The map of initial child states by name.
   */
   function getStates(options) {
     var states = {};
@@ -3369,24 +3375,27 @@ function Router(declarativeStates) {
   function setState(state, params) {
     if (isSameState(state, params)) return;
 
+    var fromState = currentState;
+
     if (transition) {
       log('Cancelling existing transition from {0} to {1}',
         transition.from, transition.to);
+
       transition.cancel();
       router.transition.cancelled.dispatch(transition.from, transition.to);
+      fromState = transition.currentState;
     }
 
     if (logEnabled) log('Starting transition from {0}:{1} to {2}:{3}',
-      currentState, JSON.stringify(currentParams),
+      fromState, JSON.stringify(currentParams),
       state, JSON.stringify(params));
 
-    router.transition.started.dispatch(currentState, state);
-    transition = Transition(currentState, state, params, paramDiff(currentParams, params));
+    router.transition.started.dispatch(fromState, state);
+    transition = Transition(fromState, state, params, paramDiff(currentParams, params));
 
     transition.then(
       function success() {
-        var oldState = currentState,
-            historyState;
+        var historyState;
 
         currentState = state;
         currentParams = params;
@@ -3398,16 +3407,16 @@ function Router(declarativeStates) {
             history.pushState(historyState, document.title, historyState);
         }
 
-        log('Transition from {0} to {1} completed', oldState, state);
-        router.transition.completed.dispatch(oldState, currentState);
+        log('Transition from {0} to {1} completed', fromState, state);
+        router.transition.completed.dispatch(fromState, state);
 
         firstTransition = false;
       },
       function fail(error) {
         transition = null;
 
-        logError('Transition from {0} to {1} failed: {2}', currentState, state, error);
-        router.transition.failed.dispatch(currentState, state);
+        logError('Transition from {0} to {1} failed: {2}', fromState, state, error);
+        router.transition.failed.dispatch(fromState, state);
       });
   }
 
@@ -3558,6 +3567,14 @@ function Router(declarativeStates) {
     else setStateForPathQuery(pathQueryOrName);
   }
 
+  /*
+  * An alias of 'state'. You can use 'redirect' when it makes more sense semantically.
+  */
+  function redirect(pathQueryOrName, params) {
+    log('Redirecting...');
+    state(pathQueryOrName, params);
+  }
+
   function setStateForPathQuery(pathQuery) {
     currentPathQuery = pathQuery;
     stateFound = false;
@@ -3662,7 +3679,7 @@ function Router(declarativeStates) {
   router.configure = configure;
   router.init = init;
   router.state = state;
-  router.redirect = state;
+  router.redirect = redirect;
   router.addState = addState;
   router.link = link;
 
