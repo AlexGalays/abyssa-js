@@ -1,7 +1,5 @@
-// abyssa-js 1.1.9
-define(function() {
+/* abyssa 1.2.0 - A stateful router library for single page applications */
 
-var Abyssa = {};
 /*jslint indent:4, white:true, nomen:true, plusplus:true */
 /*global define:false, require:false, exports:false, module:false, signals:false */
 
@@ -2862,6 +2860,26 @@ var when = (function(global) {
     window[dispatchEventName] = dispatchEvent;
 
 })(window);
+(function (factory) {
+
+  // No AMD/CommonJS dependencies for now, just use the local (slighty modified) lib/ files.
+  // html5-history-api is not in npm yet. To be continued.
+
+  if (typeof define === 'function' && define.amd) {
+    define([], factory);
+  }
+  else if (typeof exports === "object") {
+    module.exports = factory();
+  }
+  else {
+    window.Abyssa = factory();
+  }
+
+})(function() {
+  var Abyssa = {};
+  var Signal = signals.Signal;
+
+
 
 function isString(instance) {
    return Object.prototype.toString.call(instance) == '[object String]';
@@ -3824,7 +3842,6 @@ var interceptAnchorClicks = (function() {
 
 
 })();
-
 
 return Abyssa;
 

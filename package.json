@@ -1,0 +1,31 @@
+{
+    "name": "abyssa",
+    "description": "A stateful router library for single page applications",
+    "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState"],
+    "homepage": "https://github.com/AlexGalays/abyssa-js/",
+    "version": "1.2.0",
+    "author": {
+        "name": "Alexandre Galays",
+        "url": "https://github.com/AlexGalays/"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/AlexGalays/abyssa-js.git"
+    },
+    "main": "target/abyssa.js",
+    "bugs": {
+        "url": "https://github.com/AlexGalays/abyssa-js/issues"
+    },
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "http://www.opensource.org/licenses/mit-license.php"
+        }
+    ],
+    "devDependencies": {
+        "grunt": "~0.4.0",
+        "grunt-contrib-uglify": "~0.2",
+        "grunt-contrib-concat": "~0.3.0",
+        "grunt-contrib-watch": "~0.5.0"
+    }
+}
