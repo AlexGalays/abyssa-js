@@ -110,10 +110,14 @@ An alias of `state`. You can use `redirect` when it makes more sense semanticall
 Compute a link that can be used in anchors' href attributes  
 from a state name and a list of params, a.k.a reverse routing.
 
+### currentState(): [StateWithParams](#api-stateWithParams)
+Returns the current state of the router.
+
+
 ### Signals
 
 The router dispatches some signals. The signals' API is: `add`, `addOnce` and `remove`.  
-All signals receive the current state and the next state as arguments.
+All signals receive the current state and the next state as arguments (of type [StateWithParams](#api-stateWithParams)).
 
 #### router.transition.started
 Dispatched when a transition started.
@@ -152,6 +156,47 @@ var router = Router();
 router.addState('index', State());
 ```
 
+
+<a name="api-stateWithParams"></a>
+## StateWithParams
+StateWithParams is the merge between a State object (created and added to the router before init)
+and params (both path and query params, extracted from the URL after init).  
+Instances of StateWithParams are returned from router.currentState() and passed in signal handlers.  
+
+### data (key: String, value: Any): Any | State
+Same as State's data.
+
+### is(fullName: String): Boolean
+Returns whether this state has the given fullName.
+
+### isIn(fullName: String):Boolean
+Returns whether this state or any of its parents has the given fullName.
+
+Example:  
+```javascript
+
+var router = Router({
+
+  books: State('books', {
+    myData: 33,
+    listing: State(':kind')
+  })
+
+}).init('books/scifi?limit=10');
+
+var state = router.currentState();
+
+// state looks as follow:
+
+{
+  name: 'listing',
+  fullName: 'books.listing',
+  params: {kind: 'scifi', limit: 10},
+  data, // Here, state.data('myData') == 33
+  is, // state.is('books.listing') == true
+  isIn // state.isIn('books') == true
+}
+```
 
 <a name="api-state"></a>
 ## State

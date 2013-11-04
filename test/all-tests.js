@@ -859,7 +859,7 @@ asyncTest('Data can be stored on states and later retrieved', function() {
     equal(newState.data('otherData'), 5);
 
     // The parent can see its own data
-    equal(newState.parent.data('someArbitraryData'), 3);
+    equal(newState._state.parent.data('someArbitraryData'), 3);
 
     start();
   });
@@ -1130,6 +1130,73 @@ test('Redirects', function() {
 
 });
 
+
+function stateWithParamsAssertions(state) {
+  ok(state.name, 'state1Child');
+  ok(state.fullName, 'state1.state1Child');
+
+  ok(state.data('myData'), 666);
+
+  ok(state.params.id, 33);
+  ok(state.params.category, 'misc');
+  ok(state.params.filter, true);
+
+  ok(state.is('state1.state1Child'));
+  ok(!state.is('state1'));
+  ok(state.isIn('state1'));
+  ok(state.isIn('state1.state1Child'));
+  ok(!state.isIn('state2'));
+}
+
+test('signal handlers are passed StateWithParams objects', function() {
+  stop();
+
+  var router = Router({
+
+    state1: State('state1/:id', {
+      state1Child: State(':category', {
+        myData: 666
+      })
+    }),
+
+    state2: State('state2/:country/:city')
+
+  }).init('state1/33/misc?filter=true');
+
+
+  router.transition.completed.add(function(oldState, newState) {
+    stateWithParamsAssertions(newState);
+    start();
+  });
+
+});
+
+
+test('router.currentState', function() {
+  stop();
+
+  var router = Router({
+
+    state1: State('state1/:id', {
+      state1Child: State(':category', {
+        enter: assertions,
+        myData: 666
+      })
+    }),
+
+    state2: State('state2/:country/:city')
+
+  }).init('state1/33/misc?filter=true');
+
+
+  function assertions() {
+    var state = router.currentState();
+    stateWithParamsAssertions(state);
+
+    start();
+  }
+
+});
 
 
 function delay(time, value) {

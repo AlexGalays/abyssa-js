@@ -12,6 +12,7 @@ module.exports = function(grunt) {
   var srcFiles = [
     'src/header.js',
     'src/util.js',
+    'src/StateWithParams.js',
     'src/Transition.js',
     'src/State.js',
     'src/Router.js',

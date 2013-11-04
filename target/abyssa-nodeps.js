@@ -1,4 +1,4 @@
-/* abyssa 1.2.0 - A stateful router library for single page applications */
+/* abyssa 1.2.3 - A stateful router library for single page applications */
 
 (function (factory) {
 
@@ -56,17 +56,70 @@ function objectSize(obj) {
   return size;
 }
 
+var StateWithParams = (function() {
+
+  /*
+  * Creates a new StateWithParams instance.
+  *
+  * StateWithParams is the merge between a State object (created and added to the router before init)
+  * and params (both path and query params, extracted from the URL after init)
+  */
+  function StateWithParams(state, params) {
+    return {
+      _state: state,
+      name: state && state.name,
+      fullName: state && state.fullName,
+      data: state && state.data,
+      params: params,
+      is: is,
+      isIn: isIn,
+      toString: toString
+    };
+  }
+
+  /*
+  * Returns whether this state has the given fullName.
+  */
+  function is(fullStateName) {
+    return this.fullName == fullStateName;
+  }
+
+  /*
+  * Returns whether this state or any of its parents has the given fullName.
+  */
+  function isIn(fullStateName) {
+    var current = this._state;
+    while (current) {
+      if (current.fullName == fullStateName) return true;
+      current = current.parent;
+    }
+    return false;
+  }
+
+  function toString() {
+    return this.fullName + ':' + JSON.stringify(this.params)
+  }
+
+
+  return StateWithParams;
+
+})();
+
 /*
 * Create a new Transition instance.
 */
-function Transition(fromState, toState, params, paramDiff) {
+function Transition(fromStateWithParams, toStateWithParams, paramDiff) {
   var root,
       cancelled,
       enters,
       transitionPromise,
-      exits = [],
       error,
-      paramOnlyChange = (fromState == toState);
+      exits = [];
+
+  var fromState = fromStateWithParams && fromStateWithParams._state;
+  var toState = toStateWithParams._state;
+  var params = toStateWithParams.params;
+  var paramOnlyChange = (fromState == toState);
 
   var transition = {
     from: fromState,
@@ -498,7 +551,7 @@ Abyssa.State = State;
 * Create a new Router instance, passing any state defined declaratively.
 * More states can be added using addState() before the router is initialized.
 *
-* Because a router manages global state (The URL), only one instance of Router
+* Because a router manages global state (the URL), only one instance of Router
 * should be used inside an application.
 */
 function Router(declarativeStates) {
@@ -513,7 +566,6 @@ function Router(declarativeStates) {
       },
       currentPathQuery,
       currentState,
-      currentParams,
       transition,
       leafStates,
       stateFound,
@@ -534,49 +586,71 @@ function Router(declarativeStates) {
   function setState(state, params) {
     if (isSameState(state, params)) return;
 
-    var fromState = currentState;
+    var fromState;
+    var toState = StateWithParams(state, params);
 
     if (transition) {
-      log('Cancelling existing transition from {0} to {1}',
-        transition.from, transition.to);
-
-      transition.cancel();
-      router.transition.cancelled.dispatch(transition.from, transition.to);
-      fromState = transition.currentState;
+      cancelTransition();
+      fromState = StateWithParams(transition.currentState, transition.toParams);
+    }
+    else {
+      fromState = currentState;
     }
 
-    if (logEnabled) log('Starting transition from {0}:{1} to {2}:{3}',
-      fromState, JSON.stringify(currentParams),
-      state, JSON.stringify(params));
+    // While the transition is running, any code asking the router about the current state should
+    // get the end result state. The currentState is rollbacked if the transition fails.
+    currentState = toState;
 
-    router.transition.started.dispatch(fromState, state);
-    transition = Transition(fromState, state, params, paramDiff(currentParams, params));
+    startingTransition(fromState, toState);
+
+    transition = Transition(
+      fromState,
+      toState,
+      paramDiff(fromState && fromState.params, params));
 
     transition.then(
       function success() {
         var historyState;
 
-        currentState = state;
-        currentParams = params;
         transition = null;
 
         if (!poppedState && !firstTransition) {
-            historyState = ('/' + currentPathQuery).replace('//', '/');
-            log('Pushing state: {0}', historyState);
-            history.pushState(historyState, document.title, historyState);
+          historyState = ('/' + currentPathQuery).replace('//', '/');
+          log('Pushing state: {0}', historyState);
+          history.pushState(historyState, document.title, historyState);
         }
 
-        log('Transition from {0} to {1} completed', fromState, state);
-        router.transition.completed.dispatch(fromState, state);
-
-        firstTransition = false;
+        transitionCompleted(fromState, toState);
       },
       function fail(error) {
         transition = null;
+        currentState = fromState;
 
-        logError('Transition from {0} to {1} failed: {2}', fromState, state, error);
-        router.transition.failed.dispatch(fromState, state);
+        logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
+        router.transition.failed.dispatch(fromState, toState);
       });
+  }
+
+  function cancelTransition() {
+    log('Cancelling existing transition from {0} to {1}',
+      transition.from, transition.to);
+
+    transition.cancel();
+
+    router.transition.cancelled.dispatch(transition.from, transition.to);
+  }
+
+  function startingTransition(fromState, toState) {
+    log('Starting transition from {0} to {1}', fromState, toState);
+
+    router.transition.started.dispatch(fromState, toState);
+  }
+
+  function transitionCompleted(fromState, toState) {
+    log('Transition from {0} to {1} completed', fromState, toState);
+
+    router.transition.completed.dispatch(fromState, toState);
+    firstTransition = false;
   }
 
   /*
@@ -590,9 +664,9 @@ function Router(declarativeStates) {
       state = transition.to;
       params = transition.toParams;
     }
-    else {
-      state = currentState;
-      params = currentParams;
+    else if (currentState) {
+      state = currentState._state;
+      params = currentState.params;
     }
 
     diff = paramDiff(params, newParams);
@@ -833,6 +907,14 @@ function Router(declarativeStates) {
     return '/' + state.route.interpolate(params).replace('/?', '?');
   }
 
+  /*
+  * Returns a StateWithParams object representing the current state of the router.
+  */
+  function getCurrentState() {
+    return currentState;
+  }
+
+
   // Public methods
 
   router.configure = configure;
@@ -841,6 +923,7 @@ function Router(declarativeStates) {
   router.redirect = redirect;
   router.addState = addState;
   router.link = link;
+  router.currentState = getCurrentState;
 
 
   // Signals
@@ -880,11 +963,8 @@ function Router(declarativeStates) {
 // Logging
 
 var log = logError = noop;
-var logEnabled = false;
 
 Router.enableLogs = function() {
-  logEnabled = true;
-
   log = function() {
     console.log(getLogMessage(arguments));
   };

@@ -2,14 +2,18 @@
 /*
 * Create a new Transition instance.
 */
-function Transition(fromState, toState, params, paramDiff) {
+function Transition(fromStateWithParams, toStateWithParams, paramDiff) {
   var root,
       cancelled,
       enters,
       transitionPromise,
-      exits = [],
       error,
-      paramOnlyChange = (fromState == toState);
+      exits = [];
+
+  var fromState = fromStateWithParams && fromStateWithParams._state;
+  var toState = toStateWithParams._state;
+  var params = toStateWithParams.params;
+  var paramOnlyChange = (fromState == toState);
 
   var transition = {
     from: fromState,
