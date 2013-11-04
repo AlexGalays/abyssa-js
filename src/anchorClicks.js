@@ -50,16 +50,21 @@ var interceptAnchorClicks = (function() {
   }
 
   function isLocalLink(anchor) {
-    var host = anchor.host;
+    var hostname = anchor.hostname;
+    var port = anchor.port;
 
-    // IE10 and below can lose the host property when setting a relative href from JS
-    if (!host) {
+    // IE10 and below can lose the hostname/port property when setting a relative href from JS
+    if (!hostname) {
       var tempAnchor = document.createElement("a");
       tempAnchor.href = anchor.href;
-      host = tempAnchor.host;
+      hostname = tempAnchor.hostname;
+      port = tempAnchor.port;
     }
 
-    return (host == location.host);
+    var sameHostname = (hostname == location.hostname);
+    var samePort = (port || '80') == (location.port || '80');
+
+    return sameHostname && samePort;
   }
 
 

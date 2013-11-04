@@ -1,4 +1,4 @@
-/* abyssa 1.2.3 - A stateful router library for single page applications */
+/* abyssa 1.2.4 - A stateful router library for single page applications */
 
 /*jslint indent:4, white:true, nomen:true, plusplus:true */
 /*global define:false, require:false, exports:false, module:false, signals:false */
@@ -4055,16 +4055,21 @@ var interceptAnchorClicks = (function() {
   }
 
   function isLocalLink(anchor) {
-    var host = anchor.host;
+    var hostname = anchor.hostname;
+    var port = anchor.port;
 
-    // IE10 and below can lose the host property when setting a relative href from JS
-    if (!host) {
+    // IE10 and below can lose the hostname/port property when setting a relative href from JS
+    if (!hostname) {
       var tempAnchor = document.createElement("a");
       tempAnchor.href = anchor.href;
-      host = tempAnchor.host;
+      hostname = tempAnchor.hostname;
+      port = tempAnchor.port;
     }
 
-    return (host == location.host);
+    var sameHostname = (hostname == location.hostname);
+    var samePort = (port || '80') == (location.port || '80');
+
+    return sameHostname && samePort;
   }
 
 
