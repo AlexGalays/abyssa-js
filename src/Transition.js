@@ -1,4 +1,6 @@
 
+var when = require('when');
+
 /*
 * Create a new Transition instance.
 */
@@ -153,7 +155,7 @@ function transitionStates(state, root, paramOnlyChange) {
 }
 
 
-var asyncPromises = (function () {
+var asyncPromises = Transition.asyncPromises = (function () {
 
   var that;
   var activeDeferreds = [];
@@ -199,4 +201,4 @@ var asyncPromises = (function () {
 })();
 
 
-Abyssa.Async = asyncPromises.register;
+module.exports = Transition;

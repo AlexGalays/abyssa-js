@@ -1,4 +1,12 @@
 
+var Signal = require('signals').Signal,
+    crossroads = require('crossroads'),
+
+    interceptAnchorClicks = require('./anchorClicks'),
+    StateWithParams = require('./StateWithParams'),
+    Transition = require('./Transition'),
+    util = require('./util');
+
 /*
 * Create a new Router instance, passing any state defined declaratively.
 * More states can be added using addState() before the router is initialized.
@@ -8,8 +16,7 @@
 */
 function Router(declarativeStates) {
   var router = {},
-      states = copyObject(declarativeStates),
-      // Abyssa internally depends on the lower-level crossroads.js router.
+      states = util.copyObject(declarativeStates),
       roads  = crossroads.create(),
       firstTransition = true,
       initOptions = {
@@ -123,7 +130,7 @@ function Router(declarativeStates) {
 
     diff = paramDiff(params, newParams);
 
-    return (newState == state) && (objectSize(diff) == 0);
+    return (newState == state) && (util.objectSize(diff) == 0);
   }
 
   /*
@@ -157,7 +164,7 @@ function Router(declarativeStates) {
   * Configure the router before its initialization.
   */
   function configure(options) {
-    mergeObjects(initOptions, options);
+    util.mergeObjects(initOptions, options);
     return router;
   }
 
@@ -232,7 +239,7 @@ function Router(declarativeStates) {
       });
     }
 
-    callbackIfLeaf(objectToArray(states));
+    callbackIfLeaf(util.objectToArray(states));
   }
 
   /*
@@ -318,11 +325,11 @@ function Router(declarativeStates) {
       return '';
     });
 
-    if (query) mergeObjects(params, query);
+    if (query) util.mergeObjects(params, query);
 
     // Decode all params
     for (var i in params) {
-      if (isString(params[i])) params[i] = decodeURIComponent(params[i]);
+      if (util.isString(params[i])) params[i] = decodeURIComponent(params[i]);
     }
 
     return params;
@@ -341,7 +348,7 @@ function Router(declarativeStates) {
     if (!state) throw new Error('Cannot find state ' + stateName);
 
     [state].concat(state.parents).forEach(function(s) {
-      mergeObjects(allQueryParams, s.queryParams);
+      util.mergeObjects(allQueryParams, s.queryParams);
     });
 
     // The passed params are path and query params lumped together,
@@ -414,7 +421,7 @@ function Router(declarativeStates) {
 
 // Logging
 
-var log = logError = noop;
+var log = logError = util.noop;
 
 Router.enableLogs = function() {
   log = function() {
@@ -437,4 +444,4 @@ Router.enableLogs = function() {
 };
 
 
-Abyssa.Router = Router;
+module.exports = Router;

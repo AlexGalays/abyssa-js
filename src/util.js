@@ -33,3 +33,13 @@ function objectSize(obj) {
   for (var key in obj) size++;
   return size;
 }
+
+module.exports = {
+  isString: isString,
+  noop: noop,
+  arrayToObject: arrayToObject,
+  objectToArray: objectToArray,
+  copyObject: copyObject,
+  mergeObjects: mergeObjects,
+  objectSize: objectSize
+};

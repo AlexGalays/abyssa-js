@@ -1,4 +1,7 @@
 
+var util = require('./util');
+var async = require('./Transition').asyncPromises.register;
+
 /*
 * Create a new State instance.
 *
@@ -33,8 +36,8 @@ function State() {
   state.queryParams = args.queryParams;
   state.states = states;
 
-  state.enter = options.enter || noop;
-  state.exit = options.exit || noop;
+  state.enter = options.enter || util.noop;
+  state.exit = options.exit || util.noop;
   state.enterPrereqs = options.enterPrereqs;
   state.exitPrereqs = options.exitPrereqs;
 
@@ -50,7 +53,7 @@ function State() {
     state.children = getChildren();
     state.fullName = getFullName();
     state.root = state.parents[state.parents.length - 1];
-    state.async = Abyssa.Async;
+    state.async = async;
 
     eachChildState(function(name, childState) {
       childState.init(name, state);
@@ -209,7 +212,7 @@ function getArgs(args) {
       param;
 
   if (args.length == 1) {
-    if (isString(arg1)) result.path = arg1;
+    if (util.isString(arg1)) result.path = arg1;
     else result.options = arg1;
   }
   else if (args.length == 2) {
@@ -222,7 +225,7 @@ function getArgs(args) {
   if (queryIndex != -1) {
     result.queryParams = result.path.slice(queryIndex + 1);
     result.path = result.path.slice(0, queryIndex);
-    result.queryParams = arrayToObject(result.queryParams.split('&'));
+    result.queryParams = util.arrayToObject(result.queryParams.split('&'));
   }
 
   // Replace dynamic params like :id with {id}, which is what crossroads uses,
@@ -237,4 +240,4 @@ function getArgs(args) {
 }
 
 
-Abyssa.State = State;
+module.exports = State;

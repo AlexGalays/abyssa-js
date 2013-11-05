@@ -2,52 +2,60 @@ module.exports = function(grunt) {
 
   var banner = '/* <%= pkg.name %> <%= pkg.version %> - <%= pkg.description %> */\n\n';
 
-  var libFiles = [
-    'lib/signals.js',
-    'lib/crossroads.js',
-    'lib/when.js',
-    'lib/history.iegte8.js',
-  ];
-
-  var srcFiles = [
-    'src/header.js',
-    'src/util.js',
-    'src/StateWithParams.js',
-    'src/Transition.js',
-    'src/State.js',
-    'src/Router.js',
-    'src/anchorClicks.js',
-    'src/footer.js'
+  var dependencies = [
+    'when',
+    'signals',
+    'crossroads',
+    'html5-history-api/history.iegte8'
   ];
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
+
+    browserify: {
+      build: {
+        files: {'target/abyssa.js': ['src/main.js']},
+        options: {
+          standalone: 'Abyssa',
+          ignore: dependencies
+        }
+      },
+      buildWithDeps: {
+        files: {'target/abyssa-with-deps.js': ['src/main.js'] },
+        options: {
+          standalone: 'Abyssa'
+        }
+      }
+    },
+
     concat: {
       options: {
         banner: banner
       },
-      buildWithDeps: {
-        src: libFiles.concat(srcFiles),
-        dest: 'target/<%= pkg.name %>.js'
+      build: {
+        src: ['target/abyssa.js'],
+        dest: 'target/abyssa.js'
       },
-      buildWithoutDeps: {
-        src: srcFiles,
-        dest: 'target/<%= pkg.name %>-nodeps.js'
+      buildWithDeps: {
+        src: ['target/abyssa-with-deps.js'],
+        dest: 'target/abyssa-with-deps.js'
       }
     },
+
     uglify: {
       options: {
         banner: banner
       },
-      buildWithDeps: {
-        src: 'target/<%= pkg.name %>.js',
-        dest: 'target/<%= pkg.name %>.min.js'
+      build: {
+        src: 'target/abyssa.js',
+        dest: 'target/abyssa.min.js'
       },
-      buildWithoutDeps: {
-        src: 'target/<%= pkg.name %>-nodeps.js',
-        dest: 'target/<%= pkg.name %>-nodeps.min.js'
+      buildWithDeps: {
+        src: 'target/abyssa-with-deps.js',
+        dest: 'target/abyssa-with-deps.min.js'
       }
     },
+
     watch: {
       all: {
         files: ['src/*.js'],
@@ -59,7 +67,8 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-browserify');
 
-  grunt.registerTask('default', ['concat', 'uglify']);
+  grunt.registerTask('default', ['browserify', 'concat', 'uglify']);
   grunt.registerTask('dev', ['default', 'watch']);
 };
