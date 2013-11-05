@@ -4,7 +4,7 @@ Router = Abyssa.Router;
 State  = Abyssa.State;
 Async  = Abyssa.Async;
 
-Router.enableLogs();
+//Router.enableLogs();
 Router.ignoreInitialURL = true;
 stubHistory();
 
