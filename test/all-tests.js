@@ -852,7 +852,7 @@ asyncTest('Data can be stored on states and later retrieved', function() {
 
   }).init();
 
-  router.transition.completed.add(function(oldState, newState) {
+  router.changed.add(function(oldState, newState) {
 
     // A child state can see the data of its parent
     equal(newState.data('someArbitraryData'), 3);

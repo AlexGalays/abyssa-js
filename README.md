@@ -6,10 +6,12 @@ A stateful router library for single page applications.
 # Content
 * [Introduction](#introduction)
 * [Code examples](#code-examples)
+* [Installation](#installation)
 * [API](#api)
 * [Blocking/Non-blocking navigation](#blocking)
 * [Dependencies](#dependencies)
 * [Browser support](#browser-support)
+* [Cookbook](#cookbook)
 
 
 <a name="introduction"></a>
@@ -72,6 +74,21 @@ Router({
 }).init();
 
 ```
+
+<a name="installation"></a>
+# Installation
+
+** Using abyssa as a commonJS/browserify module **
+```
+npm install abyssa
+...
+var Router = require('abyssa').Router;
+
+```
+
+** Using abyssa as a global or as an AMD module **  
+Use one of the provided prebuilt files in the target folder.
+
 
 <a name="api"></a>
 # API
@@ -436,3 +453,99 @@ Abyssa is compiled in two flavors: with and without dependencies built in. The s
 # Browser support
 
 Tested with most modern browsers, IE9 and IE8 (with the inclusion of proper es5 shims).  
+
+
+<a name="cookbook"></a>
+# Cookbook
+
+## Highlight the selected primary navigation item
+
+Assuming the following highlight function is in scope:  
+
+```javascript
+function highlight(navItem) {
+  $('li.nav').removeClass('active');
+  $('li.nav.' + navItem).addClass('active');
+}
+
+```
+
+We can either:  
+
+**1) Observe all state changes externally**  
+
+```javascript
+
+var router = Router({
+
+  section1: State('section1', {
+    navItem: 'section1' // custom data property; seen by any substate.
+  }),
+
+  section2: State('section2', {
+    navItem: 'section2'
+  })
+
+}).init('section1');
+
+
+router.changed.add(function(_, newState) {
+  highlight(newState.data('navItem'));
+  // or
+  highlight(newState.name);
+});
+
+```
+
+Or  
+
+**2) Create a specialized State type to deal with that common concern**  
+
+```javascript
+
+// utility
+function doBefore(func, beforeFunc) {
+  return function() {
+    beforeFunc.apply(this, arguments);
+    return func && func.apply(this, arguments);
+  };
+}
+
+function NavState(path, options) {
+  options.enter = doBefore(options.enter, function(params) {
+    highlight(this.name);
+  });
+  return State(path, options);
+}
+
+var router = Router({
+
+  section1: NavState('section1'),
+  section2: NavState('section2')
+
+}).init('section1');
+
+```
+
+
+## Disable anchor click interception on HTML4 browsers
+
+pros:  
+- Only one URL kind around (no hashes)
+- Can use traditional anchor # links to jump to sections in all browsers without using JS
+
+cons:  
+- Slower browsing in HTML4 browsers: Everytime a state change occurs, the page full reloads, the router initializes again, etc.
+- Some UX become impossible to deliver. Ex: A three steps form process where each step has its own route and where the state accumulates in JS before being sent to the server after the final step.  
+
+```javascript
+
+var router = Router({
+  // ...
+})
+.configure({
+  interceptAnchorClicks: !history.emulate
+})
+.init();
+
+```
