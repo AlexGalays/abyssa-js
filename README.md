@@ -134,7 +134,7 @@ Returns the current state of the router.
 ### Signals
 
 The router dispatches some signals. The signals' API is: `add`, `addOnce` and `remove`.  
-All signals receive the current state and the next state as arguments (of type [StateWithParams](#api-stateWithParams)).
+All signals receive the current state and the old state as arguments (of type [StateWithParams](#api-stateWithParams)).
 
 #### router.transition.started
 Dispatched when a transition started.
@@ -143,13 +143,16 @@ Dispatched when a transition started.
 Dispatched when a transition either completed, failed or got cancelled.
 
 #### router.transition.completed
-Dispatched when a transition successfuly completed
+Dispatched when a transition successfuly completed.
 
 #### router.transition.failed
-Dispatched when a transition failed to complete
+Dispatched when a transition failed to complete.
 
 #### router.transition.cancelled
-Dispatched when a transition got cancelled
+Dispatched when a transition got cancelled.
+
+#### router.changed
+Shorter alias for transition.completed: The most commonly used signal.
 
 #### router.initialized
 Dispatched once after the router successfully reached its initial state.
@@ -489,10 +492,10 @@ var router = Router({
 }).init('section1');
 
 
-router.changed.add(function(_, newState) {
-  highlight(newState.data('navItem'));
+router.changed.add(function(state) {
+  highlight(state.data('navItem'));
   // or
-  highlight(newState.name);
+  highlight(state.name);
 });
 
 ```
@@ -535,7 +538,7 @@ pros:
 - Can use traditional anchor # links to jump to sections in all browsers without using JS
 
 cons:  
-- Slower browsing in HTML4 browsers: Everytime a state change occurs, the page full reloads, the router initializes again, etc.
+- Slower browsing in HTML4 browsers: Everytime a state change occurs, the page fully reloads, the router initializes again, etc.
 - Some UX become impossible to deliver. Ex: A three steps form process where each step has its own route and where the state accumulates in JS before being sent to the server after the final step.  
 
 ```javascript

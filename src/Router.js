@@ -86,7 +86,7 @@ function Router(declarativeStates) {
         currentState = fromState;
 
         logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
-        router.transition.failed.dispatch(fromState, toState);
+        router.transition.failed.dispatch(toState, fromState);
       });
   }
 
@@ -96,19 +96,19 @@ function Router(declarativeStates) {
 
     transition.cancel();
 
-    router.transition.cancelled.dispatch(transition.from, transition.to);
+    router.transition.cancelled.dispatch(transition.to, transition.from);
   }
 
   function startingTransition(fromState, toState) {
     log('Starting transition from {0} to {1}', fromState, toState);
 
-    router.transition.started.dispatch(fromState, toState);
+    router.transition.started.dispatch(toState, fromState);
   }
 
   function transitionCompleted(fromState, toState) {
     log('Transition from {0} to {1} completed', fromState, toState);
 
-    router.transition.completed.dispatch(fromState, toState);
+    router.transition.completed.dispatch(toState, fromState);
     firstTransition = false;
   }
 
@@ -403,7 +403,7 @@ function Router(declarativeStates) {
   // Dispatched once after the router successfully reached its initial state.
   router.initialized = new Signal();
 
-  // Shorter alias for the most commonly used signal
+  // Shorter alias for transition.completed: The most commonly used signal
   router.changed = router.transition.completed;
 
   router.transition.completed.addOnce(function() {
@@ -414,8 +414,8 @@ function Router(declarativeStates) {
   router.transition.failed.add(transitionEnded);
   router.transition.cancelled.add(transitionEnded);
 
-  function transitionEnded(oldState, newState) {
-    router.transition.ended.dispatch(oldState, newState);
+  function transitionEnded(newState, oldState) {
+    router.transition.ended.dispatch(newState, oldState);
   }
 
   return router;

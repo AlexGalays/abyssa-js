@@ -1,4 +1,4 @@
-/* abyssa 1.4.1 - A stateful router library for single page applications */
+/* abyssa 1.5.0 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -92,7 +92,7 @@ function Router(declarativeStates) {
         currentState = fromState;
 
         logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
-        router.transition.failed.dispatch(fromState, toState);
+        router.transition.failed.dispatch(toState, fromState);
       });
   }
 
@@ -102,19 +102,19 @@ function Router(declarativeStates) {
 
     transition.cancel();
 
-    router.transition.cancelled.dispatch(transition.from, transition.to);
+    router.transition.cancelled.dispatch(transition.to, transition.from);
   }
 
   function startingTransition(fromState, toState) {
     log('Starting transition from {0} to {1}', fromState, toState);
 
-    router.transition.started.dispatch(fromState, toState);
+    router.transition.started.dispatch(toState, fromState);
   }
 
   function transitionCompleted(fromState, toState) {
     log('Transition from {0} to {1} completed', fromState, toState);
 
-    router.transition.completed.dispatch(fromState, toState);
+    router.transition.completed.dispatch(toState, fromState);
     firstTransition = false;
   }
 
@@ -409,7 +409,7 @@ function Router(declarativeStates) {
   // Dispatched once after the router successfully reached its initial state.
   router.initialized = new Signal();
 
-  // Shorter alias for the most commonly used signal
+  // Shorter alias for transition.completed: The most commonly used signal
   router.changed = router.transition.completed;
 
   router.transition.completed.addOnce(function() {
@@ -420,8 +420,8 @@ function Router(declarativeStates) {
   router.transition.failed.add(transitionEnded);
   router.transition.cancelled.add(transitionEnded);
 
-  function transitionEnded(oldState, newState) {
-    router.transition.ended.dispatch(oldState, newState);
+  function transitionEnded(newState, oldState) {
+    router.transition.ended.dispatch(newState, oldState);
   }
 
   return router;
