@@ -43,12 +43,7 @@ Read this excellent blog post for an in-depth explanation: [Make the most of you
 <a name="code-examples"></a>
 # Code examples
 
-## Demo app with blocking navigation
-
-Demo: [Abyssa demo sync](http://calm-cove-4493.herokuapp.com/)  
-Source: [Abyssa demo sync source](https://github.com/AlexGalays/abyssa-demo/tree/master/public/javascripts)  
-
-## Demo app with non-blocking navigation
+## Demo app
 
 Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)  
 Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/public/javascripts)  
@@ -78,7 +73,7 @@ Router({
 <a name="installation"></a>
 # Installation
 
-** Using abyssa as a commonJS/browserify module **
+**Using abyssa as a commonJS/browserify module**
 ```
 npm install abyssa
 ...
@@ -86,7 +81,7 @@ var Router = require('abyssa').Router;
 
 ```
 
-** Using abyssa as a global or as an AMD module **  
+**Using abyssa as a global or as an AMD module**  
 Use one of the provided prebuilt files in the target folder.
 
 
