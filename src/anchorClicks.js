@@ -1,4 +1,7 @@
 
+'use strict';
+
+
 var ieButton;
 
 function anchorClickHandler(evt) {

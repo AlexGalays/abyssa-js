@@ -1,4 +1,7 @@
 
+'use strict';
+
+
 var Signal = require('signals').Signal,
     crossroads = require('crossroads'),
 
@@ -424,7 +427,8 @@ function Router(declarativeStates) {
 
 // Logging
 
-var log = logError = util.noop;
+var log = util.noop,
+    logError = util.noop;
 
 Router.enableLogs = function() {
   log = function() {

@@ -1,4 +1,7 @@
 
+'use strict';
+
+
 /*
 * Creates a new StateWithParams instance.
 *

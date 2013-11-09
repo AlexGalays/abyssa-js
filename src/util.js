@@ -1,4 +1,7 @@
 
+'use strict';
+
+
 function isString(instance) {
    return Object.prototype.toString.call(instance) == '[object String]';
 }

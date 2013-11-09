@@ -1,4 +1,4 @@
-/* abyssa 1.5.0 - A stateful router library for single page applications */
+/* abyssa 1.5.1 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -3105,6 +3105,9 @@ define(function (require) {
 
 },{"__browserify_process":2}],6:[function(require,module,exports){
 
+'use strict';
+
+
 var Signal = require('signals').Signal,
     crossroads = require('crossroads'),
 
@@ -3530,7 +3533,8 @@ function Router(declarativeStates) {
 
 // Logging
 
-var log = logError = util.noop;
+var log = util.noop,
+    logError = util.noop;
 
 Router.enableLogs = function() {
   log = function() {
@@ -3555,6 +3559,9 @@ Router.enableLogs = function() {
 
 module.exports = Router;
 },{"./StateWithParams":8,"./Transition":9,"./anchorClicks":10,"./util":12,"crossroads":1,"signals":4}],7:[function(require,module,exports){
+
+'use strict';
+
 
 var util = require('./util');
 var async = require('./Transition').asyncPromises.register;
@@ -3800,6 +3807,9 @@ function getArgs(args) {
 module.exports = State;
 },{"./Transition":9,"./util":12}],8:[function(require,module,exports){
 
+'use strict';
+
+
 /*
 * Creates a new StateWithParams instance.
 *
@@ -3845,6 +3855,9 @@ function toString() {
 
 module.exports = StateWithParams;
 },{}],9:[function(require,module,exports){
+
+'use strict';
+
 
 var when = require('when');
 
@@ -4051,6 +4064,9 @@ var asyncPromises = Transition.asyncPromises = (function () {
 module.exports = Transition;
 },{"when":5}],10:[function(require,module,exports){
 
+'use strict';
+
+
 var ieButton;
 
 function anchorClickHandler(evt) {
@@ -4128,6 +4144,9 @@ module.exports = function interceptAnchorClicks(router) {
 };
 },{}],11:[function(require,module,exports){
 
+'use strict';
+
+
 require('html5-history-api/history.iegte8');
 
 var Abyssa = {
@@ -4138,6 +4157,9 @@ var Abyssa = {
 
 module.exports = Abyssa;
 },{"./Router":6,"./State":7,"./Transition":9,"html5-history-api/history.iegte8":3}],12:[function(require,module,exports){
+
+'use strict';
+
 
 function isString(instance) {
    return Object.prototype.toString.call(instance) == '[object String]';
