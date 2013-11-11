@@ -41,8 +41,7 @@ asyncTest('Simple states', function() {
 
   }).init();
 
-
-  nextTick()
+  whenSignal(router.changed)
     .then(indexWasEntered)
     .then(goToArticles)
     .then(articlesWasEntered)
@@ -51,7 +50,6 @@ asyncTest('Simple states', function() {
     .then(goToArticlesWithFilter)
     .then(articlesWasEnteredWithFilter)
     .then(start);
-
 
   function indexWasEntered() {
     deepEqual(events, ['indexEnter']);
@@ -174,7 +172,7 @@ asyncTest('Missing state with a "notFound" state defined', function() {
 
   }).init('articles/naturess/88/edit');
 
-  nextTick()
+  whenSignal(router.changed)
     .then(notFoundWasEntered)
     .then(resetToIndex)
     .then(goToWrongState)
@@ -287,9 +285,9 @@ asyncTest('Only leaf states are addressable', function() {
     articles: State({
       item: State('articles/:id', {})
     })
-  });
+  }).init();
 
-  nextTick().then(function() {
+  router.changed.addOnce(function() {
     throws(function() {
       router.state('articles');
     });
@@ -318,9 +316,8 @@ asyncTest('No transition occurs when going to the same state', function() {
 
   router.initialized.addOnce(function() {
     events = [];
-    router.state('articles/33/today');
 
-    nextTick().then(function() {
+    delay(20).then(function() {
       deepEqual(events, []);
       start();
     });
@@ -350,7 +347,7 @@ asyncTest('Async enter transitions', function() {
         events.push('newsEnter');
       },
       enterPrereqs: function() {
-        return successPromise(50, 'data');
+        return successPromise(50, 'data', notYetEntered);
       },
 
       exit: function() {
@@ -403,23 +400,23 @@ asyncTest('Async enter transitions', function() {
 
   router.initialized.addOnce(function() {
     events = [];
+
     router.state('news/today');
+    router.changed.addOnce(function() {
+      todayWasEntered();
+      goToThisWeek();
 
-    // The news's enterPrereqs has been resolved but not today's.
-    // No transition occured as we wait for all the prereqs to be resolved.
-    delay(100)
-      .then(notYetEntered);
+      thisWeekWasEntered()
+        .then(resetToIndex)
+        .then(goToFailChild)
+        .then(failChildWasNotEntered)
+        .then(start);
+    });
 
-    delay(240)
-      .then(todayWasEntered)
-      .then(goToThisWeek)
-      .then(thisWeekWasEntered)
-      .then(resetToIndex)
-      .then(goToFailChild)
-      .then(failChildWasNotEntered)
-      .then(start)
   });
 
+  // The news's enterPrereqs has been resolved but not today's.
+  // No transition occured as we wait for all the prereqs to be resolved.
   function notYetEntered() {
     deepEqual(events, []);
   }
@@ -454,7 +451,7 @@ asyncTest('Async enter transitions', function() {
 
   // In case of an async failure, the transition must not occur.
   function failChildWasNotEntered() {
-    return delay(100).then(function() {
+    return whenSignal(router.transition.failed).then(function() {
       deepEqual(events, []);
     });
   }
@@ -507,24 +504,22 @@ asyncTest('Async exit transitions', function() {
           events.push('editExit');
         },
         exitPrereqs: function() {
-          return successPromise(50);
+          return successPromise(50, '', notYetExited);
         }
       })
     })
 
   }).init('details/edit');
 
-  nextTick().then(function() {
+  router.changed.addOnce(function() {
     deepEqual(events, ['detailsEnter', 'editEnter']);
     events = [];
     router.state('');
 
-    delay(100)
-      .then(notYetExited);
-
-    delay(200)
-      .then(exited)
-      .then(start);
+    router.changed.addOnce(function() {
+      exited();
+      start();
+    });
   });
 
   function notYetExited() {
@@ -562,7 +557,7 @@ asyncTest('Cancelling an async transition', function() {
       today: State('today', {
         enter: function() { events.push('todayEnter'); },
         enterPrereqs: function() {
-          return delay(50);
+          return delay(60);
         },
         exit: function() { events.push('todayExit'); }
       }),
@@ -576,18 +571,11 @@ asyncTest('Cancelling an async transition', function() {
 
   }).init('news/today');
 
-
-  delay(40)
-    .then(todayNotEnteredYet)
+  nextTick()
     .then(cancelAndGoToThisWeek)
     .then(thisWeekWasEntered)
     .then(todayWasNeverEntered)
     .then(start);
-
-  function todayNotEnteredYet() {
-    // The 'today' section is still being transitionned to
-    deepEqual(events, []);
-  }
 
   function cancelAndGoToThisWeek() {
     // But we change our mind and go to the 'thisWeek' (synchronous) section
@@ -602,7 +590,7 @@ asyncTest('Cancelling an async transition', function() {
   }
 
   function todayWasNeverEntered() {
-    return delay(100).then(function() {
+    return delay(200).then(function() {
       deepEqual(events, []);
     });
   }
@@ -655,7 +643,7 @@ asyncTest('Param and query changes should trigger a transition', function() {
   }).init('blog/articles/33/edit');
 
 
-  nextTick()
+  whenSignal(router.changed)
     .then(changeParamOnly)
     .then(stateWasReEntered)
     .then(addQueryString)
@@ -736,7 +724,7 @@ asyncTest('Query-only transitions', function() {
   }).init('blog/articles/33/edit');
 
 
-  nextTick()
+  whenSignal(router.changed)
     .then(setSomeUnknownQuery)
     .then(fullTransitionOccurred)
     .then(setFilterQuery)
@@ -884,9 +872,7 @@ test('Reverse routing', function() {
 });
 
 
-test('Both prereqs can be specified on a single state', function() {
-  stop();
-
+asyncTest('Both prereqs can be specified on a single state', function() {
   var enterPrereq,
       exitPrereq;
 
@@ -904,28 +890,23 @@ test('Both prereqs can be specified on a single state', function() {
 
   }).init('one');
 
-  nextTick()
-    .then(assertions)
-    .then(start);
-
-  function assertions() {
+  router.changed.addOnce(function() {
     enterPrereq = exitPrereq = undefined;
     // This will cause the state to be both exited and re-entered.
     router.state('one?filter=1');
 
-    return nextTick().then(function() {
+    router.changed.addOnce(function() {
       equal(enterPrereq, 3);
       equal(exitPrereq, 4);
-    });
-  }
 
+      start();
+    });
+  });
 
 });
 
 
-test('Non blocking promises as an alternative to prereqs', function() {
-  stop();
-
+asyncTest('Non blocking promises as an alternative to prereqs', function() {
   var promiseValue = null;
 
   var router = Router({
@@ -936,19 +917,21 @@ test('Non blocking promises as an alternative to prereqs', function() {
       enter: function() {
         Async(successPromise(150, 'value')).then(function(value) {
           promiseValue = value;
+
+          beginAssertions();
         });
       }
     })
 
   }).init('one');
 
-
-  delay(200)
-    .then(promiseWasResolved)
-    .then(exitThenReEnterStateOne)
-    .then(cancelNavigation)
-    .then(promiseShouldNotHaveBeenResolved)
-    .then(start);
+  function beginAssertions() {
+    when(promiseWasResolved())
+      .then(exitThenReEnterStateOne)
+      .then(cancelNavigation)
+      .then(promiseShouldNotHaveBeenResolved)
+      .then(start);
+  }
 
   function promiseWasResolved() {
     strictEqual(promiseValue, 'value');
@@ -976,9 +959,7 @@ test('Non blocking promises as an alternative to prereqs', function() {
 
 });
 
-test('Non blocking rejected promises', function() {
-  stop();
-
+asyncTest('Non blocking rejected promises', function() {
   var promiseValue = null,
       promiseError = null;
 
@@ -988,22 +969,22 @@ test('Non blocking rejected promises', function() {
 
     one: State('one', {
       enter: function() {
-        Async(failPromise(150)).then(
+        Async(failPromise(80)).then(
           function(value) { promiseValue = value; },
           function(error) { promiseError = error; }
-        );
+        ).always(beginAssertions);
       }
     })
 
   }).init('one');
 
-
-  delay(200)
-    .then(promiseWasRejected)
-    .then(exitThenReEnterStateOne)
-    .then(cancelNavigation)
-    .then(promiseShouldNotHaveBeenResolved)
-    .then(start);
+  function beginAssertions() {
+    when(promiseWasRejected())
+      .then(exitThenReEnterStateOne)
+      .then(cancelNavigation)
+      .then(promiseShouldNotHaveBeenResolved)
+      .then(start);
+  }
 
   function promiseWasRejected() {
     strictEqual(promiseValue, null);
@@ -1025,7 +1006,7 @@ test('Non blocking rejected promises', function() {
   }
 
   function promiseShouldNotHaveBeenResolved() {
-    return delay(200).then(function() {
+    return delay(150).then(function() {
       strictEqual(promiseValue, null);
       strictEqual(promiseError, null);
     });
@@ -1033,8 +1014,7 @@ test('Non blocking rejected promises', function() {
 
 });
 
-test('State construction shorthand', function() {
-  stop();
+asyncTest('State construction shorthand', function() {
 
   var passedParams = {};
   var passedData;
@@ -1046,25 +1026,23 @@ test('State construction shorthand', function() {
 
       passedParams = params;
 
+      paramsWerePassed();
+
       this.async(data).then(function(data) {
         passedData = data;
+
+        asyncWasCalled();
+        start();
       });
 
     })
 
   }).init('index/55?filter=true');
 
-  nextTick()
-    .then(paramsWerePassed)
-    .then(asyncWasCalled)
-    .then(start);
-
   function paramsWerePassed() {
     strictEqual(passedParams.id, 55);
     strictEqual(passedParams.filter, true);
     strictEqual(passedData, undefined);
-    
-    return delay(80);
   }
 
   function asyncWasCalled() {
@@ -1074,9 +1052,7 @@ test('State construction shorthand', function() {
 });
 
 
-test('params should be decoded automatically', function() {
-  stop();
-
+asyncTest('params should be decoded automatically', function() {
   var passedParams;
 
   var router = Router({
@@ -1087,7 +1063,7 @@ test('params should be decoded automatically', function() {
 
   }).init('index/The%20midget%20%40/a%20b%20c');
 
-  nextTick().then(paramsWereDecoded);
+  whenSignal(router.changed).then(paramsWereDecoded);
 
   function paramsWereDecoded() {
     equal(passedParams.id, 'The midget @');
@@ -1098,9 +1074,7 @@ test('params should be decoded automatically', function() {
 });
 
 
-test('Redirects', function() {
-  stop();
-
+asyncTest('Redirects', function() {
   var oldRouteChildEntered;
   var oldRouteExited;
   var newRouteEntered;
@@ -1118,7 +1092,7 @@ test('Redirects', function() {
 
   }).init('oldRoute.oldRouteChild');
 
-  nextTick().then(assertions);
+  whenSignal(router.changed).then(assertions);
 
   function assertions() {
     ok(oldRouteExited, 'Any entered state should be exited, even if it simply redirected');
@@ -1148,8 +1122,7 @@ function stateWithParamsAssertions(state) {
   ok(!state.isIn('state2'));
 }
 
-test('signal handlers are passed StateWithParams objects', function() {
-  stop();
+asyncTest('signal handlers are passed StateWithParams objects', function() {
 
   var router = Router({
 
@@ -1164,7 +1137,7 @@ test('signal handlers are passed StateWithParams objects', function() {
   }).init('state1/33/misc?filter=true');
 
 
-  router.transition.completed.add(function(newState) {
+  router.changed.addOnce(function(newState) {
     stateWithParamsAssertions(newState);
     start();
   });
@@ -1172,8 +1145,7 @@ test('signal handlers are passed StateWithParams objects', function() {
 });
 
 
-test('router.currentState', function() {
-  stop();
+asyncTest('router.currentState', function() {
 
   var router = Router({
 
@@ -1205,8 +1177,13 @@ function delay(time, value) {
   return defer.promise;
 }
 
-function successPromise(time, value) {
-  return delay(time, value);
+function successPromise(time, value, afterResolveCallback) {
+  var promise = delay(time, value);
+  if (afterResolveCallback) promise.then(function() {
+    // Ensures all 'then' callbacks were called
+    setTimeout(afterResolveCallback, 0);
+  });
+  return promise;
 }
 
 function failPromise(time) {
@@ -1215,6 +1192,12 @@ function failPromise(time) {
 
 function nextTick() {
   return delay(25);
+}
+
+function whenSignal(signal) {
+  var defer = when.defer();
+  signal.addOnce(defer.resolve);
+  return defer.promise;
 }
 
 
