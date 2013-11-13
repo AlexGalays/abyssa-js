@@ -61,7 +61,7 @@ function getParamDiff(oldParams, newParams) {
  * 
  * @return {Location}
  */
-function getLocationObject(original) {
+function getLocationObject() {
   var location = window && window.location;
   if (!location) { throw new Error('Browser location object cannot be obtained.'); }
   return location;

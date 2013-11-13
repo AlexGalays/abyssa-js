@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.8 (2013-10-30T10:23:05.610Z)
+ * v1.2.8 (2013-11-07T09:28:59.779Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -69,7 +69,7 @@ function getParamDiff(oldParams, newParams) {
  * 
  * @return {Location}
  */
-function getLocationObject(original) {
+function getLocationObject() {
   var location = window && window.location;
   if (!location) { throw new Error('Browser location object cannot be obtained.'); }
   return location;
