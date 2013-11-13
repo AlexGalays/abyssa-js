@@ -76,6 +76,55 @@ QUnit.test('Dependencies and Globals', function() {
   QUnit.assert.ok(Async, "Abyssa.Async");
 });
 
+QUnit.test('Abyssa.normalizePathQuery', function() {
+  function expectOne(from, to, removeLeadingSlash) {
+    if (removeLeadingSlash) { to = to.replace(/^\//, ''); }
+    QUnit.assert.equal(Abyssa.normalizePathQuery(from, removeLeadingSlash), to, '"' + from + '" => "' + to + '"'
+      + ' (removeLeadingSlash === ' + (removeLeadingSlash === false ? 'false' : (removeLeadingSlash === true ? 'true' : typeof removeLeadingSlash)) + ')');
+  }
+  function expect(from, to) {
+    expectOne(from, to);
+    expectOne(from, to, false);
+    expectOne(from, to, true);
+  }
+  
+  QUnit.assert.ok(typeof Abyssa.normalizePathQuery === 'function', "Abyssa.normalizePathQuery is a function");
+
+  // Keep:
+  expect("/", "/");
+  expect("/path", "/path");
+  expect("/path/a/b/c", "/path/a/b/c");
+  expect("/path?query", "/path?query");
+  expect("/path/a/b/c?query", "/path/a/b/c?query");
+  expect("/path/a/b/c?query=///", "/path/a/b/c?query=///");
+  
+  // Add:
+  expect("", "/");
+  expect("path", "/path");
+  expect("path/a/b/c", "/path/a/b/c");
+  expect("path?query", "/path?query");
+  expect("path/a/b/c?query", "/path/a/b/c?query");
+  expect("?query", "/?query");
+  
+  // Remove:
+  expect("//", "/");
+  expect("///", "/");
+  expect("//path", "/path");
+  expect("//path/a/b/c", "/path/a/b/c");
+  expect("//path/", "/path");
+  expect("//path/a/b/c/", "/path/a/b/c");
+  expect("//path//", "/path");
+  expect("//path/a/b/c//", "/path/a/b/c");
+  expect("/path//", "/path");
+  expect("/path/a/b/c//", "/path/a/b/c");
+  expect("//path?query", "/path?query");
+  expect("//path/a/b/c?query", "/path/a/b/c?query");
+  expect("/path/?query", "/path?query");
+  expect("/path/a/b/c/?query", "/path/a/b/c?query");
+  expect("/path//?query", "/path?query");
+  expect("/path/a/b/c//?query", "/path/a/b/c?query");
+});
+
 QUnit.asyncTest('Simple states', function() {
 
   var events = [],

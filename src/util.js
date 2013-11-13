@@ -76,8 +76,11 @@ function getLocationObject() {
  * @return {String} Normalized path and query string.
  */
 function normalizePathQuery(pathQuery, removeLeadingSlash) {
-  return ((removeLeadingSlash ? '' : '/') + pathQuery.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\/+\?/, '?'));
+  return ((removeLeadingSlash ? '' : '/') + pathQuery.replace(/^\/+/, '').replace(/^([^?]*?)\/+$/, '$1').replace(/\/+\?/, '?'));
 }
+
+// Export for tests and possible outside usage:
+Abyssa.normalizePathQuery = normalizePathQuery;
 
 /**
  * Returns the path and query string from a full URL.
