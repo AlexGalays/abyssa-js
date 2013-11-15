@@ -125,6 +125,18 @@ QUnit.test('Abyssa.normalizePathQuery', function() {
   expect("/path/a/b/c//?query", "/path/a/b/c?query");
 });
 
+QUnit.test('Abyssa.getLocationObject', function() {
+  QUnit.assert.ok(typeof Abyssa.getLocationObject === 'function', "Abyssa.getLocationObject is a function");
+  
+  // TODO: Add tests for the location object.
+});
+
+QUnit.test('Abyssa.getPathQuery', function() {
+  QUnit.assert.ok(typeof Abyssa.getPathQuery === 'function', "Abyssa.getPathQuery is a function");
+  
+  // TODO: Add tests for the path-query.
+});
+
 QUnit.asyncTest('Simple states', function() {
 
   var events = [],

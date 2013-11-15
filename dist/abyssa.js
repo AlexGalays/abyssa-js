@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.9 (2013-11-13T08:59:11.386Z)
+ * v1.2.10 (2013-11-15T07:06:30.011Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -63,6 +63,8 @@ function getParamDiff(oldParams, newParams) {
 
   return diff;
 }
+// Export for tests and possible outside usage:
+Abyssa.getParamDiff = getParamDiff;
 
 /**
  * Gets the browser location object.
@@ -74,6 +76,8 @@ function getLocationObject() {
   if (!location) { throw new Error('Browser location object cannot be obtained.'); }
   return location;
 }
+// Export for tests and possible outside usage:
+Abyssa.getLocationObject = getLocationObject;
 
 /**
  * Normalizes leading and trailing slashes.
@@ -86,7 +90,6 @@ function getLocationObject() {
 function normalizePathQuery(pathQuery, removeLeadingSlash) {
   return ((removeLeadingSlash ? '' : '/') + pathQuery.replace(/^\/+/, '').replace(/^([^?]*?)\/+$/, '$1').replace(/\/+\?/, '?'));
 }
-
 // Export for tests and possible outside usage:
 Abyssa.normalizePathQuery = normalizePathQuery;
 
@@ -108,6 +111,8 @@ function urlPathQuery(urlObject) {
     : (urlObject.pathname + urlObject.search)
   ));
 }
+// Export for tests and possible outside usage:
+Abyssa.getPathQuery = urlPathQuery;
 
 /**
  * Returns a promise of a function call wrapped in a try...catch block.

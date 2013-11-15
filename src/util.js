@@ -55,6 +55,8 @@ function getParamDiff(oldParams, newParams) {
 
   return diff;
 }
+// Export for tests and possible outside usage:
+Abyssa.getParamDiff = getParamDiff;
 
 /**
  * Gets the browser location object.
@@ -66,6 +68,8 @@ function getLocationObject() {
   if (!location) { throw new Error('Browser location object cannot be obtained.'); }
   return location;
 }
+// Export for tests and possible outside usage:
+Abyssa.getLocationObject = getLocationObject;
 
 /**
  * Normalizes leading and trailing slashes.
@@ -78,7 +82,6 @@ function getLocationObject() {
 function normalizePathQuery(pathQuery, removeLeadingSlash) {
   return ((removeLeadingSlash ? '' : '/') + pathQuery.replace(/^\/+/, '').replace(/^([^?]*?)\/+$/, '$1').replace(/\/+\?/, '?'));
 }
-
 // Export for tests and possible outside usage:
 Abyssa.normalizePathQuery = normalizePathQuery;
 
@@ -100,6 +103,8 @@ function urlPathQuery(urlObject) {
     : (urlObject.pathname + urlObject.search)
   ));
 }
+// Export for tests and possible outside usage:
+Abyssa.getPathQuery = urlPathQuery;
 
 /**
  * Returns a promise of a function call wrapped in a try...catch block.
