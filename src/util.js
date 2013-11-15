@@ -55,7 +55,7 @@ function getParamDiff(oldParams, newParams) {
 
   return diff;
 }
-// Export for tests and possible outside usage:
+// Export for external usage and tests:
 Abyssa.getParamDiff = getParamDiff;
 
 /**
@@ -68,7 +68,7 @@ function getLocationObject() {
   if (!location) { throw new Error('Browser location object cannot be obtained.'); }
   return location;
 }
-// Export for tests and possible outside usage:
+// Export for external usage and tests:
 Abyssa.getLocationObject = getLocationObject;
 
 /**
@@ -82,7 +82,7 @@ Abyssa.getLocationObject = getLocationObject;
 function normalizePathQuery(pathQuery, removeLeadingSlash) {
   return ((removeLeadingSlash ? '' : '/') + pathQuery.replace(/^\/+/, '').replace(/^([^?]*?)\/+$/, '$1').replace(/\/+\?/, '?'));
 }
-// Export for tests and possible outside usage:
+// Export for external usage and tests:
 Abyssa.normalizePathQuery = normalizePathQuery;
 
 /**
@@ -103,7 +103,7 @@ function urlPathQuery(urlObject) {
     : (urlObject.pathname + urlObject.search)
   ));
 }
-// Export for tests and possible outside usage:
+// Export for external usage and tests:
 Abyssa.getPathQuery = urlPathQuery;
 
 /**

@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.10 (2013-11-15T07:06:30.011Z)
+ * v1.2.11 (2013-11-15T07:32:21.637Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -63,7 +63,7 @@ function getParamDiff(oldParams, newParams) {
 
   return diff;
 }
-// Export for tests and possible outside usage:
+// Export for external usage and tests:
 Abyssa.getParamDiff = getParamDiff;
 
 /**
@@ -76,7 +76,7 @@ function getLocationObject() {
   if (!location) { throw new Error('Browser location object cannot be obtained.'); }
   return location;
 }
-// Export for tests and possible outside usage:
+// Export for external usage and tests:
 Abyssa.getLocationObject = getLocationObject;
 
 /**
@@ -90,7 +90,7 @@ Abyssa.getLocationObject = getLocationObject;
 function normalizePathQuery(pathQuery, removeLeadingSlash) {
   return ((removeLeadingSlash ? '' : '/') + pathQuery.replace(/^\/+/, '').replace(/^([^?]*?)\/+$/, '$1').replace(/\/+\?/, '?'));
 }
-// Export for tests and possible outside usage:
+// Export for external usage and tests:
 Abyssa.normalizePathQuery = normalizePathQuery;
 
 /**
@@ -111,7 +111,7 @@ function urlPathQuery(urlObject) {
     : (urlObject.pathname + urlObject.search)
   ));
 }
-// Export for tests and possible outside usage:
+// Export for external usage and tests:
 Abyssa.getPathQuery = urlPathQuery;
 
 /**
@@ -1077,7 +1077,11 @@ var interceptAnchorClicks = (function (window) {
     return (tempAnchor.protocol === location.protocol && tempAnchor.hostname === location.hostname && (tempAnchor.port || '80') === (location.port || '80'));
   }
 
-  return function (router) {
+  return function (router, container) {
+    if (!container) {
+      container = window.document;
+    }
+
     function handler(e) {
       var event = e || window.event;
       var target = event.target || event.srcElement;
@@ -1110,10 +1114,18 @@ var interceptAnchorClicks = (function (window) {
       router.state(urlPathQuery(anchor));
     }
 
-    if (window.document.addEventListener) { window.document.addEventListener('click', handler); }
-    else if (window.document.attachEvent) { window.document.attachEvent('onclick', handler); }
+    if (container.addEventListener) { container.addEventListener('click', handler); }
+    else if (container.attachEvent) { container.attachEvent('onclick', handler); }
+
+    // Return a teardown function:
+    return function () {
+      if (container.removeEventListener) { container.removeEventListener('click', handler); }
+      else if (container.detachEvent) { container.detachEvent('onclick', handler); }
+    };
   };
 }(this));
+// Export for external usage and tests:
+Abyssa.interceptAnchorClicks = interceptAnchorClicks;
 
 return Abyssa;
 };

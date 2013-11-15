@@ -76,6 +76,12 @@ QUnit.test('Dependencies and Globals', function() {
   QUnit.assert.ok(Async, "Abyssa.Async");
 });
 
+QUnit.test('Abyssa.getParamDiff', function() {
+  QUnit.assert.ok(typeof Abyssa.getParamDiff === 'function', "Abyssa.getParamDiff is a function");
+  
+  // TODO: Add tests for the param diff.
+});
+
 QUnit.test('Abyssa.normalizePathQuery', function() {
   function expectOne(from, to, removeLeadingSlash) {
     if (removeLeadingSlash) { to = to.replace(/^\//, ''); }
@@ -135,6 +141,12 @@ QUnit.test('Abyssa.getPathQuery', function() {
   QUnit.assert.ok(typeof Abyssa.getPathQuery === 'function', "Abyssa.getPathQuery is a function");
   
   // TODO: Add tests for the path-query.
+});
+
+QUnit.test('Abyssa.interceptAnchorClicks', function() {
+  QUnit.assert.ok(typeof Abyssa.interceptAnchorClicks === 'function', "Abyssa.interceptAnchorClicks is a function");
+  
+  // TODO: Add tests for the anchor clicks interceptor.
 });
 
 QUnit.asyncTest('Simple states', function() {
