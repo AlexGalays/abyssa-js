@@ -1,4 +1,4 @@
-/* abyssa 1.5.1 - A stateful router library for single page applications */
+/* abyssa 1.5.2 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -259,7 +259,7 @@ function Router(declarativeStates) {
   * state('target/33?filter=desc')
   */
   function state(pathQueryOrName, params) {
-    var isName = (pathQueryOrName.indexOf('.') > -1 || leafStates[pathQueryOrName]);
+    var isName = leafStates[pathQueryOrName] !== undefined;
 
     log('Changing state to {0}', pathQueryOrName || '""');
 
@@ -277,11 +277,11 @@ function Router(declarativeStates) {
   }
 
   function setStateForPathQuery(pathQuery) {
-    currentPathQuery = pathQuery;
+    currentPathQuery = util.normalizePathQuery(pathQuery);
     stateFound = false;
-    roads.parse(pathQuery);
+    roads.parse(currentPathQuery);
 
-    if (!stateFound) notFound(pathQuery);
+    if (!stateFound) notFound(currentPathQuery);
   }
 
   function setStateByName(name, params) {
@@ -313,9 +313,11 @@ function Router(declarativeStates) {
 
   function urlPathQuery() {
     var hashSlash = location.href.indexOf('#/');
-    return hashSlash > -1
+    var pathQuery = hashSlash > -1
       ? location.href.slice(hashSlash + 2)
       : (location.pathname + location.search).slice(1);
+
+    return util.normalizePathQuery(pathQuery);
   }
 
   /*
@@ -372,7 +374,7 @@ function Router(declarativeStates) {
 
     if (hasQuery) params.query = query;
 
-    return '/' + state.route.interpolate(params).replace('/?', '?');
+    return util.normalizePathQuery(state.route.interpolate(params));
   }
 
   /*
@@ -1052,11 +1054,13 @@ require('html5-history-api/history.iegte8');
 var Abyssa = {
   Router: require('./Router'),
   State:  require('./State'),
-  Async:  require('./Transition').asyncPromises.register
+  Async:  require('./Transition').asyncPromises.register,
+
+  util:   require('./util')
 };
 
 module.exports = Abyssa;
-},{"./Router":2,"./State":3,"./Transition":5,"html5-history-api/history.iegte8":1}],8:[function(require,module,exports){
+},{"./Router":2,"./State":3,"./Transition":5,"./util":8,"html5-history-api/history.iegte8":1}],8:[function(require,module,exports){
 
 'use strict';
 
@@ -1096,6 +1100,17 @@ function objectSize(obj) {
   return size;
 }
 
+var LEADING_SLASHES = /^\/+/;
+var TRAILING_SLASHES = /^([^?]*?)\/+$/;
+var TRAILING_SLASHES_BEFORE_QUERY = /\/+\?/;
+function normalizePathQuery(pathQuery) {
+  return ('/' + pathQuery
+    .replace(LEADING_SLASHES, '')
+    .replace(TRAILING_SLASHES, '$1')
+    .replace(TRAILING_SLASHES_BEFORE_QUERY, '?'));
+}
+
+
 module.exports = {
   isString: isString,
   noop: noop,
@@ -1103,7 +1118,8 @@ module.exports = {
   objectToArray: objectToArray,
   copyObject: copyObject,
   mergeObjects: mergeObjects,
-  objectSize: objectSize
+  objectSize: objectSize,
+  normalizePathQuery: normalizePathQuery
 };
 },{}]},{},[7])
 (7)

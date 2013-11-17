@@ -37,6 +37,17 @@ function objectSize(obj) {
   return size;
 }
 
+var LEADING_SLASHES = /^\/+/;
+var TRAILING_SLASHES = /^([^?]*?)\/+$/;
+var TRAILING_SLASHES_BEFORE_QUERY = /\/+\?/;
+function normalizePathQuery(pathQuery) {
+  return ('/' + pathQuery
+    .replace(LEADING_SLASHES, '')
+    .replace(TRAILING_SLASHES, '$1')
+    .replace(TRAILING_SLASHES_BEFORE_QUERY, '?'));
+}
+
+
 module.exports = {
   isString: isString,
   noop: noop,
@@ -44,5 +55,6 @@ module.exports = {
   objectToArray: objectToArray,
   copyObject: copyObject,
   mergeObjects: mergeObjects,
-  objectSize: objectSize
+  objectSize: objectSize,
+  normalizePathQuery: normalizePathQuery
 };

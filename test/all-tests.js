@@ -1171,6 +1171,65 @@ asyncTest('router.currentState', function() {
 });
 
 
+asyncTest('urls can contain dots', function() {
+
+  Router({
+    map: State('map/:lat/:lon', function(params) {
+      strictEqual(params.lat, 1.5441);
+      strictEqual(params.lon, 0.9986);
+      start();
+    })
+  }).init('map/1.5441/0.9986');
+
+});
+
+
+test('util.normalizePathQuery', function() {
+
+  function expect(from, to) {
+
+    var assertMessage = ('"' + from + '" => "' + to + '"');
+
+    equal(Abyssa.util.normalizePathQuery(from), to, assertMessage);
+  }
+
+  // No slash changes required
+  expect("/", "/");
+  expect("/path", "/path");
+  expect("/path/a/b/c", "/path/a/b/c");
+  expect("/path?query", "/path?query");
+  expect("/path/a/b/c?query", "/path/a/b/c?query");
+  expect("/path/a/b/c?query=///", "/path/a/b/c?query=///");
+  
+  // Slashes are added
+  expect("", "/");
+  expect("path", "/path");
+  expect("path/a/b/c", "/path/a/b/c");
+  expect("path?query", "/path?query");
+  expect("path/a/b/c?query", "/path/a/b/c?query");
+  expect("?query", "/?query");
+  
+  // Slashes are removed
+  expect("//", "/");
+  expect("///", "/");
+  expect("//path", "/path");
+  expect("//path/a/b/c", "/path/a/b/c");
+  expect("//path/", "/path");
+  expect("//path/a/b/c/", "/path/a/b/c");
+  expect("//path//", "/path");
+  expect("//path/a/b/c//", "/path/a/b/c");
+  expect("/path//", "/path");
+  expect("/path/a/b/c//", "/path/a/b/c");
+  expect("//path?query", "/path?query");
+  expect("//path/a/b/c?query", "/path/a/b/c?query");
+  expect("/path/?query", "/path?query");
+  expect("/path/a/b/c/?query", "/path/a/b/c?query");
+  expect("/path//?query", "/path?query");
+  expect("/path/a/b/c//?query", "/path/a/b/c?query");
+
+});
+
+
 function delay(time, value) {
   var defer = when.defer();
   setTimeout(function() { defer.resolve(value); }, time);

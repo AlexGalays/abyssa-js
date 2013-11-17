@@ -253,7 +253,7 @@ function Router(declarativeStates) {
   * state('target/33?filter=desc')
   */
   function state(pathQueryOrName, params) {
-    var isName = (pathQueryOrName.indexOf('.') > -1 || leafStates[pathQueryOrName]);
+    var isName = leafStates[pathQueryOrName] !== undefined;
 
     log('Changing state to {0}', pathQueryOrName || '""');
 
@@ -271,11 +271,11 @@ function Router(declarativeStates) {
   }
 
   function setStateForPathQuery(pathQuery) {
-    currentPathQuery = pathQuery;
+    currentPathQuery = util.normalizePathQuery(pathQuery);
     stateFound = false;
-    roads.parse(pathQuery);
+    roads.parse(currentPathQuery);
 
-    if (!stateFound) notFound(pathQuery);
+    if (!stateFound) notFound(currentPathQuery);
   }
 
   function setStateByName(name, params) {
@@ -307,9 +307,11 @@ function Router(declarativeStates) {
 
   function urlPathQuery() {
     var hashSlash = location.href.indexOf('#/');
-    return hashSlash > -1
+    var pathQuery = hashSlash > -1
       ? location.href.slice(hashSlash + 2)
       : (location.pathname + location.search).slice(1);
+
+    return util.normalizePathQuery(pathQuery);
   }
 
   /*
@@ -366,7 +368,7 @@ function Router(declarativeStates) {
 
     if (hasQuery) params.query = query;
 
-    return '/' + state.route.interpolate(params).replace('/?', '?');
+    return util.normalizePathQuery(state.route.interpolate(params));
   }
 
   /*
