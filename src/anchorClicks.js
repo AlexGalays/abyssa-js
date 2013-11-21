@@ -2,7 +2,7 @@
 'use strict';
 
 
-var ieButton;
+var ieButton, router;
 
 function anchorClickHandler(evt) {
   evt = evt || window.event;
@@ -69,7 +69,9 @@ function isLocalLink(anchor) {
 }
 
 
-module.exports = function interceptAnchorClicks(router) {
+module.exports = function interceptAnchorClicks(forRouter) {
+  router = forRouter;
+
   if (document.addEventListener)
     document.addEventListener('click', anchorClickHandler);
   else {
