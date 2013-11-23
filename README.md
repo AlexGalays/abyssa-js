@@ -91,6 +91,14 @@ Use one of the provided prebuilt files in the target folder.
 <a name="api-router"></a>
 ## Router
 
+
+### configure (options: Object): Router
+Configure the router before its initialization.
+The available options are:  
+- enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.  
+- interceptAnchorClicks: Whether anchor clicks should be intercepted and trigger a state change. Defaults to true.  
+- notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null. 
+
 ### init (initState: String): Router
 Initialize and freeze the router (states can not be updated or added afterwards).  
 The router will immediately initiate a transition to, in order of priority:  

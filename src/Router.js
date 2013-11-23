@@ -159,12 +159,16 @@ function Router(declarativeStates) {
   function notFound(state) {
     log('State not found: {0}', state);
 
-    if (states.notFound) setState(states.notFound);
+    if (initOptions.notFound) setState(initOptions.notFound);
     else throw new Error ('State "' + state + '" could not be found');
   }
 
   /*
   * Configure the router before its initialization.
+  * The available options are:
+  *   enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.
+  *   interceptAnchorClicks: Whether anchor clicks should be intercepted and trigger a state change. Defaults to true.
+  *   notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null.
   */
   function configure(options) {
     util.mergeObjects(initOptions, options);
@@ -211,6 +215,9 @@ function Router(declarativeStates) {
     eachRootState(function(name, state) {
       state.init(name);
     });
+
+    if (initOptions.notFound)
+      initOptions.notFound.init('notFound');
 
     leafStates = {};
 

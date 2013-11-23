@@ -164,13 +164,15 @@ asyncTest('Missing state with a "notFound" state defined', function() {
       nature: State({
         edit: State('articles/nature/:id/edit')
       })
-    }),
+    })
 
+  })
+  .configure({
     notFound: State({
       enter: function() { reachedNotFound = true; }
     })
-
-  }).init('articles/naturess/88/edit');
+  })
+  .init('articles/naturess/88/edit');
 
   whenSignal(router.changed)
     .then(notFoundWasEntered)
