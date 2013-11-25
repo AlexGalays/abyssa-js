@@ -100,6 +100,7 @@ function Router(declarativeStates) {
     transition.cancel();
 
     router.transition.cancelled.dispatch(transition.to, transition.from);
+    firstTransition = false;
   }
 
   function startingTransition(fromState, toState) {

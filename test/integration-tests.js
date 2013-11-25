@@ -61,6 +61,26 @@ asyncTest('Simple anchor interception', function() {
 });
 
 
+asyncTest('Redirect', function() {
+
+  var router = Router({
+
+    index: State('index', function() {
+      router.redirect('articles');
+    }),
+
+    articles: State('articles')
+
+  }).init('index');
+
+  router.changed.addOnce(function() {
+    equal(history.location.pathname, '/articles');
+    start();
+  });
+
+});
+
+
 
 function changeURL(pathQuery) {
   history.pushState('', '', pathQuery);
