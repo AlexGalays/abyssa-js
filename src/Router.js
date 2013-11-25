@@ -178,9 +178,8 @@ function Router(declarativeStates) {
   /*
   * Initialize and freeze the router (states can not be added afterwards).
   * The router will immediately initiate a transition to, in order of priority:
-  * 1) The state captured by the current URL
-  * 2) The init state passed as an argument
-  * 3) The default state (pathless and queryless)
+  * 1) The init state passed as an argument
+  * 2) The state captured by the current URL
   */
   function init(initState) {
     if (initOptions.enableLogs)
@@ -192,7 +191,7 @@ function Router(declarativeStates) {
     log('Router init');
     initStates();
 
-    var initialState = (!Router.ignoreInitialURL && urlPathQuery()) || initState || '';
+    var initialState = (initState !== undefined) ? initState : urlPathQuery();
 
     log('Initializing to state {0}', initialState || '""');
     state(initialState);

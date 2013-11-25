@@ -5,7 +5,6 @@ State  = Abyssa.State;
 Async  = Abyssa.Async;
 
 //Router.enableLogs();
-Router.ignoreInitialURL = true;
 stubHistory();
 
 
@@ -39,7 +38,7 @@ asyncTest('Simple states', function() {
       }
     })
 
-  }).init();
+  }).init('');
 
   whenSignal(router.changed)
     .then(indexWasEntered)
@@ -218,7 +217,7 @@ asyncTest('Missing state without a "notFound" state defined', function() {
       })
     }),
 
-  }).init();
+  }).init('');
 
   router.initialized.addOnce(function() {
     throws(function() {
@@ -287,7 +286,7 @@ asyncTest('Only leaf states are addressable', function() {
     articles: State({
       item: State('articles/:id', {})
     })
-  }).init();
+  }).init('');
 
   router.changed.addOnce(function() {
     throws(function() {
@@ -398,7 +397,7 @@ asyncTest('Async enter transitions', function() {
 
     })
 
-  }).init();
+  }).init('');
 
   router.initialized.addOnce(function() {
     events = [];
@@ -473,7 +472,7 @@ asyncTest('prereqs can return non promise values', function() {
         start();
       }
     })
-  }).init();
+  }).init('');
 
 });
 
@@ -840,7 +839,7 @@ asyncTest('Data can be stored on states and later retrieved', function() {
       two: State()
     })
 
-  }).init();
+  }).init('');
 
   router.changed.add(function(newState) {
 
@@ -866,7 +865,7 @@ test('Reverse routing', function() {
       two: State(':id?filter')
     })
 
-  }).init();
+  }).init('');
 
   var href = router.link('one.two', {id: 33, filter: 'bloup'});
   equal(href, '/one/33?filter=bloup');
