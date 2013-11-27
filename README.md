@@ -102,9 +102,8 @@ The available options are:
 ### init (initState: String): Router
 Initialize and freeze the router (states can not be updated or added afterwards).  
 The router will immediately initiate a transition to, in order of priority:  
-1) The state captured by the current URL  
-2) The init state passed as an argument  
-3) The default state (pathless and queryless)  
+1) The init state passed as an argument (useful for testing and debugging)  
+2) The state captured by the current URL  
 
 ### addState (name: String, state: State): Router
 Add a new root state to the router.  
