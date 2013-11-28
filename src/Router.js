@@ -139,7 +139,7 @@ function Router(declarativeStates) {
         params: params || {}
       }));
     }
-    else throw new Error('State "' + pathQueryOrName + '" could not be found.');
+    else return handleAsyncError(new Error('State "' + pathQueryOrName + '" could not be found.'));
   }
 
   /**
@@ -393,6 +393,22 @@ Router.enableLogs = function() {
 
     return message;
   }
+};
+
+
+// Error handling
+
+var handleAsyncError = handleAsyncErrorDefault;
+
+function handleAsyncErrorDefault(error) {
+  if (error) {
+    if (typeof console !== 'undefined') console.error(error);
+    throw error;
+  }
+}
+
+Router.setAsyncErrorHandler = function(handler) {
+  handleAsyncError = handler || handleAsyncErrorDefault;
 };
 
 

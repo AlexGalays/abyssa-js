@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.12 (2013-11-28T09:17:36.841Z)
+ * v1.2.13 (2013-11-28T09:57:47.157Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -207,7 +207,7 @@ function prereqs(enters, exits, params) {
       function fail(cause) {
         var error = new Error('Failed to resolve EXIT prereqs of state "' + state.fullName + '": ' + (cause ? cause.message || cause : '(no cause)'));
         error.inner = cause;
-        throw error;
+        return handleAsyncError(error);
       }
     );
   });
@@ -222,7 +222,7 @@ function prereqs(enters, exits, params) {
       function fail(cause) {
         var error = new Error('Failed to resolve ENTER prereqs of state "' + state.fullName + '": ' + (cause ? cause.message || cause : '(no cause)'));
         error.inner = cause;
-        throw error;
+        return handleAsyncError(error);
       }
     );
   });
@@ -777,7 +777,7 @@ function Router(declarativeStates) {
         params: params || {}
       }));
     }
-    else throw new Error('State "' + pathQueryOrName + '" could not be found.');
+    else return handleAsyncError(new Error('State "' + pathQueryOrName + '" could not be found.'));
   }
 
   /**
@@ -1031,6 +1031,22 @@ Router.enableLogs = function() {
 
     return message;
   }
+};
+
+
+// Error handling
+
+var handleAsyncError = handleAsyncErrorDefault;
+
+function handleAsyncErrorDefault(error) {
+  if (error) {
+    if (typeof console !== 'undefined') console.error(error);
+    throw error;
+  }
+}
+
+Router.setAsyncErrorHandler = function(handler) {
+  handleAsyncError = handler || handleAsyncErrorDefault;
 };
 
 

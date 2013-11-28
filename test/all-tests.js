@@ -72,6 +72,8 @@ QUnit.test('Dependencies and Globals', function() {
   QUnit.assert.ok(global.JSON, "JSON");
   QUnit.assert.ok(Abyssa, "Abyssa");
   QUnit.assert.ok(Router, "Abyssa.Router");
+  QUnit.assert.ok(typeof Router.enableLogs === 'function', "Abyssa.Router.enableLogs is a function");
+  QUnit.assert.ok(typeof Router.setAsyncErrorHandler === 'function', "Abyssa.Router.setAsyncErrorHandler is a function");
   QUnit.assert.ok(State, "Abyssa.State");
   QUnit.assert.ok(Async, "Abyssa.Async");
 });
