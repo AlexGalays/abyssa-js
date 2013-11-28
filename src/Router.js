@@ -139,7 +139,7 @@ function Router(declarativeStates) {
         params: params || {}
       }));
     }
-    else throw new Error('State "' + pathQueryOrName + '" could not be found');
+    else throw new Error('State "' + pathQueryOrName + '" could not be found.');
   }
 
   /**

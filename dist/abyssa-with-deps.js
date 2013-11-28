@@ -2915,7 +2915,7 @@ var when = (function(global) {
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.11 (2013-11-15T07:32:21.637Z)
+ * v1.2.12 (2013-11-28T09:17:36.841Z)
  */
 (function () {
 var factory = function () {
@@ -3119,7 +3119,7 @@ function prereqs(enters, exits, params) {
         if (state._exitPrereqs === prereqs) state._exitPrereqs.value = value;
       },
       function fail(cause) {
-        var error = new Error('Failed to resolve EXIT prereqs of state "' + state.fullName + '"');
+        var error = new Error('Failed to resolve EXIT prereqs of state "' + state.fullName + '": ' + (cause ? cause.message || cause : '(no cause)'));
         error.inner = cause;
         throw error;
       }
@@ -3134,7 +3134,7 @@ function prereqs(enters, exits, params) {
         if (state._enterPrereqs === prereqs) state._enterPrereqs.value = value;
       },
       function fail(cause) {
-        var error = new Error('Failed to resolve ENTER prereqs of state "' + state.fullName + '"');
+        var error = new Error('Failed to resolve ENTER prereqs of state "' + state.fullName + '": ' + (cause ? cause.message || cause : '(no cause)'));
         error.inner = cause;
         throw error;
       }
@@ -3691,7 +3691,7 @@ function Router(declarativeStates) {
         params: params || {}
       }));
     }
-    else throw new Error('State "' + pathQueryOrName + '" could not be found');
+    else throw new Error('State "' + pathQueryOrName + '" could not be found.');
   }
 
   /**

@@ -70,7 +70,7 @@ function prereqs(enters, exits, params) {
         if (state._exitPrereqs === prereqs) state._exitPrereqs.value = value;
       },
       function fail(cause) {
-        var error = new Error('Failed to resolve EXIT prereqs of state "' + state.fullName + '"');
+        var error = new Error('Failed to resolve EXIT prereqs of state "' + state.fullName + '": ' + (cause ? cause.message || cause : '(no cause)'));
         error.inner = cause;
         throw error;
       }
@@ -85,7 +85,7 @@ function prereqs(enters, exits, params) {
         if (state._enterPrereqs === prereqs) state._enterPrereqs.value = value;
       },
       function fail(cause) {
-        var error = new Error('Failed to resolve ENTER prereqs of state "' + state.fullName + '"');
+        var error = new Error('Failed to resolve ENTER prereqs of state "' + state.fullName + '": ' + (cause ? cause.message || cause : '(no cause)'));
         error.inner = cause;
         throw error;
       }

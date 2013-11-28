@@ -1282,7 +1282,7 @@ QUnit.asyncTest('Transition failed handler receives error thrown from enter', fu
 });
 
 QUnit.asyncTest('Transition failed handler receives rejection from enterPrereqs', function() {
-  var testError = new Error();
+  var testError = new Error('TEST ERROR');
 
   var router = Router({
 
@@ -1302,6 +1302,9 @@ QUnit.asyncTest('Transition failed handler receives rejection from enterPrereqs'
     // The inner error is the one that was wrapped into the rejection
     QUnit.assert.strictEqual(error.inner, testError, "error.inner equals the original error");
 
+    // The error message contains the original error message
+    QUnit.assert.ok(error.message.indexOf(testError.message) >= 0, "error message contains the original error message");
+
     QUnit.start();
 
   });
@@ -1310,7 +1313,7 @@ QUnit.asyncTest('Transition failed handler receives rejection from enterPrereqs'
 });
 
 QUnit.asyncTest('Transition failed handler receives rejection from exitPrereqs', function() {
-  var testError = new Error();
+  var testError = new Error('TEST ERROR');
 
   var router = Router({
 
@@ -1331,6 +1334,9 @@ QUnit.asyncTest('Transition failed handler receives rejection from exitPrereqs',
 
     // The inner error is the one that was wrapped into the rejection
     QUnit.assert.strictEqual(error.inner, testError, "error.inner equals the original error");
+
+    // The error message contains the original error message
+    QUnit.assert.ok(error.message.indexOf(testError.message) >= 0, "error message contains the original error message");
 
     QUnit.start();
 
@@ -1344,7 +1350,7 @@ QUnit.asyncTest('Transition failed handler receives rejection from exitPrereqs',
 });
 
 QUnit.asyncTest('Transition failed handler receives error thrown from enterPrereqs', function() {
-  var testError = new Error();
+  var testError = new Error('TEST ERROR');
 
   var router = Router({
 
@@ -1364,6 +1370,9 @@ QUnit.asyncTest('Transition failed handler receives error thrown from enterPrere
     // The inner error is the one that was wrapped into the rejection
     QUnit.assert.strictEqual(error.inner, testError, "error.inner equals the original error");
 
+    // The error message contains the original error message
+    QUnit.assert.ok(error.message.indexOf(testError.message) >= 0, "error message contains the original error message");
+
     QUnit.start();
 
   });
@@ -1372,7 +1381,7 @@ QUnit.asyncTest('Transition failed handler receives error thrown from enterPrere
 });
 
 QUnit.asyncTest('Transition failed handler receives error thrown from exitPrereqs', function() {
-  var testError = new Error();
+  var testError = new Error('TEST ERROR');
 
   var router = Router({
 
@@ -1393,6 +1402,9 @@ QUnit.asyncTest('Transition failed handler receives error thrown from exitPrereq
 
     // The inner error is the one that was wrapped into the rejection
     QUnit.assert.strictEqual(error.inner, testError, "error.inner equals the original error");
+
+    // The error message contains the original error message
+    QUnit.assert.ok(error.message.indexOf(testError.message) >= 0, "error message contains the original error message");
 
     QUnit.start();
 
