@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.13 (2013-11-28T09:57:47.157Z)
+ * v1.2.14 (2013-12-04T14:13:38.914Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -246,6 +246,7 @@ function doTransition(enters, exits, params) {
 
 /**
  * Finds the top-most current state's parent that must be exited.
+ * For paramOnlyChange, fromState is also checked for owning params.
  *
  * @param {Abyssa.State} fromState The original state.
  * @param {Abyssa.State} toState The target state.
@@ -259,7 +260,8 @@ function transitionRoot(fromState, toState, paramOnlyChange, paramDiff) {
 
   // For a param-only change, the root is the top-most state owning the param(s),
   if (paramOnlyChange) {
-    fromState.parents.slice().reverse().forEach(function(parent) {
+    [fromState].concat(fromState.parents).reverse().forEach(function(parent) {
+      if (root) return;
       for (var param in paramDiff) {
         if (parent.params[param] || parent.queryParams[param]) {
           root = parent;

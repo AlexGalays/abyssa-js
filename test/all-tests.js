@@ -966,6 +966,82 @@ QUnit.asyncTest('Query-only transitions', function() {
 });
 
 
+QUnit.asyncTest('Param changes only in a child-most state should not trigger a parent transition', function() {
+
+  var events = [],
+      lastArticleId;
+
+  var router = Router({
+
+    blog: State('blog', {
+      enter: function() {
+        events.push('blogEnter');
+      },
+
+      exit: function() {
+        events.push('blogExit');
+      },
+
+
+      articles: State('articles/:id', {
+        enter: function(params) {
+          events.push('articlesEnter');
+          lastArticleId = params.id;
+        },
+
+        exit: function() {
+          events.push('articlesExit');
+        }
+
+      })
+
+    })
+
+  }).init('/blog/articles/33');
+
+
+  nextTick()
+    .then(changeParamOnly)
+    .then(stateWasReEntered)
+    .then(addQueryString)
+    .then(stateWasFullyReEntered)
+    .then(changeQueryStringValue)
+    .then(stateWasFullyReEntered)
+    .then(QUnit.start);
+
+
+  function changeParamOnly() {
+    router.state('/blog/articles/44');
+    events = [];
+  }
+
+  // The transition only goes up to the state owning the param
+  function stateWasReEntered() {
+    return nextTick().then(function() {
+      QUnit.assert.deepEqual(events, ['articlesExit', 'articlesEnter']);
+      events = [];
+    });
+  }
+
+  function addQueryString() {
+    router.state('/blog/articles/44?filter=1');
+  }
+
+  // By default, a change in the query will result in a complete transition to the root state and back.
+  function stateWasFullyReEntered() {
+    return nextTick().then(function() {
+      QUnit.assert.deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter']);
+      events = [];
+    });
+  }
+
+  function changeQueryStringValue() {
+    router.state('/blog/articles/44?filter=2');
+  }
+
+});
+
+
 QUnit.asyncTest('The query string is provided to all states', function() {
 
   Router({
