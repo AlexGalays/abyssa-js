@@ -99,7 +99,7 @@ The available options are:
 - interceptAnchorClicks: Whether anchor clicks should be intercepted and trigger a state change. Defaults to true.  
 - notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null. 
 
-### init (initState: String): Router
+### init (initState: String, initParams: Object): Router
 Initialize and freeze the router (states can not be updated or added afterwards).  
 The router will immediately initiate a transition to, in order of priority:  
 1) The init state passed as an argument (useful for testing and debugging)  

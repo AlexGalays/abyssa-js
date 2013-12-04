@@ -208,7 +208,7 @@ function Router(declarativeStates) {
   * 1) The init state passed as an argument
   * 2) The state captured by the current URL
   */
-  function init(initState) {
+  function init(initState, initParams) {
     if (initOptions.enableLogs)
       Router.enableLogs();
 
@@ -218,10 +218,10 @@ function Router(declarativeStates) {
     log('Router init');
     initStates();
 
-    var initialState = (initState !== undefined) ? initState : urlPathQuery();
+    initState = (initState !== undefined) ? initState : urlPathQuery();
 
-    log('Initializing to state {0}', initialState || '""');
-    state(initialState);
+    log('Initializing to state {0}', initState || '""');
+    state(initState, initParams);
 
     window.onpopstate = function(evt) {
       if (ignoreNextPopState) {
