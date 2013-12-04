@@ -123,7 +123,9 @@ function transitionRoot(fromState, toState, paramOnlyChange, paramDiff) {
 
   // For a param-only change, the root is the top-most state owning the param(s),
   if (paramOnlyChange) {
-    fromState.parents.slice().reverse().forEach(function(parent) {
+    [fromState].concat(fromState.parents).reverse().forEach(function(parent) {
+      if (root) return;
+
       for (param in paramDiff) {
         if (parent.params[param] || parent.queryParams[param]) {
           root = parent;
