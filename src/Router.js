@@ -26,6 +26,7 @@ function Router(declarativeStates) {
         enableLogs: false,
         interceptAnchorClicks: true
       },
+      ignoreNextPopState = false,
       currentPathQuery,
       currentState,
       transition,
@@ -62,6 +63,12 @@ function Router(declarativeStates) {
     // While the transition is running, any code asking the router about the current state should
     // get the end result state. The currentState is rollbacked if the transition fails.
     currentState = toState;
+    currentState._pathQuery = currentPathQuery;
+
+    // A state was popped and the browser already changed the URL as a result;
+    // Revert the URL to its previous value and actually change it after a successful transition.
+    if (poppedState) replaceState(
+      fromState._pathQuery, document.title, fromState._pathQuery);
 
     startingTransition(fromState, toState);
 
@@ -72,15 +79,15 @@ function Router(declarativeStates) {
 
     transition.then(
       function success() {
-        var historyState;
-
         transition = null;
 
         if (!poppedState && !firstTransition) {
-          historyState = ('/' + currentPathQuery).replace('//', '/');
-          log('Pushing state: {0}', historyState);
-          history.pushState(historyState, document.title, historyState);
+          log('Pushing state: {0}', currentPathQuery);
+          pushState(currentPathQuery, document.title, currentPathQuery);
         }
+
+        if (poppedState) replaceState(
+          currentState._pathQuery, document.title, currentState._pathQuery);
 
         transitionCompleted(fromState, toState);
       },
@@ -88,9 +95,10 @@ function Router(declarativeStates) {
         transition = null;
         currentState = fromState;
 
-        logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
-        router.transition.failed.dispatch(toState, fromState);
-      });
+        transitionFailed(fromState, toState, error);
+      }
+    )
+    .otherwise(logError);
   }
 
   function cancelTransition() {
@@ -98,9 +106,9 @@ function Router(declarativeStates) {
       transition.from, transition.to);
 
     transition.cancel();
+    firstTransition = false;
 
     router.transition.cancelled.dispatch(transition.to, transition.from);
-    firstTransition = false;
   }
 
   function startingTransition(fromState, toState) {
@@ -112,8 +120,26 @@ function Router(declarativeStates) {
   function transitionCompleted(fromState, toState) {
     log('Transition from {0} to {1} completed', fromState, toState);
 
-    router.transition.completed.dispatch(toState, fromState);
     firstTransition = false;
+
+    router.transition.completed.dispatch(toState, fromState);
+  }
+
+  function transitionFailed(fromState, toState, error) {
+    logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
+    router.transition.failed.dispatch(toState, fromState);
+  }
+
+  // Workaround for https://github.com/devote/HTML5-History-API/issues/44
+  function replaceState(state, title, url) {
+    if (history.emulate) ignoreNextPopState = true;
+    history.replaceState(state, title, url);
+  }
+
+  // Workaround for https://github.com/devote/HTML5-History-API/issues/44
+  function pushState(state, title, url) {
+    if (history.emulate) ignoreNextPopState = true;
+    history.pushState(state, title, url);
   }
 
   /*
@@ -198,6 +224,11 @@ function Router(declarativeStates) {
     state(initialState);
 
     window.onpopstate = function(evt) {
+      if (ignoreNextPopState) {
+        ignoreNextPopState = false;
+        return;
+      }
+
       // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
       // in these cases, evt.state is null.
       var newState = evt.state || urlPathQuery();

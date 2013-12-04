@@ -81,6 +81,128 @@ asyncTest('Redirect', function() {
 });
 
 
+asyncTest('history.back()', function() {
+
+  var router = Router({
+
+    index: State('index'),
+    books: State('books'),
+    articles: State('articles')
+
+  }).init('index');
+
+  whenSignal(router.changed)
+    .then(goToArticles)
+    .then(goToBooks)
+    .then(pathnameShouldBeBooks)
+    .then(doHistoryBack)
+    .then(pathnameShouldBeArticles)
+    .then(start);
+
+  // First state pushed
+  function goToArticles() {
+    router.state('articles');
+  }
+
+  // Second state pushed
+  function goToBooks() {
+    return nextTick().then(function() {
+      router.state('books');
+    });
+  }
+
+  function pathnameShouldBeBooks() {
+    return nextTick().then(function() {
+      equal(history.location.pathname, '/books');
+    });
+  }
+
+  function doHistoryBack() {
+    return nextTick().then(function() {
+      history.back();
+    });
+  }
+
+  function pathnameShouldBeArticles() {
+    return nextTick().then(function() {
+      equal(history.location.pathname, '/articles');
+    });
+  }
+
+});
+
+
+asyncTest('history.back() with an exitPrereqs', function() {
+
+  var exitDefer = when.defer();
+
+  var router = Router({
+
+    index: State('index'),
+    books: State('books', {
+
+      exitPrereqs: function() {
+        return exitDefer.promise;
+      }
+
+    }),
+    articles: State('articles')
+
+  }).init('index');
+
+  whenSignal(router.changed)
+    .then(goToArticles)
+    .then(goToBooks)
+    .then(pathnameShouldBeBooks)
+    .then(doHistoryBack)
+    .then(pathnameShouldStillBeBooks)
+    .then(allowExit)
+    .then(pathnameShouldBeArticles)
+    .then(start);
+
+  // First state pushed
+  function goToArticles() {
+    router.state('articles');
+  }
+
+  // Second state pushed
+  function goToBooks() {
+    return nextTick().then(function() {
+      router.state('books');
+    });
+  }
+
+  function pathnameShouldBeBooks() {
+    return nextTick().then(function() {
+      equal(history.location.pathname, '/books');
+    });
+  }
+
+  function doHistoryBack() {
+    return nextTick().then(function() {
+      history.back();
+    });
+  }
+
+  function pathnameShouldStillBeBooks() {
+    return nextTick().then(function() {
+      equal(history.location.pathname, '/books');
+    });
+  }
+
+  function allowExit() {
+    exitDefer.resolve();
+  }
+
+  function pathnameShouldBeArticles() {
+    return nextTick().then(function() {
+      equal(history.location.pathname, '/articles');
+    });
+  }
+
+});
+
+
 
 function changeURL(pathQuery) {
   history.pushState('', '', pathQuery);
@@ -101,4 +223,20 @@ function simulateClick(element) {
     element.fireEvent('onmousedown', params);
     element.fireEvent('onclick');
   }
+}
+
+function whenSignal(signal) {
+  var defer = when.defer();
+  signal.addOnce(defer.resolve);
+  return defer.promise;
+}
+
+function delay(time, value) {
+  var defer = when.defer();
+  setTimeout(function() { defer.resolve(value); }, time);
+  return defer.promise;
+}
+
+function nextTick() {
+  return delay(25);
 }

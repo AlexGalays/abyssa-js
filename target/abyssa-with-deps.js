@@ -1,4 +1,4 @@
-/* abyssa 2.0.1 - A stateful router library for single page applications */
+/* abyssa 2.0.2 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -755,7 +755,7 @@ process.chdir = function (dir) {
 
 },{}],3:[function(require,module,exports){
 /*!
- * History API JavaScript Library v4.0.8
+ * History API JavaScript Library v4.0.9
  *
  * Support: IE8+, FF3+, Opera 9+, Safari, Chrome and other
  *
@@ -767,7 +767,7 @@ process.chdir = function (dir) {
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
- * Update: 2013-10-31 16:06
+ * Update: 2013-11-20 13:03
  */
 (function(window) {
     // Prevent the code from running if there is no window.history object
@@ -776,8 +776,6 @@ process.chdir = function (dir) {
     var document = window.document;
     // HTML element
     var documentElement = document.documentElement;
-    // symlink to sessionStorage
-    var sessionStorage = null;
     // symlink to constructor of Object
     var Object = window['Object'];
     // symlink to JSON Object
@@ -1160,33 +1158,44 @@ process.chdir = function (dir) {
      * Initializing storage for the custom state's object
      */
     function storageInitialize() {
-        var storage = '';
-        if (sessionStorage) {
-            // get cache from the storage in browser
-            storage += sessionStorage.getItem(sessionStorageKey);
-        } else {
-            var cookie = document.cookie.split(sessionStorageKey + "=");
-            if (cookie.length > 1) {
-                storage += (cookie.pop().split(";").shift() || 'null');
+        var sessionStorage;
+        /**
+         * sessionStorage throws error when cookies are disabled
+         * Chrome content settings when running the site in a Facebook IFrame.
+         * see: https://github.com/devote/HTML5-History-API/issues/34
+         * and: http://stackoverflow.com/a/12976988/669360
+         */
+        try {
+            sessionStorage = window['sessionStorage'];
+            sessionStorage.setItem(sessionStorageKey + 't', '1');
+            sessionStorage.removeItem(sessionStorageKey + 't');
+        } catch(_e_) {
+            sessionStorage = {
+                getItem: function(key) {
+                    var cookie = document.cookie.split(key + "=");
+                    return cookie.length > 1 && cookie.pop().split(";").shift() || 'null';
+                },
+                setItem: function(key, value) {
+                    var state = {};
+                    // insert one current element to cookie
+                    if (state[windowLocation.href] = historyObject.state) {
+                        document.cookie = key + '=' + JSON.stringify(state);
+                    }
+                }
             }
         }
+
         try {
-            stateStorage = JSON.parse(storage) || {};
+            // get cache from the storage in browser
+            stateStorage = JSON.parse(sessionStorage.getItem(sessionStorageKey)) || {};
         } catch(_e_) {
             stateStorage = {};
         }
+
         // hang up the event handler to event unload page
         addEvent(eventNamePrefix + 'unload', function() {
-            if (sessionStorage) {
-                // save current state's object
-                sessionStorage.setItem(sessionStorageKey, JSON.stringify(stateStorage));
-            } else {
-                // save the current 'state' in the cookie
-                var state = {};
-                if (state[windowLocation.href] = historyObject.state) {
-                    document.cookie = sessionStorageKey + '=' + JSON.stringify(state);
-                }
-            }
+            // save current state's object
+            sessionStorage.setItem(sessionStorageKey, JSON.stringify(stateStorage));
         }, false);
     }
 
@@ -1452,7 +1461,7 @@ process.chdir = function (dir) {
             // if current url not equal new url
             if (urlObject._relative !== parseURL()._relative) {
                 // if empty lastURLValue to skip hash change event
-                lastURL = lastURLValue;
+                if (lastURLValue !== undefined) lastURL = lastURLValue;
                 if (replace) {
                     // only replace hash, not store to history
                     windowLocation.replace("#" + urlObject._special);
@@ -1475,6 +1484,8 @@ process.chdir = function (dir) {
      * @return void
      */
     function onHashChange(event) {
+        console.log("hash change: " + windowLocation.href);
+
         // if not empty lastURL, otherwise skipped the current handler event
         if (lastURL) {
             // if checkUrlForPopState equal current url, this means that the event was raised popstate browser
@@ -1604,15 +1615,6 @@ process.chdir = function (dir) {
         arg.replace(/(\w+)(?:=([^&]*))?/g, function(a, key, value) {
             settings[key] = (value || (key === 'basepath' ? '/' : '')).replace(/^(0|false)$/, '');
         });
-
-        /**
-         * sessionStorage throws error when cookies are disabled
-         * Chrome content settings when running the site in a Facebook IFrame.
-         * see: https://github.com/devote/HTML5-History-API/issues/34
-         */
-        try {
-            sessionStorage = window['sessionStorage'];
-        } catch(_e_) {}
 
         /**
          * hang up the event handler to listen to the events hashchange
@@ -3132,6 +3134,7 @@ function Router(declarativeStates) {
         enableLogs: false,
         interceptAnchorClicks: true
       },
+      ignoreNextPopState = false,
       currentPathQuery,
       currentState,
       transition,
@@ -3168,6 +3171,12 @@ function Router(declarativeStates) {
     // While the transition is running, any code asking the router about the current state should
     // get the end result state. The currentState is rollbacked if the transition fails.
     currentState = toState;
+    currentState._pathQuery = currentPathQuery;
+
+    // A state was popped and the browser already changed the URL as a result;
+    // Revert the URL to its previous value and actually change it after a successful transition.
+    if (poppedState) replaceState(
+      fromState._pathQuery, document.title, fromState._pathQuery);
 
     startingTransition(fromState, toState);
 
@@ -3178,15 +3187,15 @@ function Router(declarativeStates) {
 
     transition.then(
       function success() {
-        var historyState;
-
         transition = null;
 
         if (!poppedState && !firstTransition) {
-          historyState = ('/' + currentPathQuery).replace('//', '/');
-          log('Pushing state: {0}', historyState);
-          history.pushState(historyState, document.title, historyState);
+          log('Pushing state: {0}', currentPathQuery);
+          pushState(currentPathQuery, document.title, currentPathQuery);
         }
+
+        if (poppedState) replaceState(
+          currentState._pathQuery, document.title, currentState._pathQuery);
 
         transitionCompleted(fromState, toState);
       },
@@ -3194,9 +3203,10 @@ function Router(declarativeStates) {
         transition = null;
         currentState = fromState;
 
-        logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
-        router.transition.failed.dispatch(toState, fromState);
-      });
+        transitionFailed(fromState, toState, error);
+      }
+    )
+    .otherwise(logError);
   }
 
   function cancelTransition() {
@@ -3204,9 +3214,9 @@ function Router(declarativeStates) {
       transition.from, transition.to);
 
     transition.cancel();
+    firstTransition = false;
 
     router.transition.cancelled.dispatch(transition.to, transition.from);
-    firstTransition = false;
   }
 
   function startingTransition(fromState, toState) {
@@ -3218,8 +3228,26 @@ function Router(declarativeStates) {
   function transitionCompleted(fromState, toState) {
     log('Transition from {0} to {1} completed', fromState, toState);
 
-    router.transition.completed.dispatch(toState, fromState);
     firstTransition = false;
+
+    router.transition.completed.dispatch(toState, fromState);
+  }
+
+  function transitionFailed(fromState, toState, error) {
+    logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
+    router.transition.failed.dispatch(toState, fromState);
+  }
+
+  // Workaround for https://github.com/devote/HTML5-History-API/issues/44
+  function replaceState(state, title, url) {
+    if (history.emulate) ignoreNextPopState = true;
+    history.replaceState(state, title, url);
+  }
+
+  // Workaround for https://github.com/devote/HTML5-History-API/issues/44
+  function pushState(state, title, url) {
+    if (history.emulate) ignoreNextPopState = true;
+    history.pushState(state, title, url);
   }
 
   /*
@@ -3304,6 +3332,11 @@ function Router(declarativeStates) {
     state(initialState);
 
     window.onpopstate = function(evt) {
+      if (ignoreNextPopState) {
+        ignoreNextPopState = false;
+        return;
+      }
+
       // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
       // in these cases, evt.state is null.
       var newState = evt.state || urlPathQuery();
