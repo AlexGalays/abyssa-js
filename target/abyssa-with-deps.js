@@ -1,4 +1,4 @@
-/* abyssa 2.0.4 - A stateful router library for single page applications */
+/* abyssa 2.0.5 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -1484,8 +1484,6 @@ process.chdir = function (dir) {
      * @return void
      */
     function onHashChange(event) {
-        console.log("hash change: " + windowLocation.href);
-
         // if not empty lastURL, otherwise skipped the current handler event
         if (lastURL) {
             // if checkUrlForPopState equal current url, this means that the event was raised popstate browser
@@ -3206,7 +3204,7 @@ function Router(declarativeStates) {
         transitionFailed(fromState, toState, error);
       }
     )
-    .otherwise(logError);
+    .otherwise(transitionError);
   }
 
   function cancelTransition() {
@@ -3236,6 +3234,15 @@ function Router(declarativeStates) {
   function transitionFailed(fromState, toState, error) {
     logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
     router.transition.failed.dispatch(toState, fromState);
+    throw error;
+  }
+
+  function transitionError(error) {
+    // Get a fresh stackstrace without noise and keeping
+    // all the original infos such as the script/line of the error.
+    setTimeout(function() {
+      throw error;
+    }, 0);
   }
 
   // Workaround for https://github.com/devote/HTML5-History-API/issues/44

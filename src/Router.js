@@ -98,7 +98,7 @@ function Router(declarativeStates) {
         transitionFailed(fromState, toState, error);
       }
     )
-    .otherwise(logError);
+    .otherwise(transitionError);
   }
 
   function cancelTransition() {
@@ -128,6 +128,15 @@ function Router(declarativeStates) {
   function transitionFailed(fromState, toState, error) {
     logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
     router.transition.failed.dispatch(toState, fromState);
+    throw error;
+  }
+
+  function transitionError(error) {
+    // Get a fresh stackstrace without noise and keeping
+    // all the original infos such as the script/line of the error.
+    setTimeout(function() {
+      throw error;
+    }, 0);
   }
 
   // Workaround for https://github.com/devote/HTML5-History-API/issues/44
