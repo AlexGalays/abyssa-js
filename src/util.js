@@ -37,6 +37,17 @@ function objectSize(obj) {
   return size;
 }
 
+function makeMessage() {
+  var message = arguments[0],
+      tokens = Array.prototype.slice.call(arguments, 1);
+
+  for (var i = 0, l = tokens.length; i < l; i++) 
+    message = message.replace('{' + i + '}', tokens[i]);
+
+  return message;
+}
+
+
 var LEADING_SLASHES = /^\/+/;
 var TRAILING_SLASHES = /^([^?]*?)\/+$/;
 var TRAILING_SLASHES_BEFORE_QUERY = /\/+\?/;
@@ -56,5 +67,6 @@ module.exports = {
   copyObject: copyObject,
   mergeObjects: mergeObjects,
   objectSize: objectSize,
+  makeMessage: makeMessage,
   normalizePathQuery: normalizePathQuery
 };

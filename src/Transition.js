@@ -2,7 +2,8 @@
 'use strict';
 
 
-var when = require('when');
+var when = require('when'),
+    util = require('./util');
 
 /*
 * Create a new Transition instance.
@@ -71,7 +72,8 @@ function prereqs(enters, exits, params) {
         if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
       },
       function fail(cause) {
-        throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
+        var message = util.makeMessage('Failed to resolve EXIT prereqs of "{0}"', state.fullName);
+        throw TransitionError(message, cause);
       }
     );
   });
@@ -84,7 +86,8 @@ function prereqs(enters, exits, params) {
         if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
       },
       function fail(cause) {
-        throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
+        var message = util.makeMessage('Failed to resolve ENTER prereqs of "{0}"', state.fullName);
+        throw TransitionError(message, cause);
       }
     );
   });
@@ -157,6 +160,16 @@ function withParents(state, upTo, inclusive) {
 function transitionStates(state, root, paramOnlyChange) {
   var inclusive = !root || paramOnlyChange;
   return withParents(state, root || state.root, inclusive);
+}
+
+function TransitionError(message, cause) {
+  return {
+    message: message,
+    isTransitionError: true,
+    toString: function() {
+      return util.makeMessage('{0} (cause: {1})', message, cause);
+    }
+  };
 }
 
 

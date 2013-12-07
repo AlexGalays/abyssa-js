@@ -1,4 +1,4 @@
-/* abyssa 2.0.5 - A stateful router library for single page applications */
+/* abyssa 2.0.6 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -3238,11 +3238,13 @@ function Router(declarativeStates) {
   }
 
   function transitionError(error) {
-    // Get a fresh stackstrace without noise and keeping
-    // all the original infos such as the script/line of the error.
-    setTimeout(function() {
-      throw error;
-    }, 0);
+    // Transition errors are not fatal, so just log them.
+    if (error.isTransitionError)
+      return logError(error);
+
+    // For developer errors, rethrow the error outside
+    // of the promise context to retain the script and line of the error.
+    setTimeout(function() { throw error; }, 0);
   }
 
   // Workaround for https://github.com/devote/HTML5-History-API/issues/44
@@ -3587,22 +3589,14 @@ var log = util.noop,
 
 Router.enableLogs = function() {
   log = function() {
-    console.log(getLogMessage(arguments));
+    var message = util.makeMessage.apply(null, arguments);
+    console.log(message);
   };
 
   logError = function() {
-    console.error(getLogMessage(arguments));
+    var message = util.makeMessage.apply(null, arguments);
+    console.error(message);
   };
-
-  function getLogMessage(args) {
-    var message = args[0],
-        tokens = Array.prototype.slice.call(args, 1);
-
-    for (var i = 0, l = tokens.length; i < l; i++) 
-      message = message.replace('{' + i + '}', tokens[i]);
-
-    return message;
-  }
 };
 
 
@@ -3908,7 +3902,8 @@ module.exports = StateWithParams;
 'use strict';
 
 
-var when = require('when');
+var when = require('when'),
+    util = require('./util');
 
 /*
 * Create a new Transition instance.
@@ -3977,7 +3972,8 @@ function prereqs(enters, exits, params) {
         if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
       },
       function fail(cause) {
-        throw new Error('Failed to resolve EXIT prereqs of ' + state.fullName);
+        var message = util.makeMessage('Failed to resolve EXIT prereqs of "{0}"', state.fullName);
+        throw TransitionError(message, cause);
       }
     );
   });
@@ -3990,7 +3986,8 @@ function prereqs(enters, exits, params) {
         if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
       },
       function fail(cause) {
-        throw new Error('Failed to resolve ENTER prereqs of ' + state.fullName);
+        var message = util.makeMessage('Failed to resolve ENTER prereqs of "{0}"', state.fullName);
+        throw TransitionError(message, cause);
       }
     );
   });
@@ -4065,6 +4062,16 @@ function transitionStates(state, root, paramOnlyChange) {
   return withParents(state, root || state.root, inclusive);
 }
 
+function TransitionError(message, cause) {
+  return {
+    message: message,
+    isTransitionError: true,
+    toString: function() {
+      return util.makeMessage('{0} (cause: {1})', message, cause);
+    }
+  };
+}
+
 
 var asyncPromises = Transition.asyncPromises = (function () {
 
@@ -4113,7 +4120,7 @@ var asyncPromises = Transition.asyncPromises = (function () {
 
 
 module.exports = Transition;
-},{"when":5}],10:[function(require,module,exports){
+},{"./util":12,"when":5}],10:[function(require,module,exports){
 
 'use strict';
 
@@ -4251,6 +4258,17 @@ function objectSize(obj) {
   return size;
 }
 
+function makeMessage() {
+  var message = arguments[0],
+      tokens = Array.prototype.slice.call(arguments, 1);
+
+  for (var i = 0, l = tokens.length; i < l; i++) 
+    message = message.replace('{' + i + '}', tokens[i]);
+
+  return message;
+}
+
+
 var LEADING_SLASHES = /^\/+/;
 var TRAILING_SLASHES = /^([^?]*?)\/+$/;
 var TRAILING_SLASHES_BEFORE_QUERY = /\/+\?/;
@@ -4270,6 +4288,7 @@ module.exports = {
   copyObject: copyObject,
   mergeObjects: mergeObjects,
   objectSize: objectSize,
+  makeMessage: makeMessage,
   normalizePathQuery: normalizePathQuery
 };
 },{}]},{},[11])

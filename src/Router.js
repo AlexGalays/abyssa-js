@@ -132,11 +132,13 @@ function Router(declarativeStates) {
   }
 
   function transitionError(error) {
-    // Get a fresh stackstrace without noise and keeping
-    // all the original infos such as the script/line of the error.
-    setTimeout(function() {
-      throw error;
-    }, 0);
+    // Transition errors are not fatal, so just log them.
+    if (error.isTransitionError)
+      return logError(error);
+
+    // For developer errors, rethrow the error outside
+    // of the promise context to retain the script and line of the error.
+    setTimeout(function() { throw error; }, 0);
   }
 
   // Workaround for https://github.com/devote/HTML5-History-API/issues/44
@@ -481,22 +483,14 @@ var log = util.noop,
 
 Router.enableLogs = function() {
   log = function() {
-    console.log(getLogMessage(arguments));
+    var message = util.makeMessage.apply(null, arguments);
+    console.log(message);
   };
 
   logError = function() {
-    console.error(getLogMessage(arguments));
+    var message = util.makeMessage.apply(null, arguments);
+    console.error(message);
   };
-
-  function getLogMessage(args) {
-    var message = args[0],
-        tokens = Array.prototype.slice.call(args, 1);
-
-    for (var i = 0, l = tokens.length; i < l; i++) 
-      message = message.replace('{' + i + '}', tokens[i]);
-
-    return message;
-  }
 };
 
 
