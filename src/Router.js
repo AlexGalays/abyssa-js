@@ -437,6 +437,7 @@ function Router(declarativeStates) {
   router.addState = addState;
   router.link = link;
   router.currentState = getCurrentState;
+  router.urlPathQuery = urlPathQuery;
 
 
   // Signals

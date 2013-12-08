@@ -17,9 +17,13 @@ A stateful router library for single page applications.
 <a name="browser-support"></a>
 # Browser support
 
-Tested with most modern browsers, IE9 and IE8 (with the inclusion of proper es5 shims).  
+With shims ([es5-shim](https://github.com/kriskowal/es5-shim) and [history.js](https://github.com/devote/HTML5-History-API))  
 
 [![SauceLabs Status](https://saucelabs.com/browser-matrix/boubiyeah.svg)](https://saucelabs.com/u/boubiyeah)
+
+Without shims  
+
+[![SauceLabs Status](https://saucelabs.com/browser-matrix/bagonzago.svg)](https://saucelabs.com/u/bagonzago)
 
 
 <a name="introduction"></a>
@@ -454,12 +458,9 @@ To implement Non-blocking navigation, do not specify any `enterPrereqs`; instead
 
 Abyssa uses the following libraries:
 
-[**history.js**](https://github.com/devote/HTML5-History-API): Used to support HTML4 browsers and abstract the HTML5 history implementation differences.  
 [**crossroads.js**](https://github.com/millermedeiros/crossroads.js): A stateless, solid traditional low level router. Abyssa builds on top of it.  
 [**signals.js**](https://github.com/millermedeiros/js-signals): A dependency of crossroads.js; Provide an alternative to string based events. Abyssa uses signals instead of events.  
 [**when.js**](https://github.com/cujojs/when): A small and solid implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
-
-Abyssa is compiled in two flavors: with and without dependencies built in. The standalone build may be used if a project already depends on some of these libraries.
 
 
 <a name="cookbook"></a>

@@ -71,7 +71,7 @@ asyncTest('Redirect', function() {
   }).init('index');
 
   router.changed.addOnce(function() {
-    equal(history.location.pathname, '/articles');
+    equal(router.urlPathQuery(), '/articles');
     start();
   });
 
@@ -110,7 +110,7 @@ asyncTest('history.back()', function() {
 
   function pathnameShouldBeBooks() {
     return nextTick().then(function() {
-      equal(history.location.pathname, '/books');
+      equal(router.urlPathQuery(), '/books');
     });
   }
 
@@ -122,13 +122,15 @@ asyncTest('history.back()', function() {
 
   function pathnameShouldBeArticles() {
     return delay(60).then(function() {
-      equal(history.location.pathname, '/articles');
+      equal(router.urlPathQuery(), '/articles');
     });
   }
 
 });
 
 
+// IMPORTANT: In old browsers, This test actually fails because of this bug: https://github.com/devote/HTML5-History-API/issues/46
+// The line 718 of lib/history.iegte8.js has been modified to make the test pass for now.
 asyncTest('history.back() with an exitPrereqs', function() {
 
   var exitDefer = when.defer();
@@ -171,7 +173,7 @@ asyncTest('history.back() with an exitPrereqs', function() {
 
   function pathnameShouldBeBooks() {
     return nextTick().then(function() {
-      equal(history.location.pathname, '/books');
+      equal(router.urlPathQuery(), '/books');
     });
   }
 
@@ -183,7 +185,7 @@ asyncTest('history.back() with an exitPrereqs', function() {
 
   function pathnameShouldStillBeBooks() {
     return delay(60).then(function() {
-      equal(history.location.pathname, '/books');
+      equal(router.urlPathQuery(), '/books');
     });
   }
 
@@ -193,7 +195,7 @@ asyncTest('history.back() with an exitPrereqs', function() {
 
   function pathnameShouldBeArticles() {
     return nextTick().then(function() {
-      equal(history.location.pathname, '/articles');
+      equal(router.urlPathQuery(), '/articles');
     });
   }
 

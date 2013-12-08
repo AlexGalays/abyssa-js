@@ -5,9 +5,11 @@ module.exports = function(grunt) {
   var dependencies = [
     'when',
     'signals',
-    'crossroads',
-    'html5-history-api/history.iegte8'
+    'crossroads'
   ];
+
+  var supportedBrowsers = grunt.file.readJSON('test/supportedBrowsers.json');
+  var supportedBrowsersWithShims = supportedBrowsers.concat(grunt.file.readJSON('test/supportedBrowsersWithShims.json'));
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
@@ -73,15 +75,26 @@ module.exports = function(grunt) {
     },
 
     'saucelabs-qunit': {
-      all: {
+      normal: {
         options: {
-          testname: 'Abyssa',
+          testname: 'Abyssa without shims',
           tags: ['master'],
           build: +new Date(),
-          concurrency: 1,
+          concurrency: 2,
           testTimeout: 15 * 1000,
-          urls: ['http://127.0.0.1:9999/test/unitTestRunner.html', 'http://127.0.0.1:9999/test/integrationTestRunner.html'],
-          browsers: grunt.file.readJSON('saucelabsBrowsers.json')
+          urls: ['http://127.0.0.1:9999/test/unitTests.html', 'http://127.0.0.1:9999/test/integrationTests.html'],
+          browsers: supportedBrowsers
+        }
+      },
+      withShims: {
+        options: {
+          testname: 'Abyssa with shims',
+          tags: ['master'],
+          build: +new Date(),
+          concurrency: 2,
+          testTimeout: 15 * 1000,
+          urls: ['http://127.0.0.1:9999/test/unitTestsWithShims.html', 'http://127.0.0.1:9999/test/integrationTestsWithShims.html'],
+          browsers: supportedBrowsersWithShims
         }
       }
     }
