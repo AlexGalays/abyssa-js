@@ -4,14 +4,22 @@
 A stateful router library for single page applications.
 
 # Content
+* [Browser support](#browser-support)
 * [Introduction](#introduction)
 * [Code examples](#code-examples)
 * [Installation](#installation)
 * [API](#api)
 * [Blocking/Non-blocking navigation](#blocking)
 * [Dependencies](#dependencies)
-* [Browser support](#browser-support)
 * [Cookbook](#cookbook)
+
+
+<a name="browser-support"></a>
+# Browser support
+
+Tested with most modern browsers, IE9 and IE8 (with the inclusion of proper es5 shims).  
+
+[![SauceLabs Status](https://saucelabs.com/browser-matrix/boubiyeah.svg)](https://saucelabs.com/u/boubiyeah)
 
 
 <a name="introduction"></a>
@@ -452,12 +460,6 @@ Abyssa uses the following libraries:
 [**when.js**](https://github.com/cujojs/when): A small and solid implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
 
 Abyssa is compiled in two flavors: with and without dependencies built in. The standalone build may be used if a project already depends on some of these libraries.
-
-
-<a name="browser-support"></a>
-# Browser support
-
-Tested with most modern browsers, IE9 and IE8 (with the inclusion of proper es5 shims).  
 
 
 <a name="cookbook"></a>

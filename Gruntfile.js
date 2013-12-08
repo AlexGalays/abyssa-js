@@ -61,7 +61,31 @@ module.exports = function(grunt) {
         files: ['src/*.js'],
         tasks: ['default']
       }
+    },
+
+    connect: {
+      server: {
+        options: {
+          base: '.',
+          port: 9999
+        }
+      }
+    },
+
+    'saucelabs-qunit': {
+      all: {
+        options: {
+          testname: 'Abyssa',
+          tags: ['master'],
+          build: +new Date(),
+          concurrency: 1,
+          testTimeout: 15 * 1000,
+          urls: ['http://127.0.0.1:9999/test/unitTestRunner.html', 'http://127.0.0.1:9999/test/integrationTestRunner.html'],
+          browsers: grunt.file.readJSON('saucelabsBrowsers.json')
+        }
+      }
     }
+
   });
 
   grunt.loadNpmTasks('grunt-contrib-concat');
@@ -69,6 +93,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-browserify');
 
+  grunt.loadNpmTasks('grunt-contrib-connect');
+  grunt.loadNpmTasks('grunt-saucelabs');
+
   grunt.registerTask('default', ['browserify', 'concat', 'uglify']);
   grunt.registerTask('dev', ['default', 'watch']);
+  grunt.registerTask('saucelabs', ['connect', 'saucelabs-qunit']);
 };

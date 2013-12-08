@@ -3,7 +3,7 @@
     "description": "A stateful router library for single page applications",
     "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState"],
     "homepage": "https://github.com/AlexGalays/abyssa-js/",
-    "version": "2.0.6",
+    "version": "2.0.7",
     "author": {
         "name": "Alexandre Galays",
         "url": "https://github.com/AlexGalays/"
@@ -23,16 +23,18 @@
         }
     ],
     "dependencies": {
-        "when": "~2.5.0",
-        "signals": "~1.0.0",
-        "crossroads": "~0.12.0",
+        "when":              "~2.5.0",
+        "signals":           "~1.0.0",
+        "crossroads":        "~0.12.0",
         "html5-history-api": "devote/HTML5-History-API"
     },
     "devDependencies": {
-        "grunt": "~0.4.0",
-        "grunt-contrib-uglify": "~0.2",
-        "grunt-contrib-concat": "~0.3.0",
-        "grunt-contrib-watch": "~0.5.0",
-        "grunt-browserify": "~1.2.0"
+        "grunt":                 "~0.4.0",
+        "grunt-contrib-uglify":  "~0.2",
+        "grunt-contrib-concat":  "~0.3.0",
+        "grunt-contrib-watch":   "~0.5.0",
+        "grunt-browserify":      "~1.2.0",
+        "grunt-contrib-connect": "~0.1.2",
+        "grunt-saucelabs":       "~4.1.2"
     }
 }
