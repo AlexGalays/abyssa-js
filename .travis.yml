@@ -1,0 +1,10 @@
+language: node_js
+node_js:
+  - "0.10"
+
+env:
+  global:
+    - secure: "JO8RJLjf4GdhvzkaDrA1QlrDu5zYSATEP2LfpdJZbaQapR+65T0IfCfFQyaNDUBOc8cN2+btij3qKG15F00ktJm3MS0W7ZJJ6Cc2E0MY7zJzKTvGs5tt/QRkZz6oUpFPy2T5AfPfq3znh+PKzyjOEdKVtmYM//FICPyWn3M8DGs="
+    - secure: "BMwuO2aXQPArQwWNcwXEI7TRwjDGNhe4htTu+0GDBhs0d7pXnJwLuvLeR12i5LP6WcD+njyOQ5eyae7f7hKmAzgc9FP/LjLMOKls4vLOwPjQdhXLs5+XCg09Vj0ru7bufV4hU9/vpwOM/gnf2tWv2MpZMlUg8nSytMxOBOSUvlk="
+
+script: grunt saucelabs;

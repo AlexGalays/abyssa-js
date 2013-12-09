@@ -77,6 +77,8 @@ module.exports = function(grunt) {
     'saucelabs-qunit': {
       normal: {
         options: {
+          username: 'bagonzago',
+          key: process.env.SAUCE_KEY || '',
           testname: 'Abyssa without shims',
           tags: ['master'],
           build: +new Date(),
@@ -88,6 +90,8 @@ module.exports = function(grunt) {
       },
       withShims: {
         options: {
+          username: 'boubiyeah',
+          key: process.env.SAUCE_KEY_WITH_SHIMS || '',
           testname: 'Abyssa with shims',
           tags: ['master'],
           build: +new Date(),
