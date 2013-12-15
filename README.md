@@ -264,6 +264,22 @@ child states have access to their parents' data.
 This can be useful when using external models/services as a mean to communicate between states is not desired.  
 Returns the state to allow chaining.
 
+### router: Router
+A back reference to the router.  
+This property is available after router init (e.g inside an state.enter()).
+
+### name: String
+The name of this state.  
+This property is available after router init (e.g inside an state.enter()).
+
+### fullName: String
+The fully qualified name of this state.  
+This property is available after router init (e.g inside an state.enter()).
+
+### async (promiseOrValue: Object): Promise
+Shortcut for [Async](#api-async).  
+This property is available after router init (e.g inside an state.enter()).
+
 ### Declarative properties
 
 #### enter (params: Object, userData: Any): void

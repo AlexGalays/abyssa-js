@@ -49,7 +49,8 @@ function State() {
   /*
   * Initialize and freeze this state.
   */
-  function init(name, parent) {
+  function init(router, name, parent) {
+    state.router = router;
     state.name = name;
     state.parent = parent;
     state.parents = getParents();
@@ -59,7 +60,7 @@ function State() {
     state.async = async;
 
     eachChildState(function(name, childState) {
-      childState.init(name, state);
+      childState.init(router, name, state);
     });
 
     initialized = true;

@@ -255,7 +255,7 @@ function Router(declarativeStates) {
 
   function initStates() {
     eachRootState(function(name, state) {
-      state.init(name);
+      state.init(router, name);
     });
 
     if (initOptions.notFound)
