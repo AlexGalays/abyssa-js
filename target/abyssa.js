@@ -1,4 +1,4 @@
-/* abyssa 3.0.0 - A stateful router library for single page applications */
+/* abyssa 3.0.1 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -127,6 +127,8 @@ function Router(declarativeStates) {
     log('Transition from {0} to {1} completed', fromState, toState);
 
     firstTransition = false;
+
+    toState._state.lastParams = toState.params;
 
     router.transition.completed.dispatch(toState, fromState);
   }
@@ -261,7 +263,7 @@ function Router(declarativeStates) {
 
   function initStates() {
     eachRootState(function(name, state) {
-      state.init(name);
+      state.init(router, name);
     });
 
     if (initOptions.notFound)
@@ -276,7 +278,7 @@ function Router(declarativeStates) {
       state.route = roads.addRoute(state.fullPath() + ":?query:");
       state.route.matched.add(function() {
         stateFound = true;
-        setState(state, toParams(state, arguments));
+        setState(state, fromCrossroadsParams(state, arguments));
       });
     });
   }
@@ -325,6 +327,15 @@ function Router(declarativeStates) {
     state(pathQueryOrName, params);
   }
 
+  /*
+  * Attempt to navigate to 'stateName' with its previous params or 
+  * fallback to the defaultParams parameter if the state was never entered.
+  */
+  function backTo(stateName, defaultParams) {
+    var params = leafStates[stateName].lastParams || defaultParams;
+    state(stateName, params);
+  }
+
   function setStateForPathQuery(pathQuery) {
     currentPathQuery = util.normalizePathQuery(pathQuery);
     stateFound = false;
@@ -338,7 +349,7 @@ function Router(declarativeStates) {
 
     if (!state) return notFound(name);
 
-    var pathQuery = state.route.interpolate(params);
+    var pathQuery = state.route.interpolate(toCrossroadsParams(state, params));
     setStateForPathQuery(pathQuery);
   }
 
@@ -373,7 +384,7 @@ function Router(declarativeStates) {
   * Translate the crossroads argument format to what we want to use.
   * We want to keep the path and query names and merge them all in one object for convenience.
   */
-  function toParams(state, crossroadsArgs) {
+  function fromCrossroadsParams(state, crossroadsArgs) {
     var args   = Array.prototype.slice.apply(crossroadsArgs),
         query  = args.pop(),
         params = {},
@@ -390,6 +401,24 @@ function Router(declarativeStates) {
     // Decode all params
     for (var i in params) {
       if (util.isString(params[i])) params[i] = decodeURIComponent(params[i]);
+    }
+
+    return params;
+  }
+
+  /*
+  * Translate an abyssa-style params object to a crossroads one.
+  */
+  function toCrossroadsParams(state, abyssaParams) {
+    var params = {};
+
+    for (var key in abyssaParams) {
+      if (state.queryParams[key]) {
+        params.query = params.query || {};
+        params.query[key] = abyssaParams[key];
+      } else {
+        params[key] = abyssaParams[key];
+      }
     }
 
     return params;
@@ -440,6 +469,7 @@ function Router(declarativeStates) {
   router.init = init;
   router.state = state;
   router.redirect = redirect;
+  router.backTo = backTo;
   router.addState = addState;
   router.link = link;
   router.currentState = getCurrentState;
@@ -554,7 +584,8 @@ function State() {
   /*
   * Initialize and freeze this state.
   */
-  function init(name, parent) {
+  function init(router, name, parent) {
+    state.router = router;
     state.name = name;
     state.parent = parent;
     state.parents = getParents();
@@ -564,7 +595,7 @@ function State() {
     state.async = async;
 
     eachChildState(function(name, childState) {
-      childState.init(name, state);
+      childState.init(router, name, state);
     });
 
     initialized = true;

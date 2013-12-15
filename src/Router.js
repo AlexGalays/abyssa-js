@@ -122,6 +122,8 @@ function Router(declarativeStates) {
 
     firstTransition = false;
 
+    toState._state.lastParams = toState.params;
+
     router.transition.completed.dispatch(toState, fromState);
   }
 
@@ -270,7 +272,7 @@ function Router(declarativeStates) {
       state.route = roads.addRoute(state.fullPath() + ":?query:");
       state.route.matched.add(function() {
         stateFound = true;
-        setState(state, toParams(state, arguments));
+        setState(state, fromCrossroadsParams(state, arguments));
       });
     });
   }
@@ -319,6 +321,15 @@ function Router(declarativeStates) {
     state(pathQueryOrName, params);
   }
 
+  /*
+  * Attempt to navigate to 'stateName' with its previous params or 
+  * fallback to the defaultParams parameter if the state was never entered.
+  */
+  function backTo(stateName, defaultParams) {
+    var params = leafStates[stateName].lastParams || defaultParams;
+    state(stateName, params);
+  }
+
   function setStateForPathQuery(pathQuery) {
     currentPathQuery = util.normalizePathQuery(pathQuery);
     stateFound = false;
@@ -332,7 +343,7 @@ function Router(declarativeStates) {
 
     if (!state) return notFound(name);
 
-    var pathQuery = state.route.interpolate(params);
+    var pathQuery = state.route.interpolate(toCrossroadsParams(state, params));
     setStateForPathQuery(pathQuery);
   }
 
@@ -367,7 +378,7 @@ function Router(declarativeStates) {
   * Translate the crossroads argument format to what we want to use.
   * We want to keep the path and query names and merge them all in one object for convenience.
   */
-  function toParams(state, crossroadsArgs) {
+  function fromCrossroadsParams(state, crossroadsArgs) {
     var args   = Array.prototype.slice.apply(crossroadsArgs),
         query  = args.pop(),
         params = {},
@@ -384,6 +395,24 @@ function Router(declarativeStates) {
     // Decode all params
     for (var i in params) {
       if (util.isString(params[i])) params[i] = decodeURIComponent(params[i]);
+    }
+
+    return params;
+  }
+
+  /*
+  * Translate an abyssa-style params object to a crossroads one.
+  */
+  function toCrossroadsParams(state, abyssaParams) {
+    var params = {};
+
+    for (var key in abyssaParams) {
+      if (state.queryParams[key]) {
+        params.query = params.query || {};
+        params.query[key] = abyssaParams[key];
+      } else {
+        params[key] = abyssaParams[key];
+      }
     }
 
     return params;
@@ -434,6 +463,7 @@ function Router(declarativeStates) {
   router.init = init;
   router.state = state;
   router.redirect = redirect;
+  router.backTo = backTo;
   router.addState = addState;
   router.link = link;
   router.currentState = getCurrentState;

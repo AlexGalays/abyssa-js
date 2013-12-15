@@ -137,6 +137,10 @@ state('target/33?filter=desc')
 ### redirect (pathQueryOrName: String, params: Object): void
 An alias of `state`. You can use `redirect` when it makes more sense semantically.
 
+### backTo (stateName: String, defaultParams: Object): void
+Attempt to navigate to 'stateName' with its previous params or  
+fallback to the defaultParams parameter if the state was never entered.
+
 ### link (stateName: String, params: Object): String
 Compute a link that can be used in anchors' href attributes  
 from a state name and a list of params, a.k.a reverse routing.

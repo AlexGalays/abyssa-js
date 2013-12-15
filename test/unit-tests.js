@@ -1182,6 +1182,65 @@ asyncTest('Redirects', function() {
 });
 
 
+asyncTest('backTo', function() {
+  var passedParams;
+
+  var router = Router({
+
+    articles: State('articles/:id?filter', rememberParams),
+
+    books: State('books'),
+
+    cart: State('cart/:mode', rememberParams)
+
+  }).init('articles/33?filter=66');
+
+
+  whenSignal(router.changed)
+    .then(goToBooks)
+    .then(goBackToArticles)
+    .then(paramsShouldBeThePreviousOnes)
+    .then(goBackToCart)
+    .then(paramsShouldBeThePassedDefaults)
+    .done(start);
+
+
+  function rememberParams(params) {
+    passedParams = params;
+  }
+
+  function goToBooks() {
+    router.state('books');
+  }
+
+  function goBackToArticles() {
+    return nextTick().then(function() {
+      passedParams = null;
+      router.backTo('articles', {id : 1});
+    });
+  }
+
+  function paramsShouldBeThePreviousOnes() {
+    return nextTick().then(function() {
+      strictEqual(passedParams.id, 33);
+      strictEqual(passedParams.filter, 66);
+    });
+  }
+
+  // We've never been to cart before, thus the default params we pass should be used
+  function goBackToCart() {
+    router.backTo('cart', {mode: 'default'});
+  }
+
+  function paramsShouldBeThePassedDefaults() {
+    return nextTick().then(function() {
+      strictEqual(passedParams.mode, 'default');
+    });
+  }
+
+});
+
+
 function stateWithParamsAssertions(state) {
   ok(state.name, 'state1Child');
   ok(state.fullName, 'state1.state1Child');

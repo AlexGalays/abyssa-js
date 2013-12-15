@@ -1,4 +1,4 @@
-/* abyssa 3.0.0 - A stateful router library for single page applications */
+/* abyssa 3.0.1 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -1212,9 +1212,9 @@ var process=require("__browserify_process");/** @license MIT License (c) copyrig
  *
  * @author Brian Cavalier
  * @author John Hann
- * @version 2.5.1
+ * @version 2.7.0
  */
-(function(define, global) { 'use strict';
+(function(define) { 'use strict';
 define(function (require) {
 
 	// Public API
@@ -1276,102 +1276,116 @@ define(function (require) {
 		this.inspect = inspect;
 	}
 
-	Promise.prototype = {
-		/**
-		 * Register handlers for this promise.
-		 * @param [onFulfilled] {Function} fulfillment handler
-		 * @param [onRejected] {Function} rejection handler
-		 * @param [onProgress] {Function} progress handler
-		 * @return {Promise} new Promise
-		 */
-		then: function(onFulfilled, onRejected, onProgress) {
-			/*jshint unused:false*/
-			var args, sendMessage;
+	var promisePrototype = Promise.prototype;
 
-			args = arguments;
-			sendMessage = this._message;
+	/**
+	 * Register handlers for this promise.
+	 * @param [onFulfilled] {Function} fulfillment handler
+	 * @param [onRejected] {Function} rejection handler
+	 * @param [onProgress] {Function} progress handler
+	 * @return {Promise} new Promise
+	 */
+	promisePrototype.then = function(onFulfilled, onRejected, onProgress) {
+		/*jshint unused:false*/
+		var args, sendMessage;
 
-			return _promise(function(resolve, reject, notify) {
-				sendMessage('when', args, resolve, notify);
-			}, this._status && this._status.observed());
-		},
+		args = arguments;
+		sendMessage = this._message;
 
-		/**
-		 * Register a rejection handler.  Shortcut for .then(undefined, onRejected)
-		 * @param {function?} onRejected
-		 * @return {Promise}
-		 */
-		otherwise: function(onRejected) {
-			return this.then(undef, onRejected);
-		},
+		return _promise(function(resolve, reject, notify) {
+			sendMessage('when', args, resolve, notify);
+		}, this._status && this._status.observed());
+	};
 
-		/**
-		 * Ensures that onFulfilledOrRejected will be called regardless of whether
-		 * this promise is fulfilled or rejected.  onFulfilledOrRejected WILL NOT
-		 * receive the promises' value or reason.  Any returned value will be disregarded.
-		 * onFulfilledOrRejected may throw or return a rejected promise to signal
-		 * an additional error.
-		 * @param {function} onFulfilledOrRejected handler to be called regardless of
-		 *  fulfillment or rejection
-		 * @returns {Promise}
-		 */
-		ensure: function(onFulfilledOrRejected) {
-			return typeof onFulfilledOrRejected === 'function'
-				? this.then(injectHandler, injectHandler)['yield'](this)
-				: this;
+	/**
+	 * Register a rejection handler.  Shortcut for .then(undefined, onRejected)
+	 * @param {function?} onRejected
+	 * @return {Promise}
+	 */
+	promisePrototype['catch'] = promisePrototype.otherwise = function(onRejected) {
+		return this.then(undef, onRejected);
+	};
 
-			function injectHandler() {
-				return resolve(onFulfilledOrRejected());
-			}
-		},
+	/**
+	 * Ensures that onFulfilledOrRejected will be called regardless of whether
+	 * this promise is fulfilled or rejected.  onFulfilledOrRejected WILL NOT
+	 * receive the promises' value or reason.  Any returned value will be disregarded.
+	 * onFulfilledOrRejected may throw or return a rejected promise to signal
+	 * an additional error.
+	 * @param {function} onFulfilledOrRejected handler to be called regardless of
+	 *  fulfillment or rejection
+	 * @returns {Promise}
+	 */
+	promisePrototype['finally'] = promisePrototype.ensure = function(onFulfilledOrRejected) {
+		return typeof onFulfilledOrRejected === 'function'
+			? this.then(injectHandler, injectHandler)['yield'](this)
+			: this;
 
-		/**
-		 * Shortcut for .then(function() { return value; })
-		 * @param  {*} value
-		 * @return {Promise} a promise that:
-		 *  - is fulfilled if value is not a promise, or
-		 *  - if value is a promise, will fulfill with its value, or reject
-		 *    with its reason.
-		 */
-		'yield': function(value) {
-			return this.then(function() {
-				return value;
-			});
-		},
-
-		/**
-		 * Runs a side effect when this promise fulfills, without changing the
-		 * fulfillment value.
-		 * @param {function} onFulfilledSideEffect
-		 * @returns {Promise}
-		 */
-		tap: function(onFulfilledSideEffect) {
-			return this.then(onFulfilledSideEffect)['yield'](this);
-		},
-
-		/**
-		 * Assumes that this promise will fulfill with an array, and arranges
-		 * for the onFulfilled to be called with the array as its argument list
-		 * i.e. onFulfilled.apply(undefined, array).
-		 * @param {function} onFulfilled function to receive spread arguments
-		 * @return {Promise}
-		 */
-		spread: function(onFulfilled) {
-			return this.then(function(array) {
-				// array may contain promises, so resolve its contents.
-				return all(array, function(array) {
-					return onFulfilled.apply(undef, array);
-				});
-			});
-		},
-
-		/**
-		 * Shortcut for .then(onFulfilledOrRejected, onFulfilledOrRejected)
-		 * @deprecated
-		 */
-		always: function(onFulfilledOrRejected, onProgress) {
-			return this.then(onFulfilledOrRejected, onFulfilledOrRejected, onProgress);
+		function injectHandler() {
+			return resolve(onFulfilledOrRejected());
 		}
+	};
+
+	/**
+	 * Terminate a promise chain by handling the ultimate fulfillment value or
+	 * rejection reason, and assuming responsibility for all errors.  if an
+	 * error propagates out of handleResult or handleFatalError, it will be
+	 * rethrown to the host, resulting in a loud stack track on most platforms
+	 * and a crash on some.
+	 * @param {function?} handleResult
+	 * @param {function?} handleError
+	 * @returns {undefined}
+	 */
+	promisePrototype.done = function(handleResult, handleError) {
+		this.then(handleResult, handleError).otherwise(crash);
+	};
+
+	/**
+	 * Shortcut for .then(function() { return value; })
+	 * @param  {*} value
+	 * @return {Promise} a promise that:
+	 *  - is fulfilled if value is not a promise, or
+	 *  - if value is a promise, will fulfill with its value, or reject
+	 *    with its reason.
+	 */
+	promisePrototype['yield'] = function(value) {
+		return this.then(function() {
+			return value;
+		});
+	};
+
+	/**
+	 * Runs a side effect when this promise fulfills, without changing the
+	 * fulfillment value.
+	 * @param {function} onFulfilledSideEffect
+	 * @returns {Promise}
+	 */
+	promisePrototype.tap = function(onFulfilledSideEffect) {
+		return this.then(onFulfilledSideEffect)['yield'](this);
+	};
+
+	/**
+	 * Assumes that this promise will fulfill with an array, and arranges
+	 * for the onFulfilled to be called with the array as its argument list
+	 * i.e. onFulfilled.apply(undefined, array).
+	 * @param {function} onFulfilled function to receive spread arguments
+	 * @return {Promise}
+	 */
+	promisePrototype.spread = function(onFulfilled) {
+		return this.then(function(array) {
+			// array may contain promises, so resolve its contents.
+			return all(array, function(array) {
+				return onFulfilled.apply(undef, array);
+			});
+		});
+	};
+
+	/**
+	 * Shortcut for .then(onFulfilledOrRejected, onFulfilledOrRejected)
+	 * @deprecated
+	 */
+	promisePrototype.always = function(onFulfilledOrRejected, onProgress) {
+		return this.then(onFulfilledOrRejected, onFulfilledOrRejected, onProgress);
 	};
 
 	/**
@@ -1991,8 +2005,8 @@ define(function (require) {
 	//
 
 	var reduceArray, slice, fcall, nextTick, handlerQueue,
-		setTimeout, funcProto, call, arrayProto, monitorApi,
-		cjsRequire, MutationObserver, undef;
+		funcProto, call, arrayProto, monitorApi,
+		capturedSetTimeout, cjsRequire, MutationObs, undef;
 
 	cjsRequire = require;
 
@@ -2026,20 +2040,18 @@ define(function (require) {
 		handlerQueue = [];
 	}
 
-	// capture setTimeout to avoid being caught by fake timers
-	// used in time based tests
-	setTimeout = global.setTimeout;
-
 	// Allow attaching the monitor to when() if env has no console
-	monitorApi = typeof console != 'undefined' ? console : when;
+	monitorApi = typeof console !== 'undefined' ? console : when;
 
 	// Sniff "best" async scheduling option
 	// Prefer process.nextTick or MutationObserver, then check for
 	// vertx and finally fall back to setTimeout
-	/*global process*/
+	/*global process,document,setTimeout,MutationObserver,WebKitMutationObserver*/
 	if (typeof process === 'object' && process.nextTick) {
 		nextTick = process.nextTick;
-	} else if(MutationObserver = global.MutationObserver || global.WebKitMutationObserver) {
+	} else if(MutationObs =
+		(typeof MutationObserver === 'function' && MutationObserver) ||
+			(typeof WebKitMutationObserver === 'function' && WebKitMutationObserver)) {
 		nextTick = (function(document, MutationObserver, drainQueue) {
 			var el = document.createElement('div');
 			new MutationObserver(drainQueue).observe(el, { attributes: true });
@@ -2047,13 +2059,16 @@ define(function (require) {
 			return function() {
 				el.setAttribute('x', 'x');
 			};
-		}(document, MutationObserver, drainQueue));
+		}(document, MutationObs, drainQueue));
 	} else {
 		try {
 			// vert.x 1.x || 2.x
 			nextTick = cjsRequire('vertx').runOnLoop || cjsRequire('vertx').runOnContext;
 		} catch(ignore) {
-			nextTick = function(t) { setTimeout(t, 0); };
+			// capture setTimeout to avoid being caught by fake timers
+			// used in time based tests
+			capturedSetTimeout = setTimeout;
+			nextTick = function(t) { capturedSetTimeout(t, 0); };
 		}
 	}
 
@@ -2124,9 +2139,21 @@ define(function (require) {
 		return x;
 	}
 
+	function crash(fatalError) {
+		if(typeof monitorApi.reportUnhandled === 'function') {
+			monitorApi.reportUnhandled();
+		} else {
+			enqueue(function() {
+				throw fatalError;
+			});
+		}
+
+		throw fatalError;
+	}
+
 	return when;
 });
-})(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(require); }, this);
+})(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(require); });
 
 },{"__browserify_process":2}],5:[function(require,module,exports){
 
@@ -2252,6 +2279,8 @@ function Router(declarativeStates) {
     log('Transition from {0} to {1} completed', fromState, toState);
 
     firstTransition = false;
+
+    toState._state.lastParams = toState.params;
 
     router.transition.completed.dispatch(toState, fromState);
   }
@@ -2386,7 +2415,7 @@ function Router(declarativeStates) {
 
   function initStates() {
     eachRootState(function(name, state) {
-      state.init(name);
+      state.init(router, name);
     });
 
     if (initOptions.notFound)
@@ -2401,7 +2430,7 @@ function Router(declarativeStates) {
       state.route = roads.addRoute(state.fullPath() + ":?query:");
       state.route.matched.add(function() {
         stateFound = true;
-        setState(state, toParams(state, arguments));
+        setState(state, fromCrossroadsParams(state, arguments));
       });
     });
   }
@@ -2450,6 +2479,15 @@ function Router(declarativeStates) {
     state(pathQueryOrName, params);
   }
 
+  /*
+  * Attempt to navigate to 'stateName' with its previous params or 
+  * fallback to the defaultParams parameter if the state was never entered.
+  */
+  function backTo(stateName, defaultParams) {
+    var params = leafStates[stateName].lastParams || defaultParams;
+    state(stateName, params);
+  }
+
   function setStateForPathQuery(pathQuery) {
     currentPathQuery = util.normalizePathQuery(pathQuery);
     stateFound = false;
@@ -2463,7 +2501,7 @@ function Router(declarativeStates) {
 
     if (!state) return notFound(name);
 
-    var pathQuery = state.route.interpolate(params);
+    var pathQuery = state.route.interpolate(toCrossroadsParams(state, params));
     setStateForPathQuery(pathQuery);
   }
 
@@ -2498,7 +2536,7 @@ function Router(declarativeStates) {
   * Translate the crossroads argument format to what we want to use.
   * We want to keep the path and query names and merge them all in one object for convenience.
   */
-  function toParams(state, crossroadsArgs) {
+  function fromCrossroadsParams(state, crossroadsArgs) {
     var args   = Array.prototype.slice.apply(crossroadsArgs),
         query  = args.pop(),
         params = {},
@@ -2515,6 +2553,24 @@ function Router(declarativeStates) {
     // Decode all params
     for (var i in params) {
       if (util.isString(params[i])) params[i] = decodeURIComponent(params[i]);
+    }
+
+    return params;
+  }
+
+  /*
+  * Translate an abyssa-style params object to a crossroads one.
+  */
+  function toCrossroadsParams(state, abyssaParams) {
+    var params = {};
+
+    for (var key in abyssaParams) {
+      if (state.queryParams[key]) {
+        params.query = params.query || {};
+        params.query[key] = abyssaParams[key];
+      } else {
+        params[key] = abyssaParams[key];
+      }
     }
 
     return params;
@@ -2565,6 +2621,7 @@ function Router(declarativeStates) {
   router.init = init;
   router.state = state;
   router.redirect = redirect;
+  router.backTo = backTo;
   router.addState = addState;
   router.link = link;
   router.currentState = getCurrentState;
@@ -2679,7 +2736,8 @@ function State() {
   /*
   * Initialize and freeze this state.
   */
-  function init(name, parent) {
+  function init(router, name, parent) {
+    state.router = router;
     state.name = name;
     state.parent = parent;
     state.parents = getParents();
@@ -2689,7 +2747,7 @@ function State() {
     state.async = async;
 
     eachChildState(function(name, childState) {
-      childState.init(name, state);
+      childState.init(router, name, state);
     });
 
     initialized = true;
