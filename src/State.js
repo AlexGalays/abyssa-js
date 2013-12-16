@@ -153,8 +153,6 @@ function State() {
   */
   function data(key, value) {
     if (value !== undefined) {
-      if (state.ownData[key] !== undefined)
-        throw new Error('State ' + state.fullName + ' already has data with the key ' + key);
       state.ownData[key] = value;
       return state;
     }
