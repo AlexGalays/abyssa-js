@@ -46,8 +46,8 @@ function Router(declarativeStates) {
   * A successful transition will result in the URL being changed.
   * A failed transition will leave the router in its current state.
   */
-  function setState(state, params) {
-    if (isSameState(state, params)) return;
+  function setState(state, params, reload) {
+    if (!reload && isSameState(state, params)) return;
 
     var fromState;
     var toState = StateWithParams(state, params);
@@ -75,13 +75,14 @@ function Router(declarativeStates) {
     transition = Transition(
       fromState,
       toState,
-      paramDiff(fromState && fromState.params, params));
+      paramDiff(fromState && fromState.params, params),
+      reload);
 
     transition.then(
       function success() {
         transition = null;
 
-        if (!poppedState && !firstTransition) {
+        if (!poppedState && !firstTransition && !reload) {
           log('Pushing state: {0}', currentPathQuery);
           pushState(currentPathQuery, document.title, currentPathQuery);
         }
@@ -330,6 +331,16 @@ function Router(declarativeStates) {
     state(stateName, params);
   }
 
+  /*
+  * Reload the current state with its current params.
+  * All states up to the root are exited then reentered.  
+  * This can be useful when some internal state not captured in the url changed 
+  * and the current state should update because of it.
+  */
+  function reload() {
+    setState(currentState._state, currentState.params, true);
+  }
+
   function setStateForPathQuery(pathQuery) {
     currentPathQuery = util.normalizePathQuery(pathQuery);
     stateFound = false;
@@ -352,7 +363,7 @@ function Router(declarativeStates) {
   * The name must be unique among root states.
   */
   function addState(name, state) {
-    if (initialized) 
+    if (initialized)
       throw new Error('States can only be added before the Router is initialized');
 
     if (states[name])
@@ -464,6 +475,7 @@ function Router(declarativeStates) {
   router.state = state;
   router.redirect = redirect;
   router.backTo = backTo;
+  router.reload = reload;
   router.addState = addState;
   router.link = link;
   router.currentState = getCurrentState;

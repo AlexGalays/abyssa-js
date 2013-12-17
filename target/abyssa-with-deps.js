@@ -2204,8 +2204,8 @@ function Router(declarativeStates) {
   * A successful transition will result in the URL being changed.
   * A failed transition will leave the router in its current state.
   */
-  function setState(state, params) {
-    if (isSameState(state, params)) return;
+  function setState(state, params, reload) {
+    if (!reload && isSameState(state, params)) return;
 
     var fromState;
     var toState = StateWithParams(state, params);
@@ -2233,13 +2233,14 @@ function Router(declarativeStates) {
     transition = Transition(
       fromState,
       toState,
-      paramDiff(fromState && fromState.params, params));
+      paramDiff(fromState && fromState.params, params),
+      reload);
 
     transition.then(
       function success() {
         transition = null;
 
-        if (!poppedState && !firstTransition) {
+        if (!poppedState && !firstTransition && !reload) {
           log('Pushing state: {0}', currentPathQuery);
           pushState(currentPathQuery, document.title, currentPathQuery);
         }
@@ -2488,6 +2489,16 @@ function Router(declarativeStates) {
     state(stateName, params);
   }
 
+  /*
+  * Reload the current state with its current params.
+  * All states up to the root are exited then reentered.  
+  * This can be useful when some internal state not captured in the url changed 
+  * and the current state should update because of it.
+  */
+  function reload() {
+    setState(currentState._state, currentState.params, true);
+  }
+
   function setStateForPathQuery(pathQuery) {
     currentPathQuery = util.normalizePathQuery(pathQuery);
     stateFound = false;
@@ -2510,7 +2521,7 @@ function Router(declarativeStates) {
   * The name must be unique among root states.
   */
   function addState(name, state) {
-    if (initialized) 
+    if (initialized)
       throw new Error('States can only be added before the Router is initialized');
 
     if (states[name])
@@ -2622,6 +2633,7 @@ function Router(declarativeStates) {
   router.state = state;
   router.redirect = redirect;
   router.backTo = backTo;
+  router.reload = reload;
   router.addState = addState;
   router.link = link;
   router.currentState = getCurrentState;
@@ -2741,6 +2753,7 @@ function State() {
     state.name = name;
     state.parent = parent;
     state.parents = getParents();
+    state.root = state.parent ? state.parents[state.parents.length - 1] : state;
     state.children = getChildren();
     state.fullName = getFullName();
     state.root = state.parents[state.parents.length - 1];
@@ -2840,8 +2853,6 @@ function State() {
   */
   function data(key, value) {
     if (value !== undefined) {
-      if (state.ownData[key] !== undefined)
-        throw new Error('State ' + state.fullName + ' already has data with the key ' + key);
       state.ownData[key] = value;
       return state;
     }
@@ -2992,7 +3003,7 @@ var when = require('when'),
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramDiff) {
+function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
   var root,
       cancelled,
       enters,
@@ -3017,7 +3028,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff) {
 
   // The first transition has no fromState.
   if (fromState) {
-    root = transitionRoot(fromState, toState, paramOnlyChange, paramDiff);
+    root = reload ? toState.root : transitionRoot(fromState, toState, paramOnlyChange, paramDiff);
     exits = transitionStates(fromState, root, paramOnlyChange);
   }
 

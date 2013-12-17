@@ -141,6 +141,11 @@ An alias of `state`. You can use `redirect` when it makes more sense semanticall
 Attempt to navigate to 'stateName' with its previous params or  
 fallback to the defaultParams parameter if the state was never entered.
 
+### reload(): void
+Reload the current state with its current params.  
+All states up to the root are exited then reentered.  
+This can be useful when some internal state not captured in the url changed and the current state should update because of it.
+
 ### link (stateName: String, params: Object): String
 Compute a link that can be used in anchors' href attributes  
 from a state name and a list of params, a.k.a reverse routing.

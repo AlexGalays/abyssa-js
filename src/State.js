@@ -54,6 +54,7 @@ function State() {
     state.name = name;
     state.parent = parent;
     state.parents = getParents();
+    state.root = state.parent ? state.parents[state.parents.length - 1] : state;
     state.children = getChildren();
     state.fullName = getFullName();
     state.root = state.parents[state.parents.length - 1];

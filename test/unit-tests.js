@@ -1241,6 +1241,43 @@ asyncTest('backTo', function() {
 });
 
 
+asyncTest('reload', function() {
+  var articleId;
+
+  var router = Router({
+
+    articles: State('articles/:id', {
+
+      enter: function(params) {
+        articleId = params.id;
+      },
+
+      show: State('')
+
+    })
+
+  }).init('articles/99');
+
+  whenSignal(router.changed)
+    .then(reload)
+    .then(allStatesWereReentered)
+    .done(start);
+
+  function reload() {
+    articleId = null;
+    router.reload();
+  }
+
+  function allStatesWereReentered() {
+    return nextTick().then(function() {
+      strictEqual(articleId, 99);
+      strictEqual(router.currentState().fullName, 'articles.show');
+    });
+  }
+
+});
+
+
 function stateWithParamsAssertions(state) {
   ok(state.name, 'state1Child');
   ok(state.fullName, 'state1.state1Child');

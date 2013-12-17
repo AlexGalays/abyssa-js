@@ -8,7 +8,7 @@ var when = require('when'),
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramDiff) {
+function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
   var root,
       cancelled,
       enters,
@@ -33,7 +33,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff) {
 
   // The first transition has no fromState.
   if (fromState) {
-    root = transitionRoot(fromState, toState, paramOnlyChange, paramDiff);
+    root = reload ? toState.root : transitionRoot(fromState, toState, paramOnlyChange, paramDiff);
     exits = transitionStates(fromState, root, paramOnlyChange);
   }
 
