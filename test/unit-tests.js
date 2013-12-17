@@ -48,7 +48,7 @@ asyncTest('Simple states', function() {
     .then(indexWasEntered2)
     .then(goToArticlesWithFilter)
     .then(articlesWasEnteredWithFilter)
-    .then(start);
+    .done(start);
 
   function indexWasEntered() {
     deepEqual(events, ['indexEnter']);

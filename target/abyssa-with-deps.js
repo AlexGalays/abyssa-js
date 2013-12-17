@@ -2512,6 +2512,11 @@ function Router(declarativeStates) {
 
     if (!state) return notFound(name);
 
+    var crossroadsParams = toCrossroadsParams(state, params || {});
+
+    currentPathQuery = util.normalizePathQuery(
+      state.route.interpolate(crossroadsParams));
+
     setState(state, params);
   }
 
@@ -2569,34 +2574,39 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Compute a link that can be used in anchors' href attributes
-  * from a state name and a list of params, a.k.a reverse routing.
+  * Translate an abyssa-style params object to a crossroads one.
   */
-  function link(stateName, params) {
-    var query = {},
-        allQueryParams = {},
-        hasQuery = false,
-        state = leafStates[stateName];
-
-    if (!state) throw new Error('Cannot find state ' + stateName);
+  function toCrossroadsParams(state, abyssaParams) {
+    var params = {},
+        allQueryParams = {};
 
     [state].concat(state.parents).forEach(function(s) {
       util.mergeObjects(allQueryParams, s.queryParams);
     });
 
-    // The passed params are path and query params lumped together,
-    // Separate them for crossroads' to compute its interpolation.
-    for (var key in params) {
+    for (var key in abyssaParams) {
       if (allQueryParams[key]) {
-        query[key] = params[key];
-        delete params[key];
-        hasQuery = true;
+        params.query = params.query || {};
+        params.query[key] = abyssaParams[key];
+      } else {
+        params[key] = abyssaParams[key];
       }
     }
 
-    if (hasQuery) params.query = query;
+    return params;
+  }
 
-    return util.normalizePathQuery(state.route.interpolate(params));
+  /*
+  * Compute a link that can be used in anchors' href attributes
+  * from a state name and a list of params, a.k.a reverse routing.
+  */
+  function link(stateName, params) {
+    var state = leafStates[stateName];
+    if (!state) throw new Error('Cannot find state ' + stateName);
+
+    var crossroadsParams = toCrossroadsParams(state, params);
+
+    return util.normalizePathQuery(state.route.interpolate(crossroadsParams));
   }
 
   /*
