@@ -56,7 +56,7 @@ asyncTest('Simple states', function() {
   }
 
   function goToArticles() {
-    router.state('articles', {id: 38, query: {filter: 555}});
+    router.state('articles', {id: 38, filter: 555});
   }
 
   function articlesWasEntered() {
@@ -323,6 +323,53 @@ asyncTest('No transition occurs when going to the same state', function() {
       start();
     });
   });
+
+});
+
+
+asyncTest('Non url params can be passed to state() for later use', function() {
+  var passedParams;
+
+  var objectSize = Abyssa.util.objectSize;
+
+  var router = Router({
+
+    articles: State('articles/:id?filter', {
+      enter: function(params) { passedParams = params; }
+    })
+
+  }).init('articles/55?filter=no');
+
+  whenSignal(router.changed)
+    .then(goToStateWithCustomParams)
+    .then(customParamsWerePassed)
+    .then(goToStateWithURLParams)
+    .then(onlyURLParamsWerePassed)
+    .done(start);
+
+  function goToStateWithCustomParams() {
+    router.state('articles', {id: 56, filter: 'yes', horse: 1, cat: '@_@'});
+  }
+
+  function customParamsWerePassed() {
+    return nextTick().then(function() {
+      strictEqual(objectSize(passedParams), 4);
+      strictEqual(passedParams.id, 56);
+      strictEqual(passedParams.filter, 'yes');
+      strictEqual(passedParams.horse, 1);
+      strictEqual(passedParams.cat, '@_@');
+    });
+  }
+
+  function goToStateWithURLParams() {
+    router.state('articles', {id: 57, filter: 'no'});
+  }
+
+  function onlyURLParamsWerePassed() {
+    return nextTick().then(function() {
+      strictEqual(objectSize(passedParams), 2);
+    });
+  }
 
 });
 

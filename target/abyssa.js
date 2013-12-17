@@ -1,4 +1,4 @@
-/* abyssa 3.0.1 - A stateful router library for single page applications */
+/* abyssa 3.0.2 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -360,8 +360,7 @@ function Router(declarativeStates) {
 
     if (!state) return notFound(name);
 
-    var pathQuery = state.route.interpolate(toCrossroadsParams(state, params));
-    setStateForPathQuery(pathQuery);
+    setState(state, params);
   }
 
   /*
@@ -412,24 +411,6 @@ function Router(declarativeStates) {
     // Decode all params
     for (var i in params) {
       if (util.isString(params[i])) params[i] = decodeURIComponent(params[i]);
-    }
-
-    return params;
-  }
-
-  /*
-  * Translate an abyssa-style params object to a crossroads one.
-  */
-  function toCrossroadsParams(state, abyssaParams) {
-    var params = {};
-
-    for (var key in abyssaParams) {
-      if (state.queryParams[key]) {
-        params.query = params.query || {};
-        params.query[key] = abyssaParams[key];
-      } else {
-        params[key] = abyssaParams[key];
-      }
     }
 
     return params;
