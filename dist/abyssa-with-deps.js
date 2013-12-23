@@ -2915,7 +2915,7 @@ var when = (function(global) {
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.15 (2013-12-23T13:37:16.590Z)
+ * v1.2.16 (2013-12-23T17:02:05.933Z)
  */
 (function () {
 var factory = function () {
@@ -3155,11 +3155,17 @@ function prereqs(enters, exits, params) {
 function doTransition(enters, exits, params) {
   exits.forEach(function(state) {
     state.exit(state._exitPrereqs && state._exitPrereqs.value);
+
+    // Cleanup the used prereqs result to avoid confusion in function prereqs() on next transition:
+    state._exitPrereqs = null;
   });
 
   asyncPromises.allowed = true;
   enters.forEach(function(state) {
     state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
+
+    // Cleanup the used prereqs result to avoid confusion in function prereqs() on next transition:
+    state._enterPrereqs = null;
   });
   asyncPromises.allowed = false;
 }

@@ -106,11 +106,17 @@ function prereqs(enters, exits, params) {
 function doTransition(enters, exits, params) {
   exits.forEach(function(state) {
     state.exit(state._exitPrereqs && state._exitPrereqs.value);
+
+    // Cleanup the used prereqs result to avoid confusion in function prereqs() on next transition:
+    state._exitPrereqs = null;
   });
 
   asyncPromises.allowed = true;
   enters.forEach(function(state) {
     state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
+
+    // Cleanup the used prereqs result to avoid confusion in function prereqs() on next transition:
+    state._enterPrereqs = null;
   });
   asyncPromises.allowed = false;
 }

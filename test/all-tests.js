@@ -1625,6 +1625,66 @@ QUnit.asyncTest('pushState called on next successful transition if the first has
   }
 });
 
+QUnit.asyncTest('Transition does not occur if exitPrereqs are rejected having enterPrereqs fulfilled on the same state before', function() {
+
+  var events = [],
+      testError = new Error('TEST ERROR');
+
+  var router = Router({
+
+    test: State('test', {
+      enterPrereqs: function() {
+        return when.defer().resolve();
+      },
+      enter: function() {
+        events.push('testEnter');
+      },
+
+      exitPrereqs: function() {
+        return when.defer().reject(testError);
+      },
+      exit: function() {
+        events.push('testExit');
+      }
+    }),
+
+    home: State('home', {
+      enter: function() {
+        events.push('homeEnter');
+      }
+    })
+
+  });
+
+  router.init('test');
+
+  delay(200)
+    .then(testStateWasEntered)
+    .then(goToHomeState)
+    .then(testStateWasNotExited)
+    .then(QUnit.start);
+
+  function testStateWasEntered() {
+    return nextTick().then(function() {
+      QUnit.assert.deepEqual(events, ['testEnter'], 'test state was entered');
+      events = [];
+    });
+  }
+
+  function goToHomeState() {
+    return nextTick().then(function() {
+      router.state('home');
+    });
+  }
+
+  function testStateWasNotExited() {
+    return nextTick().then(function() {
+      QUnit.assert.deepEqual(events, [], 'test state was not exited, home state was not entered');
+      events = [];
+    });
+  }
+});
+
 
 function delay(time, value) {
   var defer = when.defer();
