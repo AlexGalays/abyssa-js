@@ -1495,6 +1495,136 @@ QUnit.asyncTest('Transition failed handler receives error thrown from exitPrereq
   });
 });
 
+QUnit.asyncTest('State not entered if the transition enterPrereqs have failed with a rejection having an async error handler that does not throw or return a rejection', function() {
+
+  var events = [],
+      testError = new Error('TEST ERROR'),
+      oldAsyncErrorHandler = Router.setAsyncErrorHandler(function() {
+        events.push('asyncErrorHandler');
+      });
+
+  var router = Router({
+
+    failed: State('failed', {
+      enterPrereqs: function() {
+        return when.defer().reject();
+      },
+      enter: function() {
+        events.push('failedEnter');
+      }
+    }),
+
+    success: State('success', {
+      enterPrereqs: function() {
+        return when.defer().resolve().promise;
+      },
+      enter: function() {
+        events.push('successEnter');
+      }
+    })
+
+  });
+
+  router.init('failed');
+
+  delay(200)
+    .then(failedStateWasNotEntered)
+    .then(goToSuccessState)
+    .then(successStateWasEntered)
+    .then(unstubAsyncErrorHandler)
+    .then(QUnit.start);
+
+  function failedStateWasNotEntered() {
+    return nextTick().then(function() {
+      QUnit.assert.deepEqual(events, ['asyncErrorHandler'], 'failed state was not entered');
+      events = [];
+    });
+  }
+
+  function goToSuccessState() {
+    return nextTick().then(function() {
+      router.state('success');
+    });
+  }
+
+  function successStateWasEntered() {
+    return nextTick().then(function() {
+      QUnit.assert.deepEqual(events, ['successEnter'], 'success state was entered');
+      events = [];
+    });
+  }
+
+  function unstubAsyncErrorHandler() {
+    Router.setAsyncErrorHandler(oldAsyncErrorHandler);
+  }
+});
+
+QUnit.asyncTest('pushState called on next successful transition if the first has failed', function() {
+
+  var events = [],
+      testError = new Error('TEST ERROR'),
+      oldPushState;
+
+  stubPushState();
+
+  var router = Router({
+
+    failed: State('failed', {
+      enterPrereqs: function() {
+        return when.defer().reject(testError);
+      },
+      enter: function() {
+        events.push('failedEnter');
+      }
+    }),
+
+    success: State('success', {
+      enter: function() {
+        events.push('successEnter');
+      }
+    })
+
+  });
+
+  router.init('failed');
+
+  delay(200)
+    .then(failedStateWasNotEntered)
+    .then(goToSuccessState)
+    .then(successStateWasEntered)
+    .then(unstubPushState)
+    .then(QUnit.start);
+
+  function failedStateWasNotEntered() {
+    return nextTick().then(function() {
+      QUnit.assert.deepEqual(events, [], 'failed state was not entered, pushState not called');
+      events = [];
+    });
+  }
+
+  function goToSuccessState() {
+    return nextTick().then(function() {
+      router.state('success');
+    });
+  }
+
+  function successStateWasEntered() {
+    return nextTick().then(function() {
+      QUnit.assert.deepEqual(events, ['successEnter','pushState'], 'success state was entered, pushState called');
+      events = [];
+    });
+  }
+
+  function stubPushState() {
+    oldPushState = window.history.pushState;
+    window.history.pushState = function() { events.push('pushState'); }
+  }
+
+  function unstubPushState() {
+    window.history.pushState = oldPushState;
+  }
+});
+
 
 function delay(time, value) {
   var defer = when.defer();

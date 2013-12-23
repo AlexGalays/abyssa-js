@@ -1,7 +1,7 @@
 /*! @license
  * abyssa <https://github.com/AlexGalays/abyssa-js/>
  * Author: Alexandre Galays | MIT License
- * v1.2.14 (2013-12-04T14:13:38.914Z)
+ * v1.2.15 (2013-12-23T13:37:16.590Z)
  */
 (function () {
 var factory = function (signals, crossroads, when, history) {
@@ -207,7 +207,10 @@ function prereqs(enters, exits, params) {
       function fail(cause) {
         var error = new Error('Failed to resolve EXIT prereqs of state "' + state.fullName + '": ' + (cause ? cause.message || cause : '(no cause)'));
         error.inner = cause;
-        return handleAsyncError(error);
+        handleAsyncError(error);
+
+        // Return a rejection to stop further execution and prevent state.enter from being called:
+        return when.defer().reject(error);
       }
     );
   });
@@ -222,7 +225,10 @@ function prereqs(enters, exits, params) {
       function fail(cause) {
         var error = new Error('Failed to resolve ENTER prereqs of state "' + state.fullName + '": ' + (cause ? cause.message || cause : '(no cause)'));
         error.inner = cause;
-        return handleAsyncError(error);
+        handleAsyncError(error);
+
+        // Return a rejection to stop further execution and prevent state.enter from being called:
+        return when.defer().reject(error);
       }
     );
   });
@@ -723,6 +729,9 @@ function Router(declarativeStates) {
 
         logError('Transition from {0} to {1} failed: {2}', currentState, state, error);
         router.transition.failed.dispatch(currentState, state, currentParams, params, error);
+
+        // Reset the firstTransition flag on failure, too, to be able to redirect to another route on failure and do a pushState for it:
+        firstTransition = false;
       });
   }
 
@@ -779,7 +788,9 @@ function Router(declarativeStates) {
         params: params || {}
       }));
     }
-    else return handleAsyncError(new Error('State "' + pathQueryOrName + '" could not be found.'));
+    else {
+        handleAsyncError(new Error('State "' + pathQueryOrName + '" could not be found.'));
+    }
   }
 
   /**
@@ -1048,7 +1059,9 @@ function handleAsyncErrorDefault(error) {
 }
 
 Router.setAsyncErrorHandler = function(handler) {
+  var old = handleAsyncError;
   handleAsyncError = handler || handleAsyncErrorDefault;
+  return old;
 };
 
 

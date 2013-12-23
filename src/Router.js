@@ -83,6 +83,9 @@ function Router(declarativeStates) {
 
         logError('Transition from {0} to {1} failed: {2}', currentState, state, error);
         router.transition.failed.dispatch(currentState, state, currentParams, params, error);
+
+        // Reset the firstTransition flag on failure, too, to be able to redirect to another route on failure and do a pushState for it:
+        firstTransition = false;
       });
   }
 
@@ -139,7 +142,9 @@ function Router(declarativeStates) {
         params: params || {}
       }));
     }
-    else return handleAsyncError(new Error('State "' + pathQueryOrName + '" could not be found.'));
+    else {
+        handleAsyncError(new Error('State "' + pathQueryOrName + '" could not be found.'));
+    }
   }
 
   /**
@@ -408,7 +413,9 @@ function handleAsyncErrorDefault(error) {
 }
 
 Router.setAsyncErrorHandler = function(handler) {
+  var old = handleAsyncError;
   handleAsyncError = handler || handleAsyncErrorDefault;
+  return old;
 };
 
 
