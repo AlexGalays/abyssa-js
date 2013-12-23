@@ -354,12 +354,8 @@ function Router(declarativeStates) {
 
     if (!state) return notFound(name);
 
-    var crossroadsParams = toCrossroadsParams(state, params || {});
-
-    currentPathQuery = util.normalizePathQuery(
-      state.route.interpolate(crossroadsParams));
-
-    setState(state, params);
+    var pathQuery = state.route.interpolate(toCrossroadsParams(state, params));
+    setStateForPathQuery(pathQuery);
   }
 
   /*
@@ -430,7 +426,8 @@ function Router(declarativeStates) {
       if (allQueryParams[key]) {
         params.query = params.query || {};
         params.query[key] = abyssaParams[key];
-      } else {
+      }
+      else {
         params[key] = abyssaParams[key];
       }
     }

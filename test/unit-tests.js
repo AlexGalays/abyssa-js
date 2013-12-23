@@ -26,7 +26,7 @@ asyncTest('Simple states', function() {
       }
     }),
 
-    articles: State('articles/:id', {
+    articles: State('articles/:id?filter', {
       enter: function(params) {
         events.push('articlesEnter');
         lastArticleId = params.id;
@@ -323,53 +323,6 @@ asyncTest('No transition occurs when going to the same state', function() {
       start();
     });
   });
-
-});
-
-
-asyncTest('Non url params can be passed to state() for later use', function() {
-  var passedParams;
-
-  var objectSize = Abyssa.util.objectSize;
-
-  var router = Router({
-
-    articles: State('articles/:id?filter', {
-      enter: function(params) { passedParams = params; }
-    })
-
-  }).init('articles/55?filter=no');
-
-  whenSignal(router.changed)
-    .then(goToStateWithCustomParams)
-    .then(customParamsWerePassed)
-    .then(goToStateWithURLParams)
-    .then(onlyURLParamsWerePassed)
-    .done(start);
-
-  function goToStateWithCustomParams() {
-    router.state('articles', {id: 56, filter: 'yes', horse: 1, cat: '@_@'});
-  }
-
-  function customParamsWerePassed() {
-    return nextTick().then(function() {
-      strictEqual(objectSize(passedParams), 4);
-      strictEqual(passedParams.id, 56);
-      strictEqual(passedParams.filter, 'yes');
-      strictEqual(passedParams.horse, 1);
-      strictEqual(passedParams.cat, '@_@');
-    });
-  }
-
-  function goToStateWithURLParams() {
-    router.state('articles', {id: 57, filter: 'no'});
-  }
-
-  function onlyURLParamsWerePassed() {
-    return nextTick().then(function() {
-      strictEqual(objectSize(passedParams), 2);
-    });
-  }
 
 });
 
@@ -984,13 +937,13 @@ test('Reverse routing', function() {
 
     index: State(),
 
-    one: State('one', {
-      two: State(':id?filter')
+    one: State('one?filter', {
+      two: State(':id')
     })
 
   }).init('');
 
-  var href = router.link('one.two', {id: 33, filter: 'bloup'});
+  var href = router.link('one.two', {id: 33, filter: 'bloup', bla: 55});
   equal(href, '/one/33?filter=bloup');
 
 });
