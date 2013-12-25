@@ -150,6 +150,9 @@ This can be useful when some internal state not captured in the url changed and 
 Compute a link that can be used in anchors' href attributes  
 from a state name and a list of params, a.k.a reverse routing.
 
+### previousState(): [StateWithParams](#api-stateWithParams)
+Returns the previous state of the router or null if the router is still in its initial state.
+
 ### currentState(): [StateWithParams](#api-stateWithParams)
 Returns the current state of the router.
 
@@ -205,6 +208,15 @@ router.addState('index', State());
 StateWithParams is the merge between a State object (created and added to the router before init)
 and params (both path and query params, extracted from the URL after init).  
 Instances of StateWithParams are returned from router.currentState() and passed in signal handlers.  
+
+### name: String
+Same as State's name.
+
+### fullName: String
+Same as State's fullName.
+
+### pathQuery: String
+The path/query at the time this state was active.
 
 ### data (key: String, value: Any): Any | State
 Same as State's data.
