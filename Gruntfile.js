@@ -3,7 +3,7 @@ module.exports = function(grunt) {
   var banner = '/* <%= pkg.name %> <%= pkg.version %> - <%= pkg.description %> */\n\n';
 
   var dependencies = [
-    'when',
+    'q',
     'signals',
     'crossroads'
   ];

@@ -23,7 +23,7 @@
         }
     ],
     "dependencies": {
-        "when":                  "~2.5.0",
+        "q":                     "~0.9.7",
         "signals":               "~1.0.0",
         "crossroads":            "~0.12.0"
     },

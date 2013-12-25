@@ -1049,7 +1049,8 @@ asyncTest('Non blocking rejected promises', function() {
         Async(failPromise(80)).then(
           function(value) { promiseValue = value; },
           function(error) { promiseError = error; }
-        ).always(beginAssertions);
+        )
+        .fin(beginAssertions);
       }
     })
 
@@ -1060,12 +1061,12 @@ asyncTest('Non blocking rejected promises', function() {
       .then(exitThenReEnterStateOne)
       .then(cancelNavigation)
       .then(promiseShouldNotHaveBeenResolved)
-      .then(start);
+      .done(start);
   }
 
   function promiseWasRejected() {
     strictEqual(promiseValue, null);
-    strictEqual(promiseError, 'error');
+    strictEqual(promiseError.message, 'error');
     promiseError = null;
   }
 
@@ -1419,7 +1420,7 @@ function successPromise(time, value, afterResolveCallback) {
 }
 
 function failPromise(time) {
-  return delay(time).then(function() { throw 'error'; });
+  return delay(time).then(function() { throw new Error('error'); });
 }
 
 function nextTick() {

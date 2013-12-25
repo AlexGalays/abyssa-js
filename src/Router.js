@@ -99,7 +99,7 @@ function Router(declarativeStates) {
         transitionFailed(fromState, toState, error);
       }
     )
-    .otherwise(transitionError);
+    .fail(transitionError);
   }
 
   function cancelTransition() {

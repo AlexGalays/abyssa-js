@@ -485,7 +485,7 @@ Abyssa uses the following libraries:
 
 [**crossroads.js**](https://github.com/millermedeiros/crossroads.js): A stateless, solid traditional low level router. Abyssa builds on top of it.  
 [**signals.js**](https://github.com/millermedeiros/js-signals): A dependency of crossroads.js; Provide an alternative to string based events. Abyssa uses signals instead of events.  
-[**when.js**](https://github.com/cujojs/when): A small and solid implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
+[**q.js**](https://github.com/kriskowal/q): The reference implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
 
 
 <a name="cookbook"></a>

@@ -105,7 +105,7 @@ function Router(declarativeStates) {
         transitionFailed(fromState, toState, error);
       }
     )
-    .otherwise(transitionError);
+    .fail(transitionError);
   }
 
   function cancelTransition() {
@@ -833,7 +833,7 @@ module.exports = StateWithParams;
 'use strict';
 
 
-var when = require('when'),
+var Q = require('q'),
     util = require('./util');
 
 /*
@@ -898,7 +898,7 @@ function prereqs(enters, exits, params) {
   exits.forEach(function(state) {
     if (!state.exitPrereqs) return;
 
-    var prereqs = state._exitPrereqs = when(state.exitPrereqs()).then(
+    var prereqs = state._exitPrereqs = Q(state.exitPrereqs()).then(
       function success(value) {
         if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
       },
@@ -912,7 +912,7 @@ function prereqs(enters, exits, params) {
   enters.forEach(function(state) {
     if (!state.enterPrereqs) return;
 
-    var prereqs = state._enterPrereqs = when(state.enterPrereqs(params)).then(
+    var prereqs = state._enterPrereqs = Q(state.enterPrereqs(params)).then(
       function success(value) {
         if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
       },
@@ -923,7 +923,7 @@ function prereqs(enters, exits, params) {
     );
   });
 
-  return when.all(enters.concat(exits).map(function(state) {
+  return Q.all(enters.concat(exits).map(function(state) {
     return state._enterPrereqs || state._exitPrereqs;
   }));
 }
@@ -994,13 +994,15 @@ function transitionStates(state, root, paramOnlyChange) {
 }
 
 function TransitionError(message, cause) {
-  return {
-    message: message,
-    isTransitionError: true,
-    toString: function() {
-      return util.makeMessage('{0} (cause: {1})', message, cause);
-    }
+  var error = new Error(message);
+  error.isTransitionError = true;
+  error.cause = cause;
+
+  error.toString = function() {
+    return util.makeMessage('{0} (cause: {1})', message, cause);
   };
+
+  return error;
 }
 
 
@@ -1017,11 +1019,11 @@ var asyncPromises = Transition.asyncPromises = (function () {
     if (!that.allowed)
       throw new Error('Async can only be called from within state.enter()');
 
-    var defer = when.defer();
+    var defer = Q.defer();
 
     activeDeferreds.push(defer);
 
-    when(promise).then(
+    Q(promise).then(
       function(value) {
         if (activeDeferreds.indexOf(defer) > -1)
           defer.resolve(value);
@@ -1051,7 +1053,7 @@ var asyncPromises = Transition.asyncPromises = (function () {
 
 
 module.exports = Transition;
-},{"./util":8,"when":1}],6:[function(require,module,exports){
+},{"./util":8,"q":1}],6:[function(require,module,exports){
 
 'use strict';
 
