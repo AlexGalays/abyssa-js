@@ -35,6 +35,7 @@ function Router(declarativeStates) {
       ignoreNextPopState = false,
       currentPathQuery,
       currentState,
+      previousState,
       transition,
       leafStates,
       stateFound,
@@ -55,8 +56,8 @@ function Router(declarativeStates) {
   function setState(state, params, reload) {
     if (!reload && isSameState(state, params)) return;
 
-    var fromState;
-    var toState = StateWithParams(state, params);
+    var fromState, oldPreviousState;
+    var toState = StateWithParams(state, params, currentPathQuery);
 
     if (transition) {
       cancelTransition();
@@ -66,15 +67,16 @@ function Router(declarativeStates) {
       fromState = currentState;
     }
 
-    // While the transition is running, any code asking the router about the current state should
-    // get the end result state. The currentState is rollbacked if the transition fails.
+    // While the transition is running, any code asking the router about the previous/current state should
+    // get the end result state. These states are rollbacked if the transition fails.
+    oldPreviousState = previousState;
+    previousState = currentState;
     currentState = toState;
-    currentState._pathQuery = currentPathQuery;
 
     // A state was popped and the browser already changed the URL as a result;
     // Revert the URL to its previous value and actually change it after a successful transition.
     if (poppedState) replaceState(
-      fromState._pathQuery, document.title, fromState._pathQuery);
+      fromState.pathQuery, document.title, fromState.pathQuery);
 
     startingTransition(fromState, toState);
 
@@ -94,13 +96,15 @@ function Router(declarativeStates) {
         }
 
         if (poppedState) replaceState(
-          currentState._pathQuery, document.title, currentState._pathQuery);
+          currentState.pathQuery, document.title, currentState.pathQuery);
 
         transitionCompleted(fromState, toState);
       },
       function fail(error) {
         transition = null;
-        currentState = fromState;
+
+        previousState = oldPreviousState;
+        currentState = previousState;
 
         transitionFailed(fromState, toState, error);
       }
@@ -461,6 +465,14 @@ function Router(declarativeStates) {
     return currentState;
   }
 
+  /*
+  * Returns a StateWithParams object representing the previous state of the router 
+  * or null the router is still in its initial state.
+  */
+  function getPreviousState() {
+    return previousState;
+  }
+
 
   // Public methods
 
@@ -473,6 +485,7 @@ function Router(declarativeStates) {
   router.addState = addState;
   router.link = link;
   router.currentState = getCurrentState;
+  router.previousState = getPreviousState;
   router.urlPathQuery = urlPathQuery;
 
 
@@ -790,11 +803,12 @@ module.exports = State;
 * StateWithParams is the merge between a State object (created and added to the router before init)
 * and params (both path and query params, extracted from the URL after init)
 */
-function StateWithParams(state, params) {
+function StateWithParams(state, params, pathQuery) {
   return {
     _state: state,
     name: state && state.name,
     fullName: state && state.fullName,
+    pathQuery: pathQuery,
     data: state && state.data,
     params: params,
     is: is,

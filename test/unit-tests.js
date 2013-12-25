@@ -1319,7 +1319,7 @@ asyncTest('signal handlers are passed StateWithParams objects', function() {
 });
 
 
-asyncTest('router.currentState', function() {
+asyncTest('router.currentState and router.previousState', function() {
 
   var router = Router({
 
@@ -1339,7 +1339,18 @@ asyncTest('router.currentState', function() {
     var state = router.currentState();
     stateWithParamsAssertions(state);
 
-    start();
+    equal(router.previousState(), null);
+
+    router.state('state2/england/london');
+    nextTick().done(function() {
+      var previousState = router.previousState();
+      equal(previousState, state);
+      stateWithParamsAssertions(previousState);
+
+      equal(router.currentState().fullName, 'state2');
+
+      start();
+    });
   }
 
 });
