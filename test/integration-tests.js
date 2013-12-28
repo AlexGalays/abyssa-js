@@ -12,6 +12,8 @@ var initialURL = window.location.href;
 var testElements = document.getElementById('test-elements');
 
 
+QUnit.config.testTimeout = 4000;
+
 QUnit.testDone(function() {
   if (isHTML5Browser) changeURL(initialURL);
   testElements.innerHTML = '';
@@ -34,7 +36,7 @@ asyncTest('Router initialization from initial URL', function() {
 });
 
 
-asyncTest('Simple anchor interception', function() {
+asyncTest('Default anchor interception', function() {
 
   var a = document.createElement('a');
   a.href = '/articles/33';
@@ -53,6 +55,30 @@ asyncTest('Simple anchor interception', function() {
 
   router.changed.addOnce(function() {
     simulateClick(a);
+  });
+
+});
+
+
+asyncTest('Mousedown anchor interception', function() {
+  var a = document.createElement('a');
+  a.href = '/articles/33';
+  a.setAttribute('data-nav', 'mousedown');
+  testElements.appendChild(a);
+
+  var router = Router({
+
+    index: State(''),
+
+    articles: State('articles/:id', function(params) {
+      strictEqual(params.id, 33);
+      startLater();
+    })
+
+  }).init('');
+
+  router.changed.addOnce(function() {
+    simulateMousedown(a);
   });
 
 });
@@ -218,6 +244,19 @@ function simulateClick(element) {
     params.button = 1;
     element.fireEvent('onmousedown', params);
     element.fireEvent('onclick');
+  }
+}
+
+function simulateMousedown(element) {
+  if (document.createEvent) {
+    var event = document.createEvent('MouseEvents');
+    event.initMouseEvent('mousedown', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+    element.dispatchEvent(event);
+  }
+  else {
+    var params = document.createEventObject();
+    params.button = 1;
+    element.fireEvent('onmousedown', params);
   }
 }
 

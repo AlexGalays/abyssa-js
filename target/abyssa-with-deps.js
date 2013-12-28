@@ -3147,7 +3147,7 @@ return Q;
 var Signal = require('signals').Signal,
     crossroads = require('crossroads'),
 
-    interceptAnchorClicks = require('./anchorClicks'),
+    interceptAnchors = require('./anchors'),
     StateWithParams = require('./StateWithParams'),
     Transition = require('./Transition'),
     util = require('./util');
@@ -3166,7 +3166,7 @@ function Router(declarativeStates) {
       firstTransition = true,
       initOptions = {
         enableLogs: false,
-        interceptAnchorClicks: true
+        interceptAnchors: true
       },
       ignoreNextPopState = false,
       currentPathQuery,
@@ -3354,7 +3354,7 @@ function Router(declarativeStates) {
   * Configure the router before its initialization.
   * The available options are:
   *   enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.
-  *   interceptAnchorClicks: Whether anchor clicks should be intercepted and trigger a state change. Defaults to true.
+  *   interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.
   *   notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null.
   */
   function configure(options) {
@@ -3372,8 +3372,8 @@ function Router(declarativeStates) {
     if (initOptions.enableLogs)
       Router.enableLogs();
 
-    if (initOptions.interceptAnchorClicks)
-      interceptAnchorClicks(router);
+    if (initOptions.interceptAnchors)
+      interceptAnchors(router);
 
     log('Router init');
     initStates();
@@ -3603,7 +3603,7 @@ function Router(declarativeStates) {
 
   /*
   * Returns a StateWithParams object representing the previous state of the router 
-  * or null the router is still in its initial state.
+  * or null if the router is still in its initial state.
   */
   function getPreviousState() {
     return previousState;
@@ -3681,7 +3681,7 @@ Router.enableLogs = function() {
 
 
 module.exports = Router;
-},{"./StateWithParams":7,"./Transition":8,"./anchorClicks":9,"./util":11,"crossroads":1,"signals":4}],6:[function(require,module,exports){
+},{"./StateWithParams":7,"./Transition":8,"./anchors":9,"./util":11,"crossroads":1,"signals":4}],6:[function(require,module,exports){
 
 'use strict';
 
@@ -4210,18 +4210,42 @@ module.exports = Transition;
 
 var ieButton, router;
 
-function anchorClickHandler(evt) {
+function onMouseDown(evt) {
+  // IE does not provide the correct event.button information on 'onclick' handlers 
+  // but it does on mousedown/mouseup handlers.
+  ieButton = (evt || window.event).button;
+
+  var href = hrefForEvent(evt);
+
+  if (href !== undefined)
+    router.state(href);
+}
+
+function onMouseClick(evt) {
+  var href = hrefForEvent(evt);
+
+  if (href !== undefined) {
+    if (evt.preventDefault) evt.preventDefault();
+    else evt.returnValue = false;
+
+    router.state(href);
+  }
+}
+
+function hrefForEvent(evt) {
   evt = evt || window.event;
 
   var defaultPrevented = ('defaultPrevented' in evt)
     ? evt.defaultPrevented
     : (evt.returnValue === false);
 
-  if (defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButtonClick(evt)) return;
+  if (defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButton(evt)) return;
 
   var target = evt.target || evt.srcElement;
   var anchor = anchorTarget(target);
   if (!anchor) return;
+
+  if (evt.type == 'mousedown' && anchor.getAttribute('data-nav') != 'mousedown') return;
 
   var href = anchor.getAttribute('href');
 
@@ -4229,15 +4253,10 @@ function anchorClickHandler(evt) {
   if (anchor.getAttribute('target') == '_blank') return;
   if (!isLocalLink(anchor)) return;
 
-  if (evt.preventDefault)
-    evt.preventDefault();
-  else
-    evt.returnValue = false;
-
-  router.state(href);
+  return href;
 }
 
-function isLeftButtonClick(evt) {
+function isLeftButton(evt) {
   evt = evt || window.event;
   var button = (evt.which !== undefined) ? evt.which : ieButton;
   return button == 1;
@@ -4248,12 +4267,6 @@ function anchorTarget(target) {
     if (target.nodeName == 'A') return target;
     target = target.parentNode;
   }
-}
-
-// IE does not provide the correct event.button information on 'onclick' handlers 
-// but it does on mousedown/mouseup handlers.
-function rememberIeButton(evt) {
-  ieButton = (evt || window.event).button;
 }
 
 function isLocalLink(anchor) {
@@ -4275,14 +4288,16 @@ function isLocalLink(anchor) {
 }
 
 
-module.exports = function interceptAnchorClicks(forRouter) {
+module.exports = function interceptAnchors(forRouter) {
   router = forRouter;
 
-  if (document.addEventListener)
-    document.addEventListener('click', anchorClickHandler);
+  if (document.addEventListener) {
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('click', onMouseClick);
+  }
   else {
-    document.attachEvent('onmousedown', rememberIeButton);
-    document.attachEvent('onclick', anchorClickHandler);
+    document.attachEvent('onmousedown', onMouseDown);
+    document.attachEvent('onclick', onMouseClick);
   }
 };
 },{}],10:[function(require,module,exports){

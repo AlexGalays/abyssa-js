@@ -5,7 +5,7 @@
 var Signal = require('signals').Signal,
     crossroads = require('crossroads'),
 
-    interceptAnchorClicks = require('./anchorClicks'),
+    interceptAnchors = require('./anchors'),
     StateWithParams = require('./StateWithParams'),
     Transition = require('./Transition'),
     util = require('./util');
@@ -24,7 +24,7 @@ function Router(declarativeStates) {
       firstTransition = true,
       initOptions = {
         enableLogs: false,
-        interceptAnchorClicks: true
+        interceptAnchors: true
       },
       ignoreNextPopState = false,
       currentPathQuery,
@@ -212,7 +212,7 @@ function Router(declarativeStates) {
   * Configure the router before its initialization.
   * The available options are:
   *   enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.
-  *   interceptAnchorClicks: Whether anchor clicks should be intercepted and trigger a state change. Defaults to true.
+  *   interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.
   *   notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null.
   */
   function configure(options) {
@@ -230,8 +230,8 @@ function Router(declarativeStates) {
     if (initOptions.enableLogs)
       Router.enableLogs();
 
-    if (initOptions.interceptAnchorClicks)
-      interceptAnchorClicks(router);
+    if (initOptions.interceptAnchors)
+      interceptAnchors(router);
 
     log('Router init');
     initStates();

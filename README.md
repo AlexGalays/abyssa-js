@@ -10,6 +10,7 @@ A stateful router library for single page applications.
 * [Installation](#installation)
 * [API](#api)
 * [Blocking/Non-blocking navigation](#blocking)
+* [Anchor interception](#anchor)
 * [Dependencies](#dependencies)
 * [Cookbook](#cookbook)
 
@@ -108,7 +109,7 @@ Use one of the provided prebuilt files in the target folder.
 Configure the router before its initialization.
 The available options are:  
 - enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.  
-- interceptAnchorClicks: Whether anchor clicks should be intercepted and trigger a state change. Defaults to true.  
+- interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.  
 - notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null. 
 
 ### init (initState: String, initParams: Object): Router
@@ -488,6 +489,18 @@ once they are all resolved; If any of the preReqs fail, the state change doesn't
 The navigation occurs immediately, but the data comes later. Non-blocking navigation can feel quicker but also more awkward if
 the router transitions to a state that is near empty when the data isn't known yet.  
 To implement Non-blocking navigation, do not specify any `enterPrereqs`; instead, wrap your promises (ajax, etc) in [Async](#api-async) blocks.
+
+
+<a name="anchor-interception"></a>
+# Anchor interception
+
+By default, the router will intercept anchor clicks and automatically navigate to a state if some conditions are met (left button pressed, href on the same domain, etc).  
+This behavior can be turned off by using the corresponding router [configuration setting](#api-router)  
+You can also intercept mousedown events instead of the usual click events by using a data-attribute as follow:  
+```
+<a data-nav="mousedown" href="/">
+```
+You may want to turn off this behavior on mobile optimised apps and make manual router.state() calls on touch events.
 
 
 <a name="dependencies"></a>
