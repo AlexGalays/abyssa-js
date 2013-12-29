@@ -10,7 +10,7 @@ A stateful router library for single page applications.
 * [Installation](#installation)
 * [API](#api)
 * [Blocking/Non-blocking navigation](#blocking)
-* [Anchor interception](#anchor)
+* [Anchor interception](#anchor-interception)
 * [Dependencies](#dependencies)
 * [Cookbook](#cookbook)
 
