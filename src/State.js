@@ -40,6 +40,7 @@ function State() {
   state.states = states;
 
   state.enter = options.enter || util.noop;
+  state.update = options.update;
   state.exit = options.exit || util.noop;
   state.enterPrereqs = options.enterPrereqs;
   state.exitPrereqs = options.exitPrereqs;

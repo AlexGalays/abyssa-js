@@ -3724,6 +3724,7 @@ function State() {
   state.states = states;
 
   state.enter = options.enter || util.noop;
+  state.update = options.update;
   state.exit = options.exit || util.noop;
   state.enterPrereqs = options.enterPrereqs;
   state.exitPrereqs = options.exitPrereqs;
@@ -4000,7 +4001,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
   var fromState = fromStateWithParams && fromStateWithParams._state;
   var toState = toStateWithParams._state;
   var params = toStateWithParams.params;
-  var paramOnlyChange = (fromState == toState);
+  var isUpdate = (fromState == toState);
 
   var transition = {
     from: fromState,
@@ -4014,14 +4015,14 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 
   // The first transition has no fromState.
   if (fromState) {
-    root = reload ? toState.root : transitionRoot(fromState, toState, paramOnlyChange, paramDiff);
-    exits = transitionStates(fromState, root, paramOnlyChange);
+    root = reload ? toState.root : transitionRoot(fromState, toState, isUpdate, paramDiff);
+    exits = transitionStates(fromState, root, isUpdate);
   }
 
-  enters = transitionStates(toState, root, paramOnlyChange).reverse();
+  enters = transitionStates(toState, root, isUpdate).reverse();
 
-  transitionPromise = prereqs(enters, exits, params).then(function() {
-    if (!cancelled) doTransition(enters, exits, params, transition);
+  transitionPromise = prereqs(enters, exits, params, isUpdate).then(function() {
+    if (!cancelled) doTransition(enters, exits, params, transition, isUpdate);
   });
 
   asyncPromises.newTransitionStarted();
@@ -4043,10 +4044,10 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 /*
 * Return the promise of the prerequisites for all the states involved in the transition.
 */
-function prereqs(enters, exits, params) {
+function prereqs(enters, exits, params, isUpdate) {
 
   exits.forEach(function(state) {
-    if (!state.exitPrereqs) return;
+    if (!state.exitPrereqs || (isUpdate && state.update)) return;
 
     var prereqs = state._exitPrereqs = Q(state.exitPrereqs()).then(
       function success(value) {
@@ -4060,7 +4061,7 @@ function prereqs(enters, exits, params) {
   });
 
   enters.forEach(function(state) {
-    if (!state.enterPrereqs) return;
+    if (!state.enterPrereqs || (isUpdate && state.update)) return;
 
     var prereqs = state._enterPrereqs = Q(state.enterPrereqs(params)).then(
       function success(value) {
@@ -4078,35 +4079,36 @@ function prereqs(enters, exits, params) {
   }));
 }
 
-function doTransition(enters, exits, params, transition) {
+function doTransition(enters, exits, params, transition, isUpdate) {
   exits.forEach(function(state) {
+    if (isUpdate && state.update) return;
     state.exit(state._exitPrereqs && state._exitPrereqs.value);
   });
 
-  // Async promises are only allowed in 'enter' hooks.
-  // Make it explicit to prevent programming errors.
-  asyncPromises.allowed = true;
-
   enters.forEach(function(state) {
-    if (!transition.cancelled) {
-      transition.currentState = state;
+    if (transition.cancelled) return;
+
+    transition.currentState = state;
+
+    if (isUpdate && state.update)
+      state.update(params);
+    else {
       state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
+      if (state.update) state.update(params);
     }
   });
-
-  asyncPromises.allowed = false;
 }
 
 /*
 * The top-most current state's parent that must be exited.
 */
-function transitionRoot(fromState, toState, paramOnlyChange, paramDiff) {
+function transitionRoot(fromState, toState, isUpdate, paramDiff) {
   var root,
       parent,
       param;
 
   // For a param-only change, the root is the top-most state owning the param(s),
-  if (paramOnlyChange) {
+  if (isUpdate) {
     [fromState].concat(fromState.parents).reverse().forEach(function(parent) {
       if (root) return;
 
@@ -4138,8 +4140,8 @@ function withParents(state, upTo, inclusive) {
   return [state].concat(p.slice(0, end));
 }
 
-function transitionStates(state, root, paramOnlyChange) {
-  var inclusive = !root || paramOnlyChange;
+function transitionStates(state, root, isUpdate) {
+  var inclusive = !root || isUpdate;
   return withParents(state, root || state.root, inclusive);
 }
 
@@ -4166,9 +4168,6 @@ var asyncPromises = Transition.asyncPromises = (function () {
    * changes before the wrapped promise is fullfilled. 
    */
   function register(promise) {
-    if (!that.allowed)
-      throw new Error('Async can only be called from within state.enter()');
-
     var defer = Q.defer();
 
     activeDeferreds.push(defer);
@@ -4194,7 +4193,6 @@ var asyncPromises = Transition.asyncPromises = (function () {
   that = {
     register: register,
     newTransitionStarted: newTransitionStarted,
-    allowed: false
   };
 
   return that;

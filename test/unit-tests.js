@@ -1242,6 +1242,81 @@ asyncTest('backTo', function() {
 });
 
 
+asyncTest('update', function() {
+  var events = [];
+  var updateParams;
+
+  var root    = RecordingState('root', '');
+  var news    = RecordingState('news', 'news/:id', root, true);
+  var archive = RecordingState('archive', 'archive', news);
+  var detail  = RecordingState('detail', 'detail', archive, true);
+
+
+  var router = Router({
+    root: root
+  })
+  .init('root.news.archive.detail', { id: 33 });
+
+
+  whenSignal(router.changed)
+    .then(callbacksWereProperlyCalledOnInit)
+    .then(changeIdParam)
+    .then(stateWereEnteredOrUpdated)
+    .done(start);
+
+
+  function callbacksWereProperlyCalledOnInit() {
+    deepEqual(events, [
+      'rootEnterPrereqs', 'newsEnterPrereqs', 'archiveEnterPrereqs', 'detailEnterPrereqs',
+      'rootEnter',
+      'newsEnter', 'newsUpdate',
+      'archiveEnter',
+      'detailEnter', 'detailUpdate'
+    ]);
+
+    strictEqual(updateParams.id, 33);
+  }
+
+  function changeIdParam() {
+    events = [];
+    updateParams = null;
+    router.state('root.news.archive.detail', { id: 34 });
+  }
+
+  function stateWereEnteredOrUpdated() {
+    return nextTick().then(function() {
+      deepEqual(events, [
+        'archiveExitPrereqs', 'archiveEnterPrereqs',
+        'archiveExit',
+        'newsUpdate',
+        'archiveEnter',
+        'detailUpdate'
+      ]);
+      strictEqual(updateParams.id, 34);
+    });
+  }
+
+  function RecordingState(name, path, parent, withUpdate) {
+    var state = State(path, {
+      enter: function(params) { events.push(name + 'Enter'); },
+      enterPrereqs: function() { events.push(name + 'EnterPrereqs'); },
+      exit: function() { events.push(name + 'Exit'); },
+      exitPrereqs: function() { events.push(name + 'ExitPrereqs'); }
+    });
+
+    if (withUpdate) state.update = function(params) {
+      events.push(name + 'Update');
+      updateParams = params;
+    };
+
+    if (parent) parent.addState(name, state);
+
+    return state;
+  }
+
+});
+
+
 asyncTest('reload', function() {
   var articleId;
 

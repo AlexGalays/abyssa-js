@@ -323,6 +323,48 @@ This is where you could teardown any state or side effects introduced by the ent
 Same as enterPrereqs but for the exit phase.  
 An example of an exitPrereqs would be a prompt (Backed by a promise) asking the user if she wants to leave the screen with unsaved data.
 
+#### update (params: Object): void
+The update callback is called when the router is moving to the same state as the current state, but with different params or because of a reload().  
+Specifying an update callback can be seen as an optimization preventing doing wasteful work in exit/enter, e.g removing and adding the same DOM elements that were already present in the document before the state change.  
+The update callback can be used to separate the setup/teardown of the static elements of the state (e.g a base layout) in the enter/exit, while managing
+the dynamic elements of the state (e.g rendering some list from server data) in update.
+
+**Without an update callback**
+```javascript
+var router = router({
+  people: State('people/:id', {
+    enter: function() {},
+    exit: function() {},
+  })
+}).init('people/33');
+```
+
+During init, the following callbacks will be called:
+- enter
+
+Later, if the router moves to 'people/44', the following callbacks will be called:
+- exit
+- enter
+
+**With an update callback**
+```javascript
+var router = router({
+  people: State('people/:id', {
+    enter: function() {},
+    update: function() {},
+    exit: function() {},
+  })
+}).init('people/33');
+```
+
+During init, the following callbacks will be called:
+- enter
+- update
+
+Later, if the router moves to 'people/44', the following callbacks will be called:
+- update
+
+
 
 ### Usage examples
 
