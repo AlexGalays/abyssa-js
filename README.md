@@ -59,7 +59,7 @@ Read this excellent blog post for an in-depth explanation: [Make the most of you
 ## Demo app
 
 Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)  
-Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/public/javascripts)  
+Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/client/javascripts)  
 
 ## Example using the declarative notation:  
 ```javascript
