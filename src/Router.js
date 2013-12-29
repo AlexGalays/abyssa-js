@@ -97,8 +97,8 @@ function Router(declarativeStates) {
       function fail(error) {
         transition = null;
 
-        previousState = oldPreviousState;
         currentState = previousState;
+        previousState = oldPreviousState;
 
         transitionFailed(fromState, toState, error);
       }
