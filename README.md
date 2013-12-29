@@ -125,7 +125,7 @@ Returns the router to allow chaining.
 ### state (pathQueryOrName: String, params: Object): void
 Request a programmatic state change.  
 Only leaf states can be transitionned to.  
-While you can change state programmatically, keep in mind the most idiomatic way to do it is using anchor tags with the proper href.  
+While you can change state programmatically, the more idiomatic way to do it is sometimes using anchor tags with the proper href.  
 
 Two notations are supported:  
 ```javascript
@@ -331,7 +331,7 @@ An example of an exitPrereqs would be a prompt (Backed by a promise) asking the 
 #### update (params: Object): void
 The update callback is called when the router is moving to the same state as the current state, but with different params or because of a reload().  
 Specifying an update callback can be seen as an optimization preventing doing wasteful work in exit/enter, e.g removing and adding the same DOM elements that were already present in the document before the state change.  
-The update callback can be used to separate the setup/teardown of the static elements of the state (e.g a base layout or some data independant of the url params) in the `ente`/`exit`, while managing the dynamic elements of the state (e.g rendering some list from server data) in `update`.
+The update callback can be used to separate the setup/teardown of the static elements of the state (e.g a base layout or some data independant of the url params) in the `enter`/`exit`, while managing the dynamic elements of the state (e.g rendering some list from server data) in `update`.
 
 **Without an update callback**
 ```javascript
@@ -586,11 +586,11 @@ We can either:
 var router = Router({
 
   section1: State('section1', {
-    navItem: 'section1' // custom data property; seen by any substate.
+    data: { navItem: 'section1' } // custom data property; seen by any substate.
   }),
 
   section2: State('section2', {
-    navItem: 'section2'
+    data: { navItem: 'section2' }
   })
 
 }).init('section1');
@@ -640,6 +640,7 @@ var router = Router({
 pros:  
 - Only one URL kind around (no hashes)
 - Can use traditional anchor # links to jump to sections in all browsers without using JS
+- No need for history shims
 
 cons:  
 - Slower browsing in HTML4 browsers: Everytime a state change occurs, the page fully reloads, the router initializes again, etc.
