@@ -234,7 +234,8 @@ Example:
 var router = Router({
 
   books: State('books', {
-    myData: 33,
+    data: { myData: 33 },
+
     listing: State(':kind')
   })
 
@@ -304,6 +305,10 @@ This property is available after router init (e.g inside an state.enter()).
 
 ### Declarative properties
 
+When creating a State instance with an option object, the following properties have a special meaning and are reserved for abyssa:  
+`data`, `enter`, `exit`, `enterPrereqs`, `exitPrereqs`, `update`  
+All other properties should be child states.
+
 #### enter (params: Object, userData: Any): void
 Specify a function that should be called when the state is entered.  
 The params are the dynamic params (path and query alike in one object) of the current url.  
@@ -326,8 +331,7 @@ An example of an exitPrereqs would be a prompt (Backed by a promise) asking the 
 #### update (params: Object): void
 The update callback is called when the router is moving to the same state as the current state, but with different params or because of a reload().  
 Specifying an update callback can be seen as an optimization preventing doing wasteful work in exit/enter, e.g removing and adding the same DOM elements that were already present in the document before the state change.  
-The update callback can be used to separate the setup/teardown of the static elements of the state (e.g a base layout) in the enter/exit, while managing
-the dynamic elements of the state (e.g rendering some list from server data) in update.
+The update callback can be used to separate the setup/teardown of the static elements of the state (e.g a base layout or some data independant of the url params) in the `ente`/`exit`, while managing the dynamic elements of the state (e.g rendering some list from server data) in `update`.
 
 **Without an update callback**
 ```javascript
@@ -364,6 +368,9 @@ During init, the following callbacks will be called:
 Later, if the router moves to 'people/44', the following callbacks will be called:
 - update
 
+#### data: Object
+Custom data properties can be specified declaratively when building the state.
+If more data properties are set later using `state.data(key, value)`, they will all be merged together.
 
 
 ### Usage examples
@@ -421,7 +428,7 @@ router.addState('articles', state);
 #### Query strings
 
 Now the articles state also tells us it owns the query param named 'filter' in its state hierarchy.  
-This means that any isolated change to the filter query param (meaning the filter was added, removed or changed but the path remained the same) is going to make that state exit and re-enter so that it can process the new filter value. If you do not specify which state owns the query param, all states above the currently selected state are exited and reentered, which can be less efficient. 
+This means that any isolated change to the filter query param (meaning the filter was added, removed or changed but the path remained the same) is going to make that state exit and re-enter so that it can process the new filter value. If you do not specify which state owns the query param, all states above the currently selected state are exited and reentered, which can be less efficient.  Also, Enumerating the possible query strings is mandatory if you want these to appear when using reverse routing or name-based state changes.
 ```javascript
 var state = State('articles?filter': {
   show: State()
@@ -436,7 +443,7 @@ This data can be read by all descendant states (Using `this.data('myArbitraryDat
 For more elaborated use cases, you can store the data in a custom external service or model.
 ```javascript
 var state = State('articles?filter': {
-  myArbitraryData: 66,
+  data: { myArbitraryData: 66 },
   show: State()
 });
 

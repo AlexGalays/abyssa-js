@@ -23,7 +23,7 @@ var async = require('./Transition').asyncPromises.register;
 *
 * Finally, options can contain any arbitrary data value
 * that will get stored in the state and made available via the data() method:
-* State({myData: 55})
+* State({data: { myData: 55 } })
 * This is the declarative equivalent to the data(key, value) method.
 */
 function State() {
@@ -45,7 +45,7 @@ function State() {
   state.enterPrereqs = options.enterPrereqs;
   state.exitPrereqs = options.exitPrereqs;
 
-  state.ownData = getOwnData(options);
+  state.ownData = options.data || {};
 
   /*
   * Initialize and freeze this state.
@@ -132,18 +132,6 @@ function State() {
     return state.parents.reduceRight(function(acc, parent) {
       return acc + parent.name + '.';
     }, '') + state.name;
-  }
-
-  function getOwnData(options) {
-    var reservedKeys = {'enter': 1, 'exit': 1, 'enterPrereqs': 1, 'exitPrereqs': 1},
-        result = {};
-
-    for (var key in options) {
-      if (reservedKeys[key] || options[key]._isState) continue;
-      result[key] = options[key];
-    }
-
-    return result;
   }
 
   /*

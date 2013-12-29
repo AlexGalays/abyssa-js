@@ -905,7 +905,8 @@ asyncTest('Data can be stored on states and later retrieved', function() {
   var router = Router({
 
     one: State({
-      someArbitraryData: 3,
+      // Statically declared
+      data: { someArbitraryData: 3 },
 
       enter: function() {
         // We can also store data at an arbitrary time.
@@ -1377,7 +1378,7 @@ asyncTest('signal handlers are passed StateWithParams objects', function() {
 
     state1: State('state1/:id', {
       state1Child: State(':category', {
-        myData: 666
+        data: { myData: 666 }
       })
     }),
 
@@ -1401,7 +1402,7 @@ asyncTest('router.currentState and router.previousState', function() {
     state1: State('state1/:id', {
       state1Child: State(':category', {
         enter: assertions,
-        myData: 666
+        data: { myData: 666 }
       })
     }),
 

@@ -1,4 +1,4 @@
-/* abyssa 3.0.2 - A stateful router library for single page applications */
+/* abyssa 4.0.0 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -3707,7 +3707,7 @@ var async = require('./Transition').asyncPromises.register;
 *
 * Finally, options can contain any arbitrary data value
 * that will get stored in the state and made available via the data() method:
-* State({myData: 55})
+* State({data: { myData: 55 } })
 * This is the declarative equivalent to the data(key, value) method.
 */
 function State() {
@@ -3729,7 +3729,7 @@ function State() {
   state.enterPrereqs = options.enterPrereqs;
   state.exitPrereqs = options.exitPrereqs;
 
-  state.ownData = getOwnData(options);
+  state.ownData = options.data || {};
 
   /*
   * Initialize and freeze this state.
@@ -3816,18 +3816,6 @@ function State() {
     return state.parents.reduceRight(function(acc, parent) {
       return acc + parent.name + '.';
     }, '') + state.name;
-  }
-
-  function getOwnData(options) {
-    var reservedKeys = {'enter': 1, 'exit': 1, 'enterPrereqs': 1, 'exitPrereqs': 1},
-        result = {};
-
-    for (var key in options) {
-      if (reservedKeys[key] || options[key]._isState) continue;
-      result[key] = options[key];
-    }
-
-    return result;
   }
 
   /*
