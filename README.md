@@ -178,6 +178,10 @@ Dispatched when a transition failed to complete.
 #### router.transition.cancelled
 Dispatched when a transition got cancelled.
 
+#### router.transition.prevented
+Dispatched when a transition was prevented by the router.  
+The router prevents the transition when the next state and params are identical to the current ones.
+
 #### router.changed
 Shorter alias for transition.completed: The most commonly used signal.
 

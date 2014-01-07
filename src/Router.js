@@ -48,7 +48,7 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params, reload) {
-    if (!reload && isSameState(state, params)) return;
+    if (!reload && isSameState(state, params)) return transitionPrevented(state);
 
     var fromState, oldPreviousState;
     var toState = StateWithParams(state, params, currentPathQuery);
@@ -104,6 +104,10 @@ function Router(declarativeStates) {
       }
     )
     .fail(transitionError);
+  }
+
+  function transitionPrevented(toState) {
+    router.transition.prevented.dispatch(toState);
   }
 
   function cancelTransition() {
@@ -496,7 +500,9 @@ function Router(declarativeStates) {
     // Dispatched when a transition failed to complete
     failed:    new Signal(),
     // Dispatched when a transition got cancelled
-    cancelled: new Signal()
+    cancelled: new Signal(),
+    // Dispatched when a transition was prevented by the router
+    prevented: new Signal()
   };
 
   // Dispatched once after the router successfully reached its initial state.

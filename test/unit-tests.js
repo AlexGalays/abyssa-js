@@ -374,8 +374,46 @@ asyncTest('No transition occurs when going to the same state', function() {
   router.initialized.addOnce(function() {
     events = [];
 
-    delay(20).then(function() {
+    router.state('articles/33/today');
+
+    nextTick().then(function() {
       deepEqual(events, []);
+      start();
+    });
+  });
+
+});
+
+
+asyncTest('Forcing reload on same state transition is possible', function() {
+
+  var events = [];
+  var router = Router({
+
+    articles: State('articles/:id', {
+      enter: function() { events.push('articlesEnter'); },
+      exit: function() { events.push('articlesExit'); },
+
+      today: State('today', {
+        enter: function() { events.push('todayEnter'); },
+        exit: function() { events.push('todayExit'); }
+      })
+    })
+
+  })
+  .init('articles/33/today');
+
+  router.transition.prevented.addOnce(function(stateCandidate) {
+    if (stateCandidate.fullName == 'articles.today') router.reload();
+  });
+
+  router.initialized.addOnce(function() {
+    events = [];
+
+    router.state('articles/33/today');
+
+    nextTick().then(function() {
+      deepEqual(events, ['todayExit', 'articlesExit', 'articlesEnter', 'todayEnter']);
       start();
     });
   });
