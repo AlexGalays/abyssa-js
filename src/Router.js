@@ -204,7 +204,8 @@ function Router(declarativeStates) {
   function notFound(state) {
     log('State not found: {0}', state);
 
-    if (initOptions.notFound) setState(initOptions.notFound);
+    if (initOptions.notFound) 
+      setState(leafStates[initOptions.notFound] || initOptions.notFound);
     else throw new Error ('State "' + state + '" could not be found');
   }
 
@@ -265,7 +266,7 @@ function Router(declarativeStates) {
       state.init(router, name);
     });
 
-    if (initOptions.notFound)
+    if (initOptions.notFound && initOptions.notFound.init)
       initOptions.notFound.init('notFound');
 
     leafStates = {};

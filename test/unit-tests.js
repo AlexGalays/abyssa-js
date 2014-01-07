@@ -205,6 +205,62 @@ asyncTest('Missing state with a "notFound" state defined', function() {
 });
 
 
+asyncTest('Missing state with a "notFound" state defined by its fullName', function() {
+
+  var reachedNotFound;
+
+  var router = Router({
+
+    index: State(),
+
+    articles: State({
+      nature: State({
+        edit: State('articles/nature/:id/edit')
+      })
+    }),
+
+    iamNotFound: State('404', {
+      enter: function() { reachedNotFound = true; }
+    })
+
+  })
+  .configure({
+    notFound: 'iamNotFound'
+  })
+  .init('articles/naturess/88/edit');
+
+  whenSignal(router.changed)
+    .then(notFoundWasEntered)
+    .then(resetToIndex)
+    .then(goToWrongState)
+    .then(notFoundWasEntered2)
+    .then(start);
+
+  function notFoundWasEntered() {
+    ok(reachedNotFound);
+  }
+
+  function resetToIndex() {
+    router.state('');
+    reachedNotFound = false;
+  }
+
+  // Should also work with the reverse routing notation
+  function goToWrongState() {
+    return nextTick().then(function() {
+      router.state('articles.naturess.edit', {id: 88});
+    });
+  }
+
+  function notFoundWasEntered2() {
+    return nextTick().then(function() {
+      ok(reachedNotFound);
+    });
+  }
+
+});
+
+
 asyncTest('Missing state without a "notFound" state defined', function() {
 
   var router = Router({
