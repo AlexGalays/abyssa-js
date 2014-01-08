@@ -304,6 +304,22 @@ This property is available after router init (e.g inside an state.enter()).
 The fully qualified name of this state.  
 This property is available after router init (e.g inside an state.enter()).
 
+### parent: State
+The parent of this state, or null if this state is a root.  
+This property is available after router init (e.g inside an state.enter()).
+
+### parents: Array[State]
+The list of parent states, starting with the nearest ones.  
+This property is available after router init (e.g inside an state.enter()).
+
+### root: State
+The root state in this state tree.  
+This property is available after router init (e.g inside an state.enter()).
+
+### children: Array[State]
+The children of this state.  
+This property is available after router init (e.g inside an state.enter()).
+
 ### async (promiseOrValue: Object): Promise
 Shortcut for [Async](#api-async).  
 This property is available after router init (e.g inside an state.enter()).
