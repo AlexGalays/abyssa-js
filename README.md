@@ -161,7 +161,7 @@ Returns the current state of the router.
 ### Signals
 
 The router dispatches some signals. The signals' API is: `add`, `addOnce` and `remove`.  
-All signals receive the current state and the old state as arguments (of type [StateWithParams](#api-stateWithParams)).
+Unless specified otherwise, all signal handlers receive the current state and the old state as arguments (of type [StateWithParams](#api-stateWithParams)).
 
 #### router.transition.started
 Dispatched when a transition started.
@@ -180,7 +180,8 @@ Dispatched when a transition got cancelled.
 
 #### router.transition.prevented
 Dispatched when a transition was prevented by the router.  
-The router prevents the transition when the next state and params are identical to the current ones.
+The router prevents the transition when the next state and params are identical to the current ones.  
+Handlers will only receive one argument: The current state.
 
 #### router.changed
 Shorter alias for transition.completed: The most commonly used signal.

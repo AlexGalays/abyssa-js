@@ -48,7 +48,7 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params, reload) {
-    if (!reload && isSameState(state, params)) return transitionPrevented(state);
+    if (!reload && isSameState(state, params)) return transitionPrevented(currentState);
 
     var fromState, oldPreviousState;
     var toState = StateWithParams(state, params, currentPathQuery);
@@ -169,20 +169,10 @@ function Router(declarativeStates) {
   * in which case the router can ignore the change.
   */
   function isSameState(newState, newParams) {
-    var state, params, diff;
+    if (!currentState) return false;
 
-    if (transition) {
-      state = transition.to;
-      params = transition.toParams;
-    }
-    else if (currentState) {
-      state = currentState._state;
-      params = currentState.params;
-    }
-
-    diff = paramDiff(params, newParams);
-
-    return (newState == state) && (util.objectSize(diff) == 0);
+    var diff = paramDiff(currentState.params, newParams);
+    return (newState == currentState._state) && (util.objectSize(diff) == 0);
   }
 
   /*
