@@ -1,4 +1,4 @@
-/* abyssa 4.0.1 - A stateful router library for single page applications */
+/* abyssa 4.1.0 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -3190,7 +3190,7 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params, reload) {
-    if (!reload && isSameState(state, params)) return;
+    if (!reload && isSameState(state, params)) return transitionPrevented(currentState);
 
     var fromState, oldPreviousState;
     var toState = StateWithParams(state, params, currentPathQuery);
@@ -3246,6 +3246,10 @@ function Router(declarativeStates) {
       }
     )
     .fail(transitionError);
+  }
+
+  function transitionPrevented(toState) {
+    router.transition.prevented.dispatch(toState);
   }
 
   function cancelTransition() {
@@ -3307,20 +3311,10 @@ function Router(declarativeStates) {
   * in which case the router can ignore the change.
   */
   function isSameState(newState, newParams) {
-    var state, params, diff;
+    if (!currentState) return false;
 
-    if (transition) {
-      state = transition.to;
-      params = transition.toParams;
-    }
-    else if (currentState) {
-      state = currentState._state;
-      params = currentState.params;
-    }
-
-    diff = paramDiff(params, newParams);
-
-    return (newState == state) && (util.objectSize(diff) == 0);
+    var diff = paramDiff(currentState.params, newParams);
+    return (newState == currentState._state) && (util.objectSize(diff) == 0);
   }
 
   /*
@@ -3346,7 +3340,8 @@ function Router(declarativeStates) {
   function notFound(state) {
     log('State not found: {0}', state);
 
-    if (initOptions.notFound) setState(initOptions.notFound);
+    if (initOptions.notFound) 
+      setState(leafStates[initOptions.notFound] || initOptions.notFound);
     else throw new Error ('State "' + state + '" could not be found');
   }
 
@@ -3407,7 +3402,7 @@ function Router(declarativeStates) {
       state.init(router, name);
     });
 
-    if (initOptions.notFound)
+    if (initOptions.notFound && initOptions.notFound.init)
       initOptions.notFound.init('notFound');
 
     leafStates = {};
@@ -3637,7 +3632,9 @@ function Router(declarativeStates) {
     // Dispatched when a transition failed to complete
     failed:    new Signal(),
     // Dispatched when a transition got cancelled
-    cancelled: new Signal()
+    cancelled: new Signal(),
+    // Dispatched when a transition was prevented by the router
+    prevented: new Signal()
   };
 
   // Dispatched once after the router successfully reached its initial state.
