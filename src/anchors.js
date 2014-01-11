@@ -39,7 +39,10 @@ function hrefForEvent(evt) {
   var anchor = anchorTarget(target);
   if (!anchor) return;
 
-  if (evt.type == 'mousedown' && anchor.getAttribute('data-nav') != 'mousedown') return;
+  var dataNav = anchor.getAttribute('data-nav');
+
+  if (dataNav == 'ignore') return;
+  if (evt.type == 'mousedown' && dataNav != 'mousedown') return;
 
   var href = anchor.getAttribute('href');
 

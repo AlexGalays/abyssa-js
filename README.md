@@ -567,11 +567,17 @@ To implement Non-blocking navigation, do not specify any `enterPrereqs`; instead
 
 By default, the router will intercept anchor clicks and automatically navigate to a state if some conditions are met (left button pressed, href on the same domain, etc).  
 This behavior can be turned off by using the corresponding router [configuration setting](#api-router)  
+You may want to turn off anchor interception on mobile optimised apps and make manual router.state() calls on touch events.  
+
 You can also intercept mousedown events instead of the usual click events by using a data-attribute as follow:  
 ```
 <a data-nav="mousedown" href="/">
 ```
-You may want to turn off this behavior on mobile optimised apps and make manual router.state() calls on touch events.
+
+If a same-domain link should not be intercepted by Abyssa, you can use:  
+```
+<a data-nav="ignore" href="/">
+```
 
 
 <a name="dependencies"></a>
