@@ -110,7 +110,8 @@ Configure the router before its initialization.
 The available options are:  
 - enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.  
 - interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.  
-- notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null. Either a State instance or a string representing the fullName of an existing state can be passed.
+- notFound: The State to enter when no state matching the current path query or name could be found. Either a State instance or a string representing the fullName of an existing state can be passed. Defaults to null.  
+- urlSync: Whether the router should maintain the current state and the url in sync. Setting this option to false can be useful for web/native hybrid mobile apps. Defaults to true.
 
 ### init (initState: String, initParams: Object): Router
 Initialize and freeze the router (states can not be updated or added afterwards).  

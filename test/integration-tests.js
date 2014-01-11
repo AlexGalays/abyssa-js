@@ -228,6 +228,56 @@ asyncTest('history.back() with an exitPrereqs', function() {
 });
 
 
+asyncTest('urlSync switched off', function() {
+
+  var lastParams;
+
+  // We should never leave the starting URL.
+  var defaultURL = window.location.href;
+
+  var router = Router({
+
+    index: State(''),
+
+    category1: State('category1', {
+      detail: State(':id', function(params) {
+        lastParams = params;
+      })
+    })
+
+  })
+  .configure({
+    urlSync: false
+  })
+  .init();
+
+  whenSignal(router.changed)
+    .then(ShouldDefaultToIndex)
+    .then(goToCategoryDetail)
+    .then(shouldBeInCategoryDetail)
+    .then(start);
+
+
+  function ShouldDefaultToIndex() {
+    strictEqual(router.currentState().fullName, 'index');
+    strictEqual(window.location.href, defaultURL);
+  }
+
+  function goToCategoryDetail() {
+    router.state('category1/33');
+  }
+
+  function shouldBeInCategoryDetail() {
+    return nextTick().then(function() {
+      strictEqual(router.currentState().fullName, 'category1.detail');
+      strictEqual(lastParams.id, 33);
+      strictEqual(window.location.href, defaultURL);
+    });
+  }
+
+});
+
+
 
 function changeURL(pathQuery) {
   history.pushState('', '', pathQuery);

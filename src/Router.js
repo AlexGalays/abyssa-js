@@ -24,7 +24,9 @@ function Router(declarativeStates) {
       firstTransition = true,
       initOptions = {
         enableLogs: false,
-        interceptAnchors: true
+        interceptAnchors: true,
+        notFound: null,
+        urlSync: true
       },
       ignoreNextPopState = false,
       currentPathQuery,
@@ -152,14 +154,18 @@ function Router(declarativeStates) {
     setTimeout(function() { throw error; }, 0);
   }
 
-  // Workaround for https://github.com/devote/HTML5-History-API/issues/44
   function replaceState(state, title, url) {
+    if (!initOptions.urlSync) return;
+
+    // Workaround for https://github.com/devote/HTML5-History-API/issues/44
     if (history.emulate) ignoreNextPopState = true;
     history.replaceState(state, title, url);
   }
 
-  // Workaround for https://github.com/devote/HTML5-History-API/issues/44
   function pushState(state, title, url) {
+    if (!initOptions.urlSync) return;
+
+    // Workaround for https://github.com/devote/HTML5-History-API/issues/44
     if (history.emulate) ignoreNextPopState = true;
     history.pushState(state, title, url);
   }
@@ -229,30 +235,35 @@ function Router(declarativeStates) {
       interceptAnchors(router);
 
     log('Router init');
-    initStates();
 
-    initState = (initState !== undefined) ? initState : urlPathQuery();
+    initStates();
+    initState = (initState !== undefined) ? initState : getInitState();
 
     log('Initializing to state {0}', initState || '""');
     state(initState, initParams);
 
-    window.onpopstate = function(evt) {
-      if (ignoreNextPopState) {
-        ignoreNextPopState = false;
-        return;
-      }
+    if (initOptions.urlSync)
+      window.onpopstate = function(evt) {
+        if (ignoreNextPopState) {
+          ignoreNextPopState = false;
+          return;
+        }
 
-      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
-      // in these cases, evt.state is null.
-      var newState = evt.state || urlPathQuery();
+        // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
+        // in these cases, evt.state is null.
+        var newState = evt.state || urlPathQuery();
 
-      log('Popped state: {0}', newState);
-      poppedState = true;
-      setStateForPathQuery(newState);
-    };
+        log('Popped state: {0}', newState);
+        poppedState = true;
+        setStateForPathQuery(newState);
+      };
 
     initialized = true;
     return router;
+  }
+
+  function getInitState() {
+    return initOptions.urlSync ? urlPathQuery() : '';
   }
 
   function initStates() {
