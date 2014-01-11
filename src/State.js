@@ -2,7 +2,7 @@
 'use strict';
 
 
-var util = require('./util');
+var util  = require('./util');
 var async = require('./Transition').asyncPromises.register;
 
 /*
