@@ -1,4 +1,4 @@
-/* abyssa 4.2.0 - A stateful router library for single page applications */
+/* abyssa 4.3.0 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -8,13 +8,12 @@ return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requi
 'use strict';
 
 
-var Signal = require('signals').Signal,
-    crossroads = require('crossroads'),
-
+var Signal           = require('signals').Signal,
+    crossroads       = require('crossroads'),
     interceptAnchors = require('./anchors'),
-    StateWithParams = require('./StateWithParams'),
-    Transition = require('./Transition'),
-    util = require('./util');
+    StateWithParams  = require('./StateWithParams'),
+    Transition       = require('./Transition'),
+    util             = require('./util');
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
@@ -28,7 +27,7 @@ function Router(declarativeStates) {
       states = util.copyObject(declarativeStates),
       roads  = crossroads.create(),
       firstTransition = true,
-      initOptions = {
+      options = {
         enableLogs: false,
         interceptAnchors: true,
         notFound: null,
@@ -161,7 +160,7 @@ function Router(declarativeStates) {
   }
 
   function replaceState(state, title, url) {
-    if (!initOptions.urlSync) return;
+    if (!options.urlSync) return;
 
     // Workaround for https://github.com/devote/HTML5-History-API/issues/44
     if (history.emulate) ignoreNextPopState = true;
@@ -169,7 +168,7 @@ function Router(declarativeStates) {
   }
 
   function pushState(state, title, url) {
-    if (!initOptions.urlSync) return;
+    if (!options.urlSync) return;
 
     // Workaround for https://github.com/devote/HTML5-History-API/issues/44
     if (history.emulate) ignoreNextPopState = true;
@@ -210,8 +209,8 @@ function Router(declarativeStates) {
   function notFound(state) {
     log('State not found: {0}', state);
 
-    if (initOptions.notFound) 
-      setState(leafStates[initOptions.notFound] || initOptions.notFound);
+    if (options.notFound) 
+      setState(leafStates[options.notFound] || options.notFound);
     else throw new Error ('State "' + state + '" could not be found');
   }
 
@@ -221,9 +220,10 @@ function Router(declarativeStates) {
   *   enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.
   *   interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.
   *   notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null.
+  *   urlSync: Whether the router should maintain the current state and the url in sync. Defaults to true.
   */
-  function configure(options) {
-    util.mergeObjects(initOptions, options);
+  function configure(withOptions) {
+    util.mergeObjects(options, withOptions);
     return router;
   }
 
@@ -234,10 +234,10 @@ function Router(declarativeStates) {
   * 2) The state captured by the current URL
   */
   function init(initState, initParams) {
-    if (initOptions.enableLogs)
+    if (options.enableLogs)
       Router.enableLogs();
 
-    if (initOptions.interceptAnchors)
+    if (options.interceptAnchors)
       interceptAnchors(router);
 
     log('Router init');
@@ -248,7 +248,7 @@ function Router(declarativeStates) {
     log('Initializing to state {0}', initState || '""');
     state(initState, initParams);
 
-    if (initOptions.urlSync)
+    if (options.urlSync)
       window.onpopstate = function(evt) {
         if (ignoreNextPopState) {
           ignoreNextPopState = false;
@@ -269,7 +269,7 @@ function Router(declarativeStates) {
   }
 
   function getInitState() {
-    return initOptions.urlSync ? urlPathQuery() : '';
+    return options.urlSync ? urlPathQuery() : '';
   }
 
   function initStates() {
@@ -277,8 +277,8 @@ function Router(declarativeStates) {
       state.init(router, name);
     });
 
-    if (initOptions.notFound && initOptions.notFound.init)
-      initOptions.notFound.init('notFound');
+    if (options.notFound && options.notFound.init)
+      options.notFound.init('notFound');
 
     leafStates = {};
 
@@ -558,7 +558,7 @@ module.exports = Router;
 'use strict';
 
 
-var util = require('./util');
+var util  = require('./util');
 var async = require('./Transition').asyncPromises.register;
 
 /*
@@ -844,7 +844,7 @@ module.exports = StateWithParams;
 'use strict';
 
 
-var Q = require('q'),
+var Q    = require('q'),
     util = require('./util');
 
 /*
@@ -1103,10 +1103,14 @@ function hrefForEvent(evt) {
   var anchor = anchorTarget(target);
   if (!anchor) return;
 
-  if (evt.type == 'mousedown' && anchor.getAttribute('data-nav') != 'mousedown') return;
+  var dataNav = anchor.getAttribute('data-nav');
+
+  if (dataNav == 'ignore') return;
+  if (evt.type == 'mousedown' && dataNav != 'mousedown') return;
 
   var href = anchor.getAttribute('href');
 
+  if (!href) return;
   if (href.charAt(0) == '#') return;
   if (anchor.getAttribute('target') == '_blank') return;
   if (!isLocalLink(anchor)) return;
@@ -1161,6 +1165,7 @@ module.exports = function interceptAnchors(forRouter) {
 },{}],7:[function(require,module,exports){
 
 'use strict';
+
 
 var Abyssa = {
   Router: require('./Router'),
