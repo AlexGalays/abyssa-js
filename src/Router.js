@@ -203,8 +203,8 @@ function Router(declarativeStates) {
   function notFound(state) {
     log('State not found: {0}', state);
 
-    if (options.notFound) 
-      setState(leafStates[options.notFound] || options.notFound);
+    if (options.notFound)
+      setState(leafStates[options.notFound] || options.notFound, {});
     else throw new Error ('State "' + state + '" could not be found');
   }
 
