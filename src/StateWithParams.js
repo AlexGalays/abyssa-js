@@ -10,7 +10,7 @@
 */
 function StateWithParams(state, params, pathQuery) {
   return {
-    _state: state,
+    state: state,
     name: state && state.name,
     fullName: state && state.fullName,
     pathQuery: pathQuery,
@@ -33,7 +33,7 @@ function is(fullStateName) {
 * Returns whether this state or any of its parents has the given fullName.
 */
 function isIn(fullStateName) {
-  var current = this._state;
+  var current = this.state;
   while (current) {
     if (current.fullName == fullStateName) return true;
     current = current.parent;

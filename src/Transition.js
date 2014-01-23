@@ -16,8 +16,8 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
       error,
       exits = [];
 
-  var fromState = fromStateWithParams && fromStateWithParams._state;
-  var toState = toStateWithParams._state;
+  var fromState = fromStateWithParams && fromStateWithParams.state;
+  var toState = toStateWithParams.state;
   var params = toStateWithParams.params;
   var isUpdate = (fromState == toState);
 

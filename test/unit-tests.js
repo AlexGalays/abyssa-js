@@ -1019,7 +1019,7 @@ asyncTest('Data can be stored on states and later retrieved', function() {
     equal(newState.data('otherData'), 5);
 
     // The parent can see its own data
-    equal(newState._state.parent.data('someArbitraryData'), 3);
+    equal(newState.state.parent.data('someArbitraryData'), 3);
 
     start();
   });

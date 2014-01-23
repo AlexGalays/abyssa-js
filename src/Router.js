@@ -132,7 +132,7 @@ function Router(declarativeStates) {
 
     firstTransition = false;
 
-    toState._state.lastParams = toState.params;
+    toState.state.lastParams = toState.params;
 
     router.transition.completed.dispatch(toState, fromState);
   }
@@ -177,7 +177,7 @@ function Router(declarativeStates) {
     if (!currentState) return false;
 
     var diff = paramDiff(currentState.params, newParams);
-    return (newState == currentState._state) && (util.objectSize(diff) == 0);
+    return (newState == currentState.state) && (util.objectSize(diff) == 0);
   }
 
   /*
@@ -350,7 +350,7 @@ function Router(declarativeStates) {
   * and the current state should update because of it.
   */
   function reload() {
-    setState(currentState._state, currentState.params, true);
+    setState(currentState.state, currentState.params, true);
   }
 
   function setStateForPathQuery(pathQuery) {
