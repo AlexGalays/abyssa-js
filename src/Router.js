@@ -237,6 +237,8 @@ function Router(declarativeStates) {
     log('Router init');
 
     initStates();
+    logStateTree();
+
     initState = (initState !== undefined) ? initState : getInitState();
 
     log('Initializing to state {0}', initState || '""');
@@ -379,8 +381,6 @@ function Router(declarativeStates) {
     if (states[name])
       throw new Error('A state already exist in the router with the name ' + name);
 
-    log('Adding state {0}', name);
-
     states[name] = state;
 
     return router;
@@ -473,6 +473,30 @@ function Router(declarativeStates) {
     return previousState;
   }
 
+  function logStateTree() {
+    if (!logEnabled) return;
+
+    var indent = function(level) {
+      if (level == 0) return '';
+      return new Array(2 + (level - 1) * 4).join(' ') + '── ';
+    }
+
+    var stateTree = function(state) {
+      var path = util.normalizePathQuery(state.fullPath());
+      var pathStr = (state.children.length == 0)
+        ? ' (@ path)'.replace('path', path)
+        : '';
+      var str = indent(state.parents.length) + state.name + pathStr + '\n';
+      return str + state.children.map(stateTree).join('');
+    }
+
+    var msg = '\nState tree\n\n';
+    msg += util.objectToArray(states).map(stateTree).join('');
+    msg += '\n';
+
+    log(msg);
+  }
+
 
   // Public methods
 
@@ -531,9 +555,12 @@ function Router(declarativeStates) {
 // Logging
 
 var log = util.noop,
-    logError = util.noop;
+    logError = util.noop,
+    logEnabled;
 
 Router.enableLogs = function() {
+  logEnabled = true;
+
   log = function() {
     var message = util.makeMessage.apply(null, arguments);
     console.log(message);
@@ -543,6 +570,7 @@ Router.enableLogs = function() {
     var message = util.makeMessage.apply(null, arguments);
     console.error(message);
   };
+
 };
 
 
