@@ -228,9 +228,6 @@ The path/query at the time this state was active.
 ### data (key: String, value: Any): Any | State
 Same as State's data.
 
-### is(fullName: String): Boolean
-Returns whether this state has the given fullName.
-
 ### isIn(fullName: String):Boolean
 Returns whether this state or any of its parents has the given fullName.
 
@@ -256,7 +253,6 @@ var state = router.currentState();
   fullName: 'books.listing',
   params: {kind: 'scifi', limit: 10},
   data, // Here, state.data('myData') == 33
-  is, // state.is('books.listing') == true
   isIn // state.isIn('books') == true
 }
 ```

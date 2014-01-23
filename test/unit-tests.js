@@ -7,6 +7,8 @@ Async  = Abyssa.Async;
 //Router.enableLogs();
 stubHistory();
 
+QUnit.config.testTimeout = 4000;
+
 
 asyncTest('Simple states', function() {
 
@@ -1459,8 +1461,8 @@ function stateWithParamsAssertions(state) {
   ok(state.params.category, 'misc');
   ok(state.params.filter, true);
 
-  ok(state.is('state1.state1Child'));
-  ok(!state.is('state1'));
+  equal(state.fullName, 'state1.state1Child');
+  notEqual(state.fullName, 'state1');
   ok(state.isIn('state1'));
   ok(state.isIn('state1.state1Child'));
   ok(!state.isIn('state2'));

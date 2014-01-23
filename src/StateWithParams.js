@@ -16,17 +16,9 @@ function StateWithParams(state, params, pathQuery) {
     pathQuery: pathQuery,
     data: state && state.data,
     params: params,
-    is: is,
     isIn: isIn,
     toString: toString
   };
-}
-
-/*
-* Returns whether this state has the given fullName.
-*/
-function is(fullStateName) {
-  return this.fullName == fullStateName;
 }
 
 /*
