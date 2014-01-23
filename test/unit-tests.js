@@ -277,7 +277,7 @@ asyncTest('Missing state without a "notFound" state defined', function() {
 
   }).init('');
 
-  router.initialized.addOnce(function() {
+  router.changed.addOnce(function() {
     throws(function() {
       router.state('articles/naturess/88/edit');
     });
@@ -310,7 +310,7 @@ asyncTest('The router can be built bit by bit', function() {
   router.addState('articles', articles);
   router.init('articles.edit');
 
-  router.initialized.addOnce(function() {
+  router.changed.addOnce(function() {
     ok(reachedArticlesEdit);
     start();
   });
@@ -373,7 +373,7 @@ asyncTest('No transition occurs when going to the same state', function() {
 
   }).init('articles/33/today');
 
-  router.initialized.addOnce(function() {
+  router.changed.addOnce(function() {
     events = [];
 
     router.state('articles/33/today');
@@ -409,7 +409,7 @@ asyncTest('Forcing reload on same state transition is possible', function() {
     if (stateCandidate.fullName == 'articles.today') router.reload();
   });
 
-  router.initialized.addOnce(function() {
+  router.changed.addOnce(function() {
     events = [];
 
     router.state('articles/33/today');
@@ -495,7 +495,7 @@ asyncTest('Async enter transitions', function() {
 
   }).init('');
 
-  router.initialized.addOnce(function() {
+  router.changed.addOnce(function() {
     events = [];
 
     router.state('news/today');

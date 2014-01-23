@@ -530,15 +530,8 @@ function Router(declarativeStates) {
     prevented: new Signal()
   };
 
-  // Dispatched once after the router successfully reached its initial state.
-  router.initialized = new Signal();
-
   // Shorter alias for transition.completed: The most commonly used signal
   router.changed = router.transition.completed;
-
-  router.transition.completed.addOnce(function() {
-    router.initialized.dispatch();
-  });
 
   router.transition.completed.add(transitionEnded);
   router.transition.failed.add(transitionEnded);

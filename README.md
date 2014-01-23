@@ -187,9 +187,6 @@ Handlers will only receive one argument: The current state.
 #### router.changed
 Shorter alias for transition.completed: The most commonly used signal.
 
-#### router.initialized
-Dispatched once after the router successfully reached its initial state.
-
 
 ### Usage example
 
