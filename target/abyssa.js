@@ -138,7 +138,7 @@ function Router(declarativeStates) {
 
     firstTransition = false;
 
-    toState._state.lastParams = toState.params;
+    toState.state.lastParams = toState.params;
 
     router.transition.completed.dispatch(toState, fromState);
   }
@@ -183,7 +183,7 @@ function Router(declarativeStates) {
     if (!currentState) return false;
 
     var diff = paramDiff(currentState.params, newParams);
-    return (newState == currentState._state) && (util.objectSize(diff) == 0);
+    return (newState == currentState.state) && (util.objectSize(diff) == 0);
   }
 
   /*
@@ -209,8 +209,8 @@ function Router(declarativeStates) {
   function notFound(state) {
     log('State not found: {0}', state);
 
-    if (options.notFound) 
-      setState(leafStates[options.notFound] || options.notFound);
+    if (options.notFound)
+      setState(leafStates[options.notFound] || options.notFound, {});
     else throw new Error ('State "' + state + '" could not be found');
   }
 
@@ -243,6 +243,8 @@ function Router(declarativeStates) {
     log('Router init');
 
     initStates();
+    logStateTree();
+
     initState = (initState !== undefined) ? initState : getInitState();
 
     log('Initializing to state {0}', initState || '""');
@@ -354,7 +356,7 @@ function Router(declarativeStates) {
   * and the current state should update because of it.
   */
   function reload() {
-    setState(currentState._state, currentState.params, true);
+    setState(currentState.state, currentState.params, true);
   }
 
   function setStateForPathQuery(pathQuery) {
@@ -384,8 +386,6 @@ function Router(declarativeStates) {
 
     if (states[name])
       throw new Error('A state already exist in the router with the name ' + name);
-
-    log('Adding state {0}', name);
 
     states[name] = state;
 
@@ -479,6 +479,30 @@ function Router(declarativeStates) {
     return previousState;
   }
 
+  function logStateTree() {
+    if (!logEnabled) return;
+
+    var indent = function(level) {
+      if (level == 0) return '';
+      return new Array(2 + (level - 1) * 4).join(' ') + '── ';
+    }
+
+    var stateTree = function(state) {
+      var path = util.normalizePathQuery(state.fullPath());
+      var pathStr = (state.children.length == 0)
+        ? ' (@ path)'.replace('path', path)
+        : '';
+      var str = indent(state.parents.length) + state.name + pathStr + '\n';
+      return str + state.children.map(stateTree).join('');
+    }
+
+    var msg = '\nState tree\n\n';
+    msg += util.objectToArray(states).map(stateTree).join('');
+    msg += '\n';
+
+    log(msg);
+  }
+
 
   // Public methods
 
@@ -512,15 +536,8 @@ function Router(declarativeStates) {
     prevented: new Signal()
   };
 
-  // Dispatched once after the router successfully reached its initial state.
-  router.initialized = new Signal();
-
   // Shorter alias for transition.completed: The most commonly used signal
   router.changed = router.transition.completed;
-
-  router.transition.completed.addOnce(function() {
-    router.initialized.dispatch();
-  });
 
   router.transition.completed.add(transitionEnded);
   router.transition.failed.add(transitionEnded);
@@ -537,9 +554,12 @@ function Router(declarativeStates) {
 // Logging
 
 var log = util.noop,
-    logError = util.noop;
+    logError = util.noop,
+    logEnabled;
 
 Router.enableLogs = function() {
+  logEnabled = true;
+
   log = function() {
     var message = util.makeMessage.apply(null, arguments);
     console.log(message);
@@ -549,6 +569,7 @@ Router.enableLogs = function() {
     var message = util.makeMessage.apply(null, arguments);
     console.error(message);
   };
+
 };
 
 
@@ -802,30 +823,22 @@ module.exports = State;
 */
 function StateWithParams(state, params, pathQuery) {
   return {
-    _state: state,
+    state: state,
     name: state && state.name,
     fullName: state && state.fullName,
     pathQuery: pathQuery,
     data: state && state.data,
     params: params,
-    is: is,
     isIn: isIn,
     toString: toString
   };
 }
 
 /*
-* Returns whether this state has the given fullName.
-*/
-function is(fullStateName) {
-  return this.fullName == fullStateName;
-}
-
-/*
 * Returns whether this state or any of its parents has the given fullName.
 */
 function isIn(fullStateName) {
-  var current = this._state;
+  var current = this.state;
   while (current) {
     if (current.fullName == fullStateName) return true;
     current = current.parent;
@@ -858,8 +871,8 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
       error,
       exits = [];
 
-  var fromState = fromStateWithParams && fromStateWithParams._state;
-  var toState = toStateWithParams._state;
+  var fromState = fromStateWithParams && fromStateWithParams.state;
+  var toState = toStateWithParams.state;
   var params = toStateWithParams.params;
   var isUpdate = (fromState == toState);
 
