@@ -630,18 +630,14 @@ Or
 
 ```javascript
 
-// utility
-function doBefore(func, beforeFunc) {
-  return function() {
-    beforeFunc.apply(this, arguments);
-    return func && func.apply(this, arguments);
+function NavState(path, options) {
+  var enter = options.enter;
+
+  options.enter = function(params) {
+    highlight(this.name);
+    enter(params);
   };
 }
-
-function NavState(path, options) {
-  options.enter = doBefore(options.enter, function(params) {
-    highlight(this.name);
-  });
   return State(path, options);
 }
 
