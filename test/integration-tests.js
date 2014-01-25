@@ -10,21 +10,23 @@ Async  = Abyssa.Async;
 var isHTML5Browser = !history.emulate;
 var initialURL = window.location.href;
 var testElements = document.getElementById('test-elements');
-
+var router;
 
 QUnit.config.testTimeout = 4000;
 
 QUnit.testDone(function() {
   if (isHTML5Browser) changeURL(initialURL);
   testElements.innerHTML = '';
+  router.terminate();
 });
+
 
 
 asyncTest('Router initialization from initial URL', function() {
 
   changeURL('/initialState/36');
 
-  var router = Router({
+  router = Router({
 
     index: State('initialState/:num', function(param) {
       strictEqual(param.num, 36);
@@ -42,7 +44,7 @@ asyncTest('Default anchor interception', function() {
   a.href = '/articles/33';
   testElements.appendChild(a);
 
-  var router = Router({
+  router = Router({
 
     index: State(''),
 
@@ -66,7 +68,7 @@ asyncTest('Mousedown anchor interception', function() {
   a.setAttribute('data-nav', 'mousedown');
   testElements.appendChild(a);
 
-  var router = Router({
+  router = Router({
 
     index: State(''),
 
@@ -86,7 +88,7 @@ asyncTest('Mousedown anchor interception', function() {
 
 asyncTest('Redirect', function() {
 
-  var router = Router({
+  router = Router({
 
     index: State('index', function() {
       router.redirect('articles');
@@ -98,7 +100,7 @@ asyncTest('Redirect', function() {
 
   router.changed.addOnce(function() {
     equal(router.urlPathQuery(), '/articles');
-    start();
+    startLater();
   });
 
 });
@@ -106,7 +108,7 @@ asyncTest('Redirect', function() {
 
 asyncTest('history.back()', function() {
 
-  var router = Router({
+  router = Router({
 
     index: State('index'),
     books: State('books'),
@@ -120,7 +122,7 @@ asyncTest('history.back()', function() {
     .then(pathnameShouldBeBooks)
     .then(doHistoryBack)
     .then(pathnameShouldBeArticles)
-    .then(start);
+    .done(startLater);
 
   // First state pushed
   function goToArticles() {
@@ -154,6 +156,77 @@ asyncTest('history.back()', function() {
 
 });
 
+// The history.js shim completely hijacks the hashchange listeners 
+// and many other things on the window object, preventing this test from working properly.
+// So just test modern/non shimmed browsers for now.
+// Ideally, this test should be ran for all browsers and without the history.js shim but that would require a *third* SauceLabs account.
+if (isHTML5Browser && !isUsingShims)
+  asyncTest('hash mode switched on', function() {
+
+    var lastParams;
+
+    window.addEventListener('hashchange', startTest);
+    window.location.hash = '/category1/56';
+
+    function startTest() {
+      window.removeEventListener('hashchange', startTest);
+
+      router = Router({
+
+        index: State(''),
+
+        category1: State('category1', {
+          detail: State(':id', function(params) {
+            lastParams = params;
+          })
+        })
+
+      })
+      .configure({
+        urlSync: 'hash'
+      })
+      .init();
+
+      whenSignal(router.changed)
+        .then(stateShouldBeCategoryDetail)
+        .then(goToIndex)
+        .then(stateShouldBeIndex)
+        .then(goToCategoryDetail)
+        .then(stateShouldBeCategoryDetail2)
+        .done(startLater);
+
+      function stateShouldBeCategoryDetail() {
+        strictEqual(router.currentState().fullName, 'category1.detail');
+        strictEqual(lastParams.id, 56);
+        strictEqual(window.location.hash, '#/category1/56');
+      }
+
+      function goToIndex() {
+        router.state('/');
+      }
+
+      function stateShouldBeIndex() {
+        return nextTick().then(function() {
+          strictEqual(router.currentState().fullName, 'index');
+          strictEqual(window.location.hash, '#/');
+        });
+      }
+
+      function goToCategoryDetail() {
+        router.state('category1.detail', {id: 88});
+      }
+
+      function stateShouldBeCategoryDetail2() {
+        return nextTick().then(function() {
+          strictEqual(router.currentState().fullName, 'category1.detail');
+          strictEqual(lastParams.id, 88);
+          strictEqual(window.location.hash, '#/category1/88');
+        });
+      }
+    }
+
+  });
+
 
 asyncTest('urlSync switched off', function() {
 
@@ -162,7 +235,7 @@ asyncTest('urlSync switched off', function() {
   // We should never leave the starting URL.
   var defaultURL = window.location.href;
 
-  var router = Router({
+  router = Router({
 
     index: State(''),
 
@@ -182,7 +255,7 @@ asyncTest('urlSync switched off', function() {
     .then(ShouldDefaultToIndex)
     .then(goToCategoryDetail)
     .then(shouldBeInCategoryDetail)
-    .then(start);
+    .done(startLater);
 
 
   function ShouldDefaultToIndex() {
@@ -207,7 +280,8 @@ asyncTest('urlSync switched off', function() {
 
 
 function changeURL(pathQuery) {
-  history.pushState('', '', pathQuery);
+  if (history.pushState) 
+    history.pushState('', '', pathQuery);
 }
 
 function simulateClick(element) {

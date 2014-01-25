@@ -27,14 +27,14 @@ function Router(declarativeStates) {
         notFound: null,
         urlSync: true
       },
-      ignoreNextPopState = false,
+      ignoreNextURLChange = false,
       currentPathQuery,
       currentState,
       previousState,
       transition,
       leafStates,
       stateFound,
-      poppedState,
+      urlChanged,
       initialized;
 
   // Routes params should be type casted. e.g the dynamic path items/:id when id is 33
@@ -67,9 +67,9 @@ function Router(declarativeStates) {
     previousState = currentState;
     currentState = toState;
 
-    if (!poppedState && !firstTransition && !reload) {
-      log('Pushing state: {0}', currentPathQuery);
-      pushState(currentPathQuery, document.title, currentPathQuery);
+    if (!urlChanged && !firstTransition && !reload) {
+      log('Updating URL: {0}', currentPathQuery);
+      updateURLFromState(currentPathQuery, document.title, currentPathQuery);
     }
 
     startingTransition(fromState, toState);
@@ -140,12 +140,17 @@ function Router(declarativeStates) {
     setTimeout(function() { throw error; }, 0);
   }
 
-  function pushState(state, title, url) {
+  function updateURLFromState(state, title, url) {
     if (!options.urlSync) return;
 
-    // Workaround for https://github.com/devote/HTML5-History-API/issues/44
-    if (history.emulate) ignoreNextPopState = true;
-    history.pushState(state, title, url);
+    // The first check is a workaround for https://github.com/devote/HTML5-History-API/issues/44
+    if (history.emulate || isHashMode())
+      ignoreNextURLChange = true;
+
+    if (isHashMode())
+      location.hash = url;
+    else
+      history.pushState(state, title, url);
   }
 
   /*
@@ -223,24 +228,40 @@ function Router(declarativeStates) {
     log('Initializing to state {0}', initState || '""');
     state(initState, initParams);
 
-    if (options.urlSync)
-      window.onpopstate = function(evt) {
-        if (ignoreNextPopState) {
-          ignoreNextPopState = false;
-          return;
-        }
-
-        // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
-        // in these cases, evt.state is null.
-        var newState = evt.state || urlPathQuery();
-
-        log('Popped state: {0}', newState);
-        poppedState = true;
-        setStateForPathQuery(newState);
-      };
+    listenToURLChanges();
 
     initialized = true;
     return router;
+  }
+
+  /*
+  * Remove any possibility of side effect this router instance might cause.
+  * Used for testing purposes.
+  */
+  function terminate() {
+    window.onhashchange = null;
+    window.onpopstate = null;
+  }
+
+  function listenToURLChanges() {
+    if (!options.urlSync) return;
+
+    function onURLChange(evt) {
+      if (ignoreNextURLChange) {
+        ignoreNextURLChange = false;
+        return;
+      }
+
+      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
+      // in this case, evt.state is null.
+      var newState = isHashMode() ? urlPathQuery() : evt.state || urlPathQuery();
+
+      log('URL changed: {0}', newState);
+      urlChanged = true;
+      setStateForPathQuery(newState);
+    }
+
+    window[isHashMode() ? 'onhashchange' : 'onpopstate'] = onURLChange;
   }
 
   function getInitState() {
@@ -300,7 +321,7 @@ function Router(declarativeStates) {
 
     log('Changing state to {0}', pathQueryOrName || '""');
 
-    poppedState = false;
+    urlChanged = false;
     if (isName) setStateByName(pathQueryOrName, params || {});
     else setStateForPathQuery(pathQueryOrName);
   }
@@ -372,6 +393,10 @@ function Router(declarativeStates) {
       : (location.pathname + location.search).slice(1);
 
     return util.normalizePathQuery(pathQuery);
+  }
+
+  function isHashMode() {
+    return (options.urlSync == 'hash');
   }
 
   /*
@@ -490,6 +515,7 @@ function Router(declarativeStates) {
   router.currentState = getCurrentState;
   router.previousState = getPreviousState;
   router.urlPathQuery = urlPathQuery;
+  router.terminate = terminate;
 
 
   // Signals

@@ -111,7 +111,10 @@ The available options are:
 - enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.  
 - interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.  
 - notFound: The State to enter when no state matching the current path query or name could be found. Either a State instance or a string representing the fullName of an existing state can be passed. Defaults to null.  
-- urlSync: Whether the router should maintain the current state and the url in sync. Setting this option to false can be useful for web/native hybrid mobile apps. Defaults to true.
+- urlSync: How the router state and the URL should be kept in sync. Defaults to true. Possible values are:  
+  - true: The router uses the history pushState API. The history.js shim can be used to also support IE8/IE9.
+  - false: The url is never read or updated. The starting state is the path-less, default state.
+  - 'hash': The router uses the hash part of the URL for all browsers.
 
 ### init (initState: String, initParams: Object): Router
 Initialize and freeze the router (states can not be updated or added afterwards).  

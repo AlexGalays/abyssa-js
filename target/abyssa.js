@@ -1,4 +1,4 @@
-/* abyssa 4.3.0 - A stateful router library for single page applications */
+/* abyssa 5.0.0 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -33,14 +33,14 @@ function Router(declarativeStates) {
         notFound: null,
         urlSync: true
       },
-      ignoreNextPopState = false,
+      ignoreNextURLChange = false,
       currentPathQuery,
       currentState,
       previousState,
       transition,
       leafStates,
       stateFound,
-      poppedState,
+      urlChanged,
       initialized;
 
   // Routes params should be type casted. e.g the dynamic path items/:id when id is 33
@@ -69,15 +69,14 @@ function Router(declarativeStates) {
     }
 
     // While the transition is running, any code asking the router about the previous/current state should
-    // get the end result state. These states are rollbacked if the transition fails.
-    oldPreviousState = previousState;
+    // get the end result state.
     previousState = currentState;
     currentState = toState;
 
-    // A state was popped and the browser already changed the URL as a result;
-    // Revert the URL to its previous value and actually change it after a successful transition.
-    if (poppedState) replaceState(
-      fromState.pathQuery, document.title, fromState.pathQuery);
+    if (!urlChanged && !firstTransition && !reload) {
+      log('Updating URL: {0}', currentPathQuery);
+      updateURLFromState(currentPathQuery, document.title, currentPathQuery);
+    }
 
     startingTransition(fromState, toState);
 
@@ -90,23 +89,11 @@ function Router(declarativeStates) {
     transition.then(
       function success() {
         transition = null;
-
-        if (!poppedState && !firstTransition && !reload) {
-          log('Pushing state: {0}', currentPathQuery);
-          pushState(currentPathQuery, document.title, currentPathQuery);
-        }
-
-        if (poppedState) replaceState(
-          currentState.pathQuery, document.title, currentState.pathQuery);
-
         transitionCompleted(fromState, toState);
       },
       function fail(error) {
+        currentState = transition.currentState;
         transition = null;
-
-        currentState = previousState;
-        previousState = oldPreviousState;
-
         transitionFailed(fromState, toState, error);
       }
     )
@@ -159,20 +146,17 @@ function Router(declarativeStates) {
     setTimeout(function() { throw error; }, 0);
   }
 
-  function replaceState(state, title, url) {
+  function updateURLFromState(state, title, url) {
     if (!options.urlSync) return;
 
-    // Workaround for https://github.com/devote/HTML5-History-API/issues/44
-    if (history.emulate) ignoreNextPopState = true;
-    history.replaceState(state, title, url);
-  }
+    // The first check is a workaround for https://github.com/devote/HTML5-History-API/issues/44
+    if (history.emulate || isHashMode())
+      ignoreNextURLChange = true;
 
-  function pushState(state, title, url) {
-    if (!options.urlSync) return;
-
-    // Workaround for https://github.com/devote/HTML5-History-API/issues/44
-    if (history.emulate) ignoreNextPopState = true;
-    history.pushState(state, title, url);
+    if (isHashMode())
+      location.hash = url;
+    else
+      history.pushState(state, title, url);
   }
 
   /*
@@ -250,24 +234,40 @@ function Router(declarativeStates) {
     log('Initializing to state {0}', initState || '""');
     state(initState, initParams);
 
-    if (options.urlSync)
-      window.onpopstate = function(evt) {
-        if (ignoreNextPopState) {
-          ignoreNextPopState = false;
-          return;
-        }
-
-        // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
-        // in these cases, evt.state is null.
-        var newState = evt.state || urlPathQuery();
-
-        log('Popped state: {0}', newState);
-        poppedState = true;
-        setStateForPathQuery(newState);
-      };
+    listenToURLChanges();
 
     initialized = true;
     return router;
+  }
+
+  /*
+  * Remove any possibility of side effect this router instance might cause.
+  * Used for testing purposes.
+  */
+  function terminate() {
+    window.onhashchange = null;
+    window.onpopstate = null;
+  }
+
+  function listenToURLChanges() {
+    if (!options.urlSync) return;
+
+    function onURLChange(evt) {
+      if (ignoreNextURLChange) {
+        ignoreNextURLChange = false;
+        return;
+      }
+
+      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
+      // in this case, evt.state is null.
+      var newState = isHashMode() ? urlPathQuery() : evt.state || urlPathQuery();
+
+      log('URL changed: {0}', newState);
+      urlChanged = true;
+      setStateForPathQuery(newState);
+    }
+
+    window[isHashMode() ? 'onhashchange' : 'onpopstate'] = onURLChange;
   }
 
   function getInitState() {
@@ -327,7 +327,7 @@ function Router(declarativeStates) {
 
     log('Changing state to {0}', pathQueryOrName || '""');
 
-    poppedState = false;
+    urlChanged = false;
     if (isName) setStateByName(pathQueryOrName, params || {});
     else setStateForPathQuery(pathQueryOrName);
   }
@@ -399,6 +399,10 @@ function Router(declarativeStates) {
       : (location.pathname + location.search).slice(1);
 
     return util.normalizePathQuery(pathQuery);
+  }
+
+  function isHashMode() {
+    return (options.urlSync == 'hash');
   }
 
   /*
@@ -517,6 +521,7 @@ function Router(declarativeStates) {
   router.currentState = getCurrentState;
   router.previousState = getPreviousState;
   router.urlPathQuery = urlPathQuery;
+  router.terminate = terminate;
 
 
   // Signals
@@ -894,7 +899,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 
   enters = transitionStates(toState, root, isUpdate).reverse();
 
-  transitionPromise = prereqs(enters, exits, params, isUpdate).then(function() {
+  transitionPromise = prereqs(enters, params, isUpdate).then(function() {
     if (!cancelled) doTransition(enters, exits, params, transition, isUpdate);
   });
 
@@ -917,22 +922,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 /*
 * Return the promise of the prerequisites for all the states involved in the transition.
 */
-function prereqs(enters, exits, params, isUpdate) {
-
-  exits.forEach(function(state) {
-    if (!state.exitPrereqs || (isUpdate && state.update)) return;
-
-    var prereqs = state._exitPrereqs = Q(state.exitPrereqs()).then(
-      function success(value) {
-        if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
-      },
-      function fail(cause) {
-        var message = util.makeMessage('Failed to resolve EXIT prereqs of "{0}"', state.fullName);
-        throw TransitionError(message, cause);
-      }
-    );
-  });
-
+function prereqs(enters, params, isUpdate) {
   enters.forEach(function(state) {
     if (!state.enterPrereqs || (isUpdate && state.update)) return;
 
@@ -947,8 +937,8 @@ function prereqs(enters, exits, params, isUpdate) {
     );
   });
 
-  return Q.all(enters.concat(exits).map(function(state) {
-    return state._enterPrereqs || state._exitPrereqs;
+  return Q.all(enters.map(function(state) {
+    return state._enterPrereqs;
   }));
 }
 
