@@ -39,7 +39,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 
   enters = transitionStates(toState, root, isUpdate).reverse();
 
-  transitionPromise = prereqs(enters, exits, params, isUpdate).then(function() {
+  transitionPromise = prereqs(enters, params, isUpdate).then(function() {
     if (!cancelled) doTransition(enters, exits, params, transition, isUpdate);
   });
 
@@ -62,22 +62,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 /*
 * Return the promise of the prerequisites for all the states involved in the transition.
 */
-function prereqs(enters, exits, params, isUpdate) {
-
-  exits.forEach(function(state) {
-    if (!state.exitPrereqs || (isUpdate && state.update)) return;
-
-    var prereqs = state._exitPrereqs = Q(state.exitPrereqs()).then(
-      function success(value) {
-        if (state._exitPrereqs == prereqs) state._exitPrereqs.value = value;
-      },
-      function fail(cause) {
-        var message = util.makeMessage('Failed to resolve EXIT prereqs of "{0}"', state.fullName);
-        throw TransitionError(message, cause);
-      }
-    );
-  });
-
+function prereqs(enters, params, isUpdate) {
   enters.forEach(function(state) {
     if (!state.enterPrereqs || (isUpdate && state.update)) return;
 
@@ -92,8 +77,8 @@ function prereqs(enters, exits, params, isUpdate) {
     );
   });
 
-  return Q.all(enters.concat(exits).map(function(state) {
-    return state._enterPrereqs || state._exitPrereqs;
+  return Q.all(enters.map(function(state) {
+    return state._enterPrereqs;
   }));
 }
 

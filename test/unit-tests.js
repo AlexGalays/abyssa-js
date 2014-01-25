@@ -573,63 +573,6 @@ asyncTest('prereqs can return non promise values', function() {
 });
 
 
-asyncTest('Async exit transitions', function() {
-
-  var events = [];
-  var router = Router({
-
-    index: State(),
-
-    details: State('details', {
-      enter: function() {
-        events.push('detailsEnter');
-      },
-
-      exit: function() {
-        events.push('detailsExit');
-      },
-      exitPrereqs: function() {
-        return successPromise(150);
-      },
-
-      edit: State('edit', {
-        enter: function() {
-          events.push('editEnter');
-        },
-
-        exit: function() {
-          events.push('editExit');
-        },
-        exitPrereqs: function() {
-          return successPromise(50, '', notYetExited);
-        }
-      })
-    })
-
-  }).init('details/edit');
-
-  router.changed.addOnce(function() {
-    deepEqual(events, ['detailsEnter', 'editEnter']);
-    events = [];
-    router.state('');
-
-    router.changed.addOnce(function() {
-      exited();
-      start();
-    });
-  });
-
-  function notYetExited() {
-    deepEqual(events, []);
-  }
-
-  function exited() {
-    deepEqual(events, ['editExit', 'detailsExit']);
-  }
-
-});
-
-
 asyncTest('Cancelling an async transition', function() {
 
   var events = [];
@@ -1046,40 +989,6 @@ test('Reverse routing', function() {
 });
 
 
-asyncTest('Both prereqs can be specified on a single state', function() {
-  var enterPrereq,
-      exitPrereq;
-
-  var router = Router({
-
-    index: State(),
-
-    one: State('one', {
-      enterPrereqs: function() { return 3; },
-      enter: function(params, _enterPrereq) { enterPrereq = _enterPrereq; },
-
-      exitPrereqs: function() { return 4; },
-      exit: function(_exitPrereq) { exitPrereq = _exitPrereq}
-    })
-
-  }).init('one');
-
-  router.changed.addOnce(function() {
-    enterPrereq = exitPrereq = undefined;
-    // This will cause the state to be both exited and re-entered.
-    router.state('one?filter=1');
-
-    router.changed.addOnce(function() {
-      equal(enterPrereq, 3);
-      equal(exitPrereq, 4);
-
-      start();
-    });
-  });
-
-});
-
-
 asyncTest('Non blocking promises as an alternative to prereqs', function() {
   var promiseValue = null;
 
@@ -1383,7 +1292,7 @@ asyncTest('update', function() {
   function stateWereEnteredOrUpdated() {
     return nextTick().then(function() {
       deepEqual(events, [
-        'archiveExitPrereqs', 'archiveEnterPrereqs',
+        'archiveEnterPrereqs',
         'archiveExit',
         'newsUpdate',
         'archiveEnter',
@@ -1397,8 +1306,7 @@ asyncTest('update', function() {
     var state = State(path, {
       enter: function(params) { events.push(name + 'Enter'); },
       enterPrereqs: function() { events.push(name + 'EnterPrereqs'); },
-      exit: function() { events.push(name + 'Exit'); },
-      exitPrereqs: function() { events.push(name + 'ExitPrereqs'); }
+      exit: function() { events.push(name + 'Exit'); }
     });
 
     if (withUpdate) state.update = function(params) {

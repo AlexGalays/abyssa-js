@@ -321,7 +321,7 @@ This property is available after router init (e.g inside an state.enter()).
 ### Declarative properties
 
 When creating a State instance with an option object, the following properties have a special meaning and are reserved for abyssa:  
-`data`, `enter`, `exit`, `enterPrereqs`, `exitPrereqs`, `update`  
+`data`, `enter`, `exit`, `enterPrereqs`, `update`  
 All other properties should be child states.
 
 #### enter (params: Object, userData: Any): void
@@ -338,10 +338,6 @@ Examples of enterPrereqs include fetching an html template file, data via ajax/l
 #### exit (userData: Any): void
 Same as the enter function but called when the state is exited.
 This is where you could teardown any state or side effects introduced by the enter function, if needed.
-
-#### exitPrereqs (): Any
-Same as enterPrereqs but for the exit phase.  
-An example of an exitPrereqs would be a prompt (Backed by a promise) asking the user if she wants to leave the screen with unsaved data.
 
 #### update (params: Object): void
 The update callback is called when the router is moving to the same state as the current state, but with different params or because of a reload().  

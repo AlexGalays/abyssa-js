@@ -63,15 +63,14 @@ function Router(declarativeStates) {
     }
 
     // While the transition is running, any code asking the router about the previous/current state should
-    // get the end result state. These states are rollbacked if the transition fails.
-    oldPreviousState = previousState;
+    // get the end result state.
     previousState = currentState;
     currentState = toState;
 
-    // A state was popped and the browser already changed the URL as a result;
-    // Revert the URL to its previous value and actually change it after a successful transition.
-    if (poppedState) replaceState(
-      fromState.pathQuery, document.title, fromState.pathQuery);
+    if (!poppedState && !firstTransition && !reload) {
+      log('Pushing state: {0}', currentPathQuery);
+      pushState(currentPathQuery, document.title, currentPathQuery);
+    }
 
     startingTransition(fromState, toState);
 
@@ -84,23 +83,11 @@ function Router(declarativeStates) {
     transition.then(
       function success() {
         transition = null;
-
-        if (!poppedState && !firstTransition && !reload) {
-          log('Pushing state: {0}', currentPathQuery);
-          pushState(currentPathQuery, document.title, currentPathQuery);
-        }
-
-        if (poppedState) replaceState(
-          currentState.pathQuery, document.title, currentState.pathQuery);
-
         transitionCompleted(fromState, toState);
       },
       function fail(error) {
+        currentState = transition.currentState;
         transition = null;
-
-        currentState = previousState;
-        previousState = oldPreviousState;
-
         transitionFailed(fromState, toState, error);
       }
     )
@@ -151,14 +138,6 @@ function Router(declarativeStates) {
     // For developer errors, rethrow the error outside
     // of the promise context to retain the script and line of the error.
     setTimeout(function() { throw error; }, 0);
-  }
-
-  function replaceState(state, title, url) {
-    if (!options.urlSync) return;
-
-    // Workaround for https://github.com/devote/HTML5-History-API/issues/44
-    if (history.emulate) ignoreNextPopState = true;
-    history.replaceState(state, title, url);
   }
 
   function pushState(state, title, url) {
