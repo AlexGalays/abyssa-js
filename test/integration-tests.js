@@ -324,7 +324,7 @@ function delay(time, value) {
 }
 
 function nextTick() {
-  return delay(0);
+  return delay(20);
 }
 
 // The hashchange event is dispatched asynchronously.

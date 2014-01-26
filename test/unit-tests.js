@@ -1515,7 +1515,7 @@ function failPromise(time) {
 }
 
 function nextTick() {
-  return delay(0);
+  return delay(20);
 }
 
 function whenSignal(signal) {
