@@ -649,27 +649,3 @@ var router = Router({
 }).init('section1');
 
 ```
-
-
-## Disable anchor click interception on HTML4 browsers
-
-pros:  
-- Only one URL kind around (no hashes)
-- Can use traditional anchor # links to jump to sections in all browsers without using JS
-- No need for history shims
-
-cons:  
-- Slower browsing in HTML4 browsers: Everytime a state change occurs, the page fully reloads, the router initializes again, etc.
-- Some UX become impossible to deliver. Ex: A three steps form process where each step has its own route and where the state accumulates in JS before being sent to the server after the final step.  
-
-```javascript
-
-var router = Router({
-  // ...
-})
-.configure({
-  interceptAnchorClicks: !history.emulate
-})
-.init();
-
-```
