@@ -386,6 +386,9 @@ function Router(declarativeStates) {
     return router;
   }
 
+  /*
+  * Read the path/query from the URL.
+  */
   function urlPathQuery() {
     var hashSlash = location.href.indexOf('#/');
     var pathQuery = hashSlash > -1
@@ -477,6 +480,13 @@ function Router(declarativeStates) {
     return previousState;
   }
 
+  /*
+  * Returns whether the router is executing its first transition.
+  */
+  function isFirstTransition() {
+    return previousState == null;
+  }
+
   function logStateTree() {
     if (!logEnabled) return;
 
@@ -514,6 +524,9 @@ function Router(declarativeStates) {
   router.link = link;
   router.currentState = getCurrentState;
   router.previousState = getPreviousState;
+  router.isFirstTransition = isFirstTransition;
+
+  // Used for testing
   router.urlPathQuery = urlPathQuery;
   router.terminate = terminate;
 

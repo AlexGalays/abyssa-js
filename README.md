@@ -161,6 +161,9 @@ Returns the previous state of the router or null if the router is still in its i
 ### currentState(): [StateWithParams](#api-stateWithParams)
 Returns the current state of the router.
 
+### isFirstTransition(): Boolean
+Returns whether the router is executing its first transition.
+
 
 ### Signals
 
