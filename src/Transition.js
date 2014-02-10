@@ -39,11 +39,11 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 
   enters = transitionStates(toState, root, isUpdate).reverse();
 
+  asyncPromises.newTransitionStarted();
+
   transitionPromise = prereqs(enters, params, isUpdate).then(function() {
     if (!cancelled) doTransition(enters, exits, params, transition, isUpdate);
   });
-
-  asyncPromises.newTransitionStarted();
 
   function then(completed, failed) {
     return transitionPromise.then(
