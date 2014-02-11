@@ -72,13 +72,17 @@ function Router(declarativeStates) {
       updateURLFromState(currentPathQuery, document.title, currentPathQuery);
     }
 
-    startingTransition(fromState, toState);
-
-    transition = Transition(
+    var t = transition = Transition(
       fromState,
       toState,
       paramDiff(fromState && fromState.params, params),
       reload);
+
+    startingTransition(fromState, toState);
+
+    // setState() was reentered because of a redirect inside a transition.started handler.
+    // The end of this method is obsolete.
+    if (transition != t) return;
 
     transition.then(
       function success() {

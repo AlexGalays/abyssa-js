@@ -1189,6 +1189,48 @@ asyncTest('Redirects', function() {
 });
 
 
+asyncTest('Redirecting from transition.started', function() {
+
+  var completedCount = 0;
+
+  var router = Router({
+    index: State(''),
+    uno: State('uno', incrementCompletedCount),
+    dos: State('dos', incrementCompletedCount)
+  })
+  .init('');
+
+  whenSignal(router.changed)
+    .then(addListener)
+    .then(goToUno)
+    .then(assertions)
+    .then(start);
+
+
+  function addListener() {
+    router.transition.started.addOnce(function() {
+      router.redirect('dos');
+    });
+  }
+  
+  function goToUno() {
+    router.state('uno');
+  }
+
+  function assertions() {
+    return nextTick().then(function() {
+      equal(completedCount, 1);
+      equal(router.currentState().name, 'dos');
+    });
+  }
+
+  function incrementCompletedCount() {
+    completedCount++;
+  }
+
+});
+
+
 asyncTest('backTo', function() {
   var passedParams;
 
