@@ -1537,6 +1537,43 @@ test('util.normalizePathQuery', function() {
 });
 
 
+asyncTest('can prevent a transition by navigating to self from the exit handler', function() {
+
+  var events = [];
+
+  var router = Router({
+    uno: State('uno', {
+      enter: function() { events.push('unoEnter'); },
+      exit: function() { router.state('uno'); }
+    }),
+    dos: State('dos', {
+      enter: function() { events.push('dosEnter'); },
+      exit: function() { events.push('dosExit'); }
+    })
+  })
+  .init('uno');
+
+  whenSignal(router.changed)
+    .then(goToDos)
+    .then(unoWontLetGo)
+    .then(start);
+
+  function goToDos() {
+    router.state('dos');
+  }
+
+  function unoWontLetGo() {
+    return nextTick().then(function() {
+      // Only the initial event is here. 
+      // Since the exit was interrupted, there's no reason to re-enter.
+      deepEqual(events, ['unoEnter']);
+      equal(router.currentState().name, 'uno');
+    });
+  }
+
+});
+
+
 function delay(time, value) {
   var defer = when.defer();
   setTimeout(function() { defer.resolve(value); }, time);

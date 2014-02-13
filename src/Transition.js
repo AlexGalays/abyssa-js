@@ -41,9 +41,12 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 
   asyncPromises.newTransitionStarted();
 
-  transitionPromise = prereqs(enters, params, isUpdate).then(function() {
-    if (!cancelled) doTransition(enters, exits, params, transition, isUpdate);
-  });
+  if (isNullTransition(isUpdate, reload, paramDiff))
+    transitionPromise = Q('null');
+  else
+    transitionPromise = prereqs(enters, params, isUpdate).then(function() {
+      if (!cancelled) doTransition(enters, exits, params, transition, isUpdate);
+    });
 
   function then(completed, failed) {
     return transitionPromise.then(
@@ -57,6 +60,13 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
   }
 
   return transition;
+}
+
+/*
+* Whether there is no need to actually perform a transition.
+*/
+function isNullTransition(isUpdate, reload, paramDiff) {
+  return (isUpdate && !reload && util.objectSize(paramDiff) == 0);
 }
 
 /*
