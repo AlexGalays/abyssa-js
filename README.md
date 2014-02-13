@@ -217,7 +217,7 @@ router.addState('index', State());
 ## StateWithParams
 StateWithParams is the merge between a State object (created and added to the router before init)
 and params (both path and query params, extracted from the URL after init).  
-Instances of StateWithParams are returned from router.currentState() and passed in signal handlers.  
+Instances of StateWithParams are returned from `router.previousState()`, `router.currentState()` and passed in signal handlers.  
 
 ### name: String
 Same as State's name.
@@ -348,26 +348,7 @@ This is where you could teardown any state or side effects introduced by the ent
 #### update (params: Object): void
 The update callback is called when the router is moving to the same state as the current state, but with different params or because of a reload().  
 Specifying an update callback can be seen as an optimization preventing doing wasteful work in exit/enter, e.g removing and adding the same DOM elements that were already present in the document before the state change.  
-The update callback can be used to separate the setup/teardown of the static elements of the state (e.g a base layout or some data independant of the url params) in the `enter`/`exit`, while managing the dynamic elements of the state (e.g rendering some list from server data) in `update`.
 
-**Without an update callback**
-```javascript
-var router = router({
-  people: State('people/:id', {
-    enter: function() {},
-    exit: function() {},
-  })
-}).init('people/33');
-```
-
-During init, the following callbacks will be called:
-- enter
-
-Later, if the router moves to 'people/44', the following callbacks will be called:
-- exit
-- enter
-
-**With an update callback**
 ```javascript
 var router = router({
   people: State('people/:id', {
@@ -378,12 +359,11 @@ var router = router({
 }).init('people/33');
 ```
 
-During init, the following callbacks will be called:
-- enter
-- update
+During init, `enter` will be called.  
 
-Later, if the router moves to 'people/44', the following callbacks will be called:
-- update
+Later, if the router transitions from 'people/33' to 'people/44', only `update` will be called. If an `update` callback wasn't specified,
+`exit` then `enter` would have been called in succession.
+
 
 #### data: Object
 Custom data properties can be specified declaratively when building the state.

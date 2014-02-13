@@ -1317,12 +1317,10 @@ asyncTest('update', function() {
     deepEqual(events, [
       'rootEnterPrereqs', 'newsEnterPrereqs', 'archiveEnterPrereqs', 'detailEnterPrereqs',
       'rootEnter',
-      'newsEnter', 'newsUpdate',
+      'newsEnter',
       'archiveEnter',
-      'detailEnter', 'detailUpdate'
+      'detailEnter'
     ]);
-
-    strictEqual(updateParams.id, 33);
   }
 
   function changeIdParam() {

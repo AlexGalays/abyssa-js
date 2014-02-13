@@ -95,7 +95,7 @@ function prereqs(enters, params, isUpdate) {
 function doTransition(enters, exits, params, transition, isUpdate) {
   exits.forEach(function(state) {
     if (isUpdate && state.update) return;
-    state.exit(state._exitPrereqs && state._exitPrereqs.value);
+    state.exit();
   });
 
   enters.forEach(function(state) {
@@ -105,10 +105,8 @@ function doTransition(enters, exits, params, transition, isUpdate) {
 
     if (isUpdate && state.update)
       state.update(params);
-    else {
+    else
       state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
-      if (state.update) state.update(params);
-    }
   });
 }
 
