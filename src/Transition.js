@@ -41,11 +41,9 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 
   asyncPromises.newTransitionStarted();
 
-  if (isNullTransition(isUpdate, reload, paramDiff))
-    transitionPromise = Q('null');
-  else
-    transitionPromise = Q.fcall(doTransition, enters, exits, params, transition, isUpdate);
-
+  transitionPromise = isNullTransition(isUpdate, reload, paramDiff)
+    ? Q('null')
+    : startTransition(enters, exits, params, transition, isUpdate);
 
   function then(completed, failed) {
     return transitionPromise.then(
@@ -68,24 +66,43 @@ function isNullTransition(isUpdate, reload, paramDiff) {
   return (isUpdate && !reload && util.objectSize(paramDiff) == 0);
 }
 
-function doTransition(enters, exits, params, transition, isUpdate) {
-  if (transition.cancelled) return;
+function startTransition(enters, exits, params, transition, isUpdate) {
+  var promise = Q();
 
   exits.forEach(function(state) {
     if (isUpdate && state.update) return;
-    state.exit();
+    promise = promise.then(call(state, 'exit'));
   });
 
   enters.forEach(function(state) {
-    if (transition.cancelled) return;
-
-    transition.currentState = state;
-
-    if (isUpdate && state.update)
-      state.update(params);
-    else
-      state.enter(params);
+    var fn = (isUpdate && state.update) ? 'update' : 'enter';
+    promise = promise.then(call(state, fn));
   });
+
+  function call(state, fn) {
+    return function(value) {
+      checkCancellation();
+
+      var result = state[fn](params, value);
+
+      checkCancellation();
+
+      // If the current function doesn't return anything useful,
+      // use the last known value for propagation purpose.
+      if (result === undefined) result = value;
+
+      transition.currentState = (fn == 'exit') ? state.parent : state;
+
+      return result;
+    };
+  }
+
+  function checkCancellation() {
+    if (transition.cancelled)
+      throw new Error('transition cancelled');
+  }
+
+  return promise;
 }
 
 /*

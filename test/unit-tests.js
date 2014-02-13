@@ -705,6 +705,122 @@ asyncTest('The query string is provided to all states', function() {
 });
 
 
+asyncTest('Each step of a transition can block', function() {
+
+  var events = [];
+  var lastPromiseValue;
+
+  var indexExitDefer = when.defer();
+  var parentEnterDefer = when.defer();
+  var parentUpdateDefer = when.defer();
+
+  var router = Router({
+    index: State('', {
+      exit: function() {
+        return indexExitDefer.promise;
+      }
+    }),
+
+    parent: State('parent', {
+      enter: function(params, value) {
+        events.push('parentEnter');
+        lastPromiseValue = value;
+        return parentEnterDefer.promise;
+      },
+
+      update: function(params, value) {
+        events.push('parentUpdate');
+        lastPromiseValue = value;
+        return parentUpdateDefer.promise;
+      },
+
+      child: State('child', {
+        enter: function(params, value) {
+          events.push('childEnter');
+          lastPromiseValue = value;
+        },
+
+        update: function(params, value) {
+          events.push('childUpdate');
+          lastPromiseValue = value;
+        }
+      })
+    })
+
+  }).init('');
+
+  whenSignal(router.changed)
+    .then(goToChild)
+    .then(indexDidNotExit)
+    .then(resolveIndexExit)
+    .then(parentWasEntered)
+    .then(resolveParentEnter)
+    .then(childWasEntered)
+    .then(updateChild)
+    .then(childWasNotUpdated)
+    .then(resolveParentUpdate)
+    .then(childWasUpdated)
+    .then(start);
+
+  function goToChild() {
+    router.state('parent.child');
+  }
+
+  function indexDidNotExit() {
+    return nextTick().then(function() {
+      deepEqual(events, []);
+    });
+  }
+
+  function resolveIndexExit() {
+    indexExitDefer.resolve(10);
+  }
+
+  function parentWasEntered() {
+    return nextTick().then(function() {
+      deepEqual(events, ['parentEnter']);
+      equal(lastPromiseValue, 10);
+    });
+  }
+
+  function resolveParentEnter() {
+    parentEnterDefer.resolve(20);
+  }
+
+  function childWasEntered() {
+    return nextTick().then(function() {
+      deepEqual(events, ['parentEnter', 'childEnter']);
+      equal(lastPromiseValue, 20);
+    });
+  }
+
+  function updateChild() {
+    router.reload();
+  }
+
+  function childWasNotUpdated() {
+    return nextTick().then(function() {
+      deepEqual(events, ['parentEnter', 'childEnter', 'parentUpdate']);
+      // First step of the transition
+      strictEqual(lastPromiseValue, undefined);
+    });
+  }
+
+  function resolveParentUpdate() {
+    parentUpdateDefer.resolve(30);
+  }
+
+  function childWasUpdated() {
+    return nextTick().then(function() {
+      deepEqual(events, ['parentEnter', 'childEnter', 'parentUpdate', 'childUpdate']);
+      equal(lastPromiseValue, 30);
+    });
+  }
+
+
+});
+
+
 asyncTest('Data can be stored on states and later retrieved', function() {
 
   var router = Router({
@@ -808,7 +924,7 @@ asyncTest('registering async promises', function() {
 
 });
 
-asyncTest('Non blocking rejected promises', function() {
+asyncTest('Async rejected promises', function() {
   var promiseValue = null,
       promiseError = null;
 
@@ -924,7 +1040,7 @@ asyncTest('params should be decoded automatically', function() {
 });
 
 
-asyncTest('Redirects', function() {
+asyncTest('synchronous redirect', function() {
   var oldRouteChildEntered;
   var oldRouteExited;
   var newRouteEntered;
@@ -945,11 +1061,49 @@ asyncTest('Redirects', function() {
   whenSignal(router.changed).then(assertions);
 
   function assertions() {
-    ok(oldRouteExited, 'Any entered state should be exited, even if it simply redirected');
+    ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.');
     ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered');
     ok(newRouteEntered);
 
     start();
+  }
+
+});
+
+
+asyncTest('asynchronous redirect', function() {
+  var oldRouteChildEntered;
+  var oldRouteExited;
+  var newRouteEntered;
+
+  var router = Router({
+
+    oldRoute: State('oldRoute', {
+      enter: function() { return delay(200); },
+      exit: function() { oldRouteExited = true; },
+
+      oldRouteChild: State('child', function() { oldRouteChildEntered = true; })
+    }),
+
+    newRoute: State('newRoute', function() { newRouteEntered = true; })
+
+  }).init('oldRoute.oldRouteChild');
+
+  delay(100)
+    .then(redirectNow)
+    .then(assertions)
+    .then(start);
+
+  function redirectNow() {
+    router.redirect('newRoute');
+  }
+
+  function assertions() {
+    return delay(250).then(function() {
+      ok(oldRouteExited, 'The state was properly entered. Therefore, it should exit.');
+      ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered');
+      ok(newRouteEntered);
+    });
   }
 
 });
