@@ -135,11 +135,7 @@ function Router(declarativeStates) {
   }
 
   function transitionError(error) {
-    // Transition errors are not fatal, so just log them.
-    if (error.isTransitionError)
-      return logError(error);
-
-    // For developer errors, rethrow the error outside
+    // Rethrow the error outside
     // of the promise context to retain the script and line of the error.
     setTimeout(function() { throw error; }, 0);
   }

@@ -9,7 +9,6 @@ A stateful router library for single page applications.
 * [Code examples](#code-examples)
 * [Installation](#installation)
 * [API](#api)
-* [Blocking/Non-blocking navigation](#blocking)
 * [Anchor interception](#anchor-interception)
 * [Dependencies](#dependencies)
 * [Cookbook](#cookbook)
@@ -327,19 +326,13 @@ This property is available after router init (e.g inside an state.enter()).
 ### Declarative properties
 
 When creating a State instance with an option object, the following properties have a special meaning and are reserved for abyssa:  
-`data`, `enter`, `exit`, `enterPrereqs`, `update`  
+`data`, `enter`, `exit`, `update`  
 All other properties should be child states.
 
-#### enter (params: Object, userData: Any): void
+#### enter (params: Object): void
 Specify a function that should be called when the state is entered.  
 The params are the dynamic params (path and query alike in one object) of the current url.  
-`userData` is any data you returned in enterPrereqs, or the resolved value of a promise if you did return one.  
 This is where you could render the data into the DOM or do some general work once for many child states.
-
-#### enterPrereqs (params: Object): Any
-Specify a prerequisite that must be satisfied before the state is entered.  
-It can be any value or a promise (a thenable object). Should the promise get rejected, the state will never be entered and the router will remain in its current state.  
-Examples of enterPrereqs include fetching an html template file, data via ajax/local cache or get some prerendered html from the server.
 
 #### exit (userData: Any): void
 Same as the enter function but called when the state is exited.
@@ -397,7 +390,7 @@ router.init();
 
 #### Construction shorthand
 
-When using non-blocking navigation, it is common to only have an enter callback for a state so a short way to express it is provided:  
+It is common to only have an enter callback for a state so a short way to express it is provided:  
 
 ```javascript
 var state = State('articles', function enter(params) {
@@ -457,8 +450,6 @@ var state = State('articles', {
   enter: function(params, ajaxData) { console.log('articles entered'); },
   exit: function() { console.log('articles exit'); },
 
-  enterPrereqs: function(params) { return $.ajax(...); },
-
   // A child state is simply a property of type 'State'
   item: State(':id', {
     enter: function(params) { console.log('item entered with id ' + params.id); }
@@ -473,7 +464,6 @@ var state = State('articles', {
 var state = State('articles');
 state.enter = function(params, ajaxData) { console.log('articles entered'); };
 state.exit = function() { console.log('articles exit'); };
-state.enterPrereqs = function(params) { return $.ajax(...); };
 
 var item = State(':id');
 item.enter = function(params) { console.log('item entered with id ' + params.id); };
@@ -486,11 +476,10 @@ state.addState('item', item);
 ## Async
 
 Async is a convenient mean to let the router know some async operations tied to the current state are ongoing.  
-The router will ignore (The fulfill/reject handlers will never be called) these promises if the navigation state changes in the meantime.  
+The router will ignore (The fulfill/reject handlers will never be called) these promises if the router state changes in the meantime.  
 This behavior is useful to prevent states from affecting each other (with side effects such as DOM mutation in the promise handlers)  
 You can have as many Async blocks as required.
 
-`Async` can help implement non-blocking navigation (See [Blocking/Non-blocking navigation](#blocking))  
 
 ### Example:
 ```javascript
@@ -519,23 +508,6 @@ var state = State('articles/:id': {
 
 });
 ```
-
-<a name="blocking"></a>
-# Blocking/Non-blocking navigation
-
-You can decide to implement your navigation so that it blocks or doesn't:  
-
-## Blocking
-This is close to the traditional client/server website UX: You don't get to see the next page/state till all the data needed to render it is retrieved.  
-Of course, unlike classical websites there is no blank between state transitions and you can give feedback to the user during the transition.  
-To implement blocking navigation, specify `enterPrereqs`; The prereqs will be resolved in parallel and the navigation will only occur
-once they are all resolved; If any of the preReqs fail, the state change doesn't occur.
-
-## Non-blocking
-The navigation occurs immediately, but the data comes later. Non-blocking navigation can feel quicker but also more awkward if
-the router transitions to a state that is near empty when the data isn't known yet.  
-To implement Non-blocking navigation, do not specify any `enterPrereqs`; instead, wrap your promises (ajax, etc) in [Async](#api-async) blocks.
-
 
 <a name="anchor-interception"></a>
 # Anchor interception

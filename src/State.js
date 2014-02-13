@@ -15,7 +15,7 @@ var async = require('./Transition').asyncPromises.register;
 * State({options}) // Its path is the empty string.
 *
 * options is an object with the following optional properties:
-* enter, exit, enterPrereqs, exitPrereqs.
+* enter, update, exit.
 *
 * Child states can also be specified in the options:
 * State({ myChildStateName: State() })
@@ -42,8 +42,6 @@ function State() {
   state.enter = options.enter || util.noop;
   state.update = options.update;
   state.exit = options.exit || util.noop;
-  state.enterPrereqs = options.enterPrereqs;
-  state.exitPrereqs = options.exitPrereqs;
 
   state.ownData = options.data || {};
 

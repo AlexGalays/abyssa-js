@@ -423,221 +423,6 @@ asyncTest('Forcing reload on same state transition is possible', function() {
 });
 
 
-asyncTest('Async enter transitions', function() {
-
-  var events = [];
-  var router = Router({
-
-    index: State({
-      enter: function() {
-        events.push('indexEnter');
-      },
-
-      exit: function() {
-        events.push('indexExit');
-      }
-    }),
-
-    news: State('news', {
-      enter: function(params, data) {
-        strictEqual(data, 'data');
-        events.push('newsEnter');
-      },
-      enterPrereqs: function() {
-        return successPromise(50, 'data', notYetEntered);
-      },
-
-      exit: function() {
-        events.push('newsExit');
-      },
-
-
-      today: State('today', {
-        enter: function(params, data) {
-          strictEqual(data, 48);
-          events.push('todayEnter');
-        },
-        enterPrereqs: function() {
-          return successPromise(150, 48);
-        },
-
-        exit: function() {
-          events.push('todayExit');
-        }
-      }),
-
-
-      thisWeek: State('thisWeek', {
-        enter: function() {
-          events.push('thisWeekEnter');
-        },
-
-        exit: function() {
-          events.push('thisWeekExit');
-        }
-      })
-
-    }),
-
-    failing: State('fail', {
-      enterPrereqs: function() {
-        return failPromise(50);
-      },
-
-      // This child state is unreachable because its parent can never resolve its enterPrereqs.
-      failingChild: State('child', {
-        enter: function() {
-          events.push('failChildEnter');
-        }
-      })
-
-    })
-
-  }).init('');
-
-  router.changed.addOnce(function() {
-    events = [];
-
-    router.state('news/today');
-    router.changed.addOnce(function() {
-      todayWasEntered();
-      goToThisWeek();
-
-      thisWeekWasEntered()
-        .then(resetToIndex)
-        .then(goToFailChild)
-        .then(failChildWasNotEntered)
-        .then(start);
-    });
-
-  });
-
-  // The news's enterPrereqs has been resolved but not today's.
-  // No transition occured as we wait for all the prereqs to be resolved.
-  function notYetEntered() {
-    deepEqual(events, []);
-  }
-
-  function todayWasEntered() {
-    deepEqual(events, ['indexExit', 'newsEnter', 'todayEnter']);
-    events = [];
-  }
-
-  function goToThisWeek() {
-    router.state('news/thisWeek');
-  }
-
-  function thisWeekWasEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['todayExit', 'thisWeekEnter']);
-      events = [];
-    });
-  }
-
-  function resetToIndex() {
-    router.state('');
-
-    return nextTick().then(function() {
-      events = [];
-    });
-  }
-
-  function goToFailChild() {
-    router.state('fail/child');
-  }
-
-  // In case of an async failure, the transition must not occur.
-  function failChildWasNotEntered() {
-    return whenSignal(router.transition.failed).then(function() {
-      deepEqual(events, []);
-    });
-  }
-
-});
-
-
-asyncTest('prereqs can return non promise values', function() {
-
-  Router({
-    index: State({
-      enterPrereqs: function() {
-        return 3;
-      },
-      enter: function(params, value) {
-        equal(value, 3);
-        start();
-      }
-    })
-  }).init('');
-
-});
-
-
-asyncTest('Cancelling an async transition', function() {
-
-  var events = [];
-  var router = Router({
-
-    index: State(),
-
-    articles: State('articles', {
-      enter: function() {
-        events.push('articlesEnter');
-      },
-
-      exit: function() {
-        events.push('articlesExit');
-      }
-    }),
-
-    news: State('news', {
-      enter: function() { events.push('newsEnter'); },
-      exit: function() { events.push('newsExit'); },
-
-      today: State('today', {
-        enter: function() { events.push('todayEnter'); },
-        enterPrereqs: function() {
-          return delay(60);
-        },
-        exit: function() { events.push('todayExit'); }
-      }),
-
-      thisWeek: State('thisWeek', {
-        enter: function() { events.push('thisWeekEnter'); },
-        exit: function() { events.push('thisWeekExit'); }
-      })
-
-    })
-
-  }).init('news/today');
-
-  nextTick()
-    .then(cancelAndGoToThisWeek)
-    .then(thisWeekWasEntered)
-    .then(todayWasNeverEntered)
-    .then(start);
-
-  function cancelAndGoToThisWeek() {
-    // But we change our mind and go to the 'thisWeek' (synchronous) section
-    router.state('news/thisWeek');
-  }
-
-  function thisWeekWasEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['newsEnter', 'thisWeekEnter']);
-      events = [];
-    });
-  }
-
-  function todayWasNeverEntered() {
-    return delay(200).then(function() {
-      deepEqual(events, []);
-    });
-  }
-
-});
-
-
 asyncTest('Param and query changes should trigger a transition', function() {
 
   var events = [],
@@ -920,25 +705,6 @@ asyncTest('The query string is provided to all states', function() {
 });
 
 
-asyncTest('Prereqs also get params', function() {
-
-  Router({
-
-    articles: State('articles', {
-      item: State(':id', {
-        enterPrereqs: function(params) {
-          equal(params.id, 56);
-          start();
-          return 'dummy';
-        }
-      })
-    })
-
-  }).init('articles/56');
-
-});
-
-
 asyncTest('Data can be stored on states and later retrieved', function() {
 
   var router = Router({
@@ -989,7 +755,7 @@ test('Reverse routing', function() {
 });
 
 
-asyncTest('Non blocking promises as an alternative to prereqs', function() {
+asyncTest('registering async promises', function() {
   var promiseValue = null;
 
   var router = Router({
@@ -1315,7 +1081,6 @@ asyncTest('update', function() {
 
   function callbacksWereProperlyCalledOnInit() {
     deepEqual(events, [
-      'rootEnterPrereqs', 'newsEnterPrereqs', 'archiveEnterPrereqs', 'detailEnterPrereqs',
       'rootEnter',
       'newsEnter',
       'archiveEnter',
@@ -1332,7 +1097,6 @@ asyncTest('update', function() {
   function stateWereEnteredOrUpdated() {
     return nextTick().then(function() {
       deepEqual(events, [
-        'archiveEnterPrereqs',
         'archiveExit',
         'newsUpdate',
         'archiveEnter',
@@ -1345,7 +1109,6 @@ asyncTest('update', function() {
   function RecordingState(name, path, parent, withUpdate) {
     var state = State(path, {
       enter: function(params) { events.push(name + 'Enter'); },
-      enterPrereqs: function() { events.push(name + 'EnterPrereqs'); },
       exit: function() { events.push(name + 'Exit'); }
     });
 

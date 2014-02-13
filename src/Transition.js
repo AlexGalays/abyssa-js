@@ -44,9 +44,8 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
   if (isNullTransition(isUpdate, reload, paramDiff))
     transitionPromise = Q('null');
   else
-    transitionPromise = prereqs(enters, params, isUpdate).then(function() {
-      if (!cancelled) doTransition(enters, exits, params, transition, isUpdate);
-    });
+    transitionPromise = Q.fcall(doTransition, enters, exits, params, transition, isUpdate);
+
 
   function then(completed, failed) {
     return transitionPromise.then(
@@ -69,30 +68,9 @@ function isNullTransition(isUpdate, reload, paramDiff) {
   return (isUpdate && !reload && util.objectSize(paramDiff) == 0);
 }
 
-/*
-* Return the promise of the prerequisites for all the states involved in the transition.
-*/
-function prereqs(enters, params, isUpdate) {
-  enters.forEach(function(state) {
-    if (!state.enterPrereqs || (isUpdate && state.update)) return;
-
-    var prereqs = state._enterPrereqs = Q(state.enterPrereqs(params)).then(
-      function success(value) {
-        if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
-      },
-      function fail(cause) {
-        var message = util.makeMessage('Failed to resolve ENTER prereqs of "{0}"', state.fullName);
-        throw TransitionError(message, cause);
-      }
-    );
-  });
-
-  return Q.all(enters.map(function(state) {
-    return state._enterPrereqs;
-  }));
-}
-
 function doTransition(enters, exits, params, transition, isUpdate) {
+  if (transition.cancelled) return;
+
   exits.forEach(function(state) {
     if (isUpdate && state.update) return;
     state.exit();
@@ -106,7 +84,7 @@ function doTransition(enters, exits, params, transition, isUpdate) {
     if (isUpdate && state.update)
       state.update(params);
     else
-      state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
+      state.enter(params);
   });
 }
 
@@ -154,18 +132,6 @@ function withParents(state, upTo, inclusive) {
 function transitionStates(state, root, isUpdate) {
   var inclusive = !root || isUpdate;
   return withParents(state, root || state.root, inclusive);
-}
-
-function TransitionError(message, cause) {
-  var error = new Error(message);
-  error.isTransitionError = true;
-  error.cause = cause;
-
-  error.toString = function() {
-    return util.makeMessage('{0} (cause: {1})', message, cause);
-  };
-
-  return error;
 }
 
 
