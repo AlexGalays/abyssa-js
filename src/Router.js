@@ -551,12 +551,14 @@ function Router(declarativeStates) {
   // Shorter alias for transition.completed: The most commonly used signal
   router.changed = router.transition.completed;
 
-  router.transition.completed.add(transitionEnded);
-  router.transition.failed.add(transitionEnded);
-  router.transition.cancelled.add(transitionEnded);
+  router.transition.completed.add(transitionEnded('completed'));
+  router.transition.failed.add(transitionEnded('failed'));
+  router.transition.cancelled.add(transitionEnded('cancelled'));
 
-  function transitionEnded(newState, oldState) {
-    router.transition.ended.dispatch(newState, oldState);
+  function transitionEnded(reason) {
+    return function(newState, oldState) {
+      router.transition.ended.dispatch(newState, oldState, reason);
+    }
   }
 
   return router;

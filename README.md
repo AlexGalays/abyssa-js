@@ -173,7 +173,8 @@ Unless specified otherwise, all signal handlers receive the current state and th
 Dispatched when a transition started.
 
 #### router.transition.ended
-Dispatched when a transition either completed, failed or got cancelled.
+Dispatched when a transition either completed, failed or got cancelled.  
+The exact signal type is passed as a third argument: 'completed', 'failed' or 'cancelled'.
 
 #### router.transition.completed
 Dispatched when a transition successfuly completed.
