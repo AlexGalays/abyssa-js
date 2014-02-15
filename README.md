@@ -6,11 +6,12 @@ A stateful router library for single page applications.
 # Content
 * [Browser support](#browser-support)
 * [Introduction](#introduction)
-* [Code examples](#code-examples)
 * [Installation](#installation)
+* [Transitions](#transitions)
 * [API](#api)
 * [Anchor interception](#anchor-interception)
 * [Dependencies](#dependencies)
+* [Code examples](#code-examples)
 * [Cookbook](#cookbook)
 
 
@@ -29,58 +30,52 @@ Without shims
 <a name="introduction"></a>
 # Introduction
 
-## Is it for you?
+## What is Abyssa?
 
 Abyssa is a stateful, hierarchical client side router.  
-It is meant to be used in those single page apps where using a big, comprehensive framework is unwanted: You wish to keep absolute control
-of your data, the DOM, and only willing to use a few libraries at most. 
-This would be applications with a high performance risk (Complex requirements, data intensive, High frequency of DOM updates (From SSEs, websockets, animations, etc), mobile apps and so on.  
-
+What does stateful mean? it means all states are not equal and abyssa knows how to go from one state to another efficiently.  
 Abyssa does only one thing: Routing.  
-Upon entering a route, you can render it using any technique: Direct DOM manipulation, client or server side templating, using a binding library, etc.
+Upon entering a state, it can be rendered using any technique: Direct DOM manipulation, client or server side templating, with the help of a binding library, etc.
+A state can even be abstract and not render anything.
 
-## What's so great about (very) stateful clients?
+## Abyssa is versatile
 
-'Stateful' is a swear word for servers but modern clients just love state! Mainframe terminals no longer cut it.  
-State on the client can greatly improve the user's experience by providing immediate feedback and minimizing server roundtrips.  
-On the other hand, smart clients with a lot of state are obviously more difficult to code, maintain and debug;  
-A stateful router can help you manage this complexity by compartmentalizing the app's states, while keeping your URLs in sync with all the different states. It will
-also take the complexity of transition asynchronicity and cancellation away from you.
+Abyssa can be used like a traditional stateless url -> callback router:  
 
-Stateful routing powered clients are also more performant, as they avoid doing wasteful work as much as possible by extracting commonalities into parent states.  
-For instance, two child states could share 90% of their layout and only concentrate on the differences. The same principle applies when sharing data between states.  
-Read this excellent blog post for an in-depth explanation: [Make the most of your routes](http://codebrief.com/2012/03/make-the-most-of-your-routes/)
-
-
-<a name="code-examples"></a>
-# Code examples
-
-## Demo app
-
-Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)  
-Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/client/javascripts)  
-
-## Example using the declarative notation:  
 ```javascript
 Router({
-
-  // The state named 'home' maps to the root of your site (no path is specified)
-  home: State('', function() { console.log('We are home'); }),
-
-  // The state named 'articles' maps to /articles
-  articles: State('articles', {
-    // The state named 'item' maps to /articles/:id where ':id' is the integer/string identifier of the article.
-    item: State(':id?filter', function(params) {
-      this.async($.getJSON('api/articles/' + params.id)).then(function(article) {
-        // Render the article
-      });
-    })
-
-  })
-
-}).init();
-
+  article: State('articles/:id', articleEnter),
+  articleEdit: State('articles/:id/edit', articleEditEnter)
+})
+.init();
 ```
+
+Or we can leverage abyssa's state machine nature:  
+
+```javascript
+Router({
+  article: State('articles/:id', {
+    enter: loadArticle,
+
+    show: State('', articleEnter),
+    edit: State('edit', articleEditEnter)
+  })
+})
+.init();
+```
+
+Now we can freely switch between viewing and editing an article without any pause because the article data is loaded in the parent state and can be shared in the child states.
+
+## Abyssa is performant
+
+What is the main advantage of stateful routers? Performance: Less redraws, less wasteful data loading, less wasteful setUp logic, etc.  
+When going from a state A to a state B, as far as a stateless router is concerned, everything has to be done from scratch even if the two states are closely related. Trying to optimize state transitions by hand is going to be awkward and lead to an explosion of custom state variables. On the other hand, abyssa make it simple to reason about what makes each state different and thus compute the minimum set of changes needed to transition from state A to state B.  
+
+![transition-min-changes](http://i171.photobucket.com/albums/u320/boubiyeah/abyssaTransitionPic_zps1315690d.png)
+
+Here, Abyssa will simply swap the red bit for the green bit. Why should everything be redrawn? It's slower and the software would lose all the state implicitly stored in the previous DOM.
+
+Read this excellent blog post for more information: [Make the most of your routes](http://codebrief.com/2012/03/make-the-most-of-your-routes/)
 
 <a name="installation"></a>
 # Installation
@@ -95,6 +90,24 @@ var Router = require('abyssa').Router;
 
 **Using abyssa as a global or as an AMD module**  
 Use one of the provided prebuilt files in the target folder.
+
+
+<a name="transitions"></a>
+# Transitions
+
+## Example
+
+![transition-example](http://i171.photobucket.com/albums/u320/boubiyeah/states_zps9052c00a.png)
+
+A few notes:  
+- There are several root states. The router doesn't enforce the use of a single, top level state like some state machine implementations do.  
+- Only leaf-states can be transitionned to.  
+- Each transition step can return a promise to temporarily halt the transition. The resolved promise value will be passed
+as the second argument of the next step's callback.  
+
+The transition from the state `A1` to the state `B` would consist of the following steps:  
+
+**A1 exit -> (Resolve A1 exit promise if applicable) -> PA exit -> (Resolve PA exit promise if applicable) -> B enter**
 
 
 <a name="api"></a>
@@ -330,17 +343,17 @@ When creating a State instance with an option object, the following properties h
 `data`, `enter`, `exit`, `update`  
 All other properties should be child states.
 
-#### enter (params: Object): void
+#### enter (params: Object, value: Any): void
 Specify a function that should be called when the state is entered.  
 The params are the dynamic params (path and query alike in one object) of the current url.  
 This is where you could render the data into the DOM or do some general work once for many child states.
 
-#### exit (userData: Any): void
+#### exit (params: Object, value: Any): void
 Same as the enter function but called when the state is exited.
 This is where you could teardown any state or side effects introduced by the enter function, if needed.
 
-#### update (params: Object): void
-The update callback is called when the router is moving to the same state as the current state, but with different params or because of a reload().  
+#### update (params: Object, value: Any): void
+The update callback is called when the router is moving to the same state as the current state, but with different params or because `reload()` was called.  
 Specifying an update callback can be seen as an optimization preventing doing wasteful work in exit/enter, e.g removing and adding the same DOM elements that were already present in the document before the state change.  
 
 ```javascript
@@ -482,7 +495,7 @@ This behavior is useful to prevent states from affecting each other (with side e
 You can have as many Async blocks as required.
 
 
-### Example:
+### Example 1:
 ```javascript
 var Async = Abyssa.Async;
 
@@ -499,7 +512,7 @@ var state = State('articles/:id': {
       // Render article safely; the router is still in the right state.
     });
 
-    // Or
+    // Or, equivalently:
 
     this.async(data).then(function(article) {
 
@@ -508,6 +521,25 @@ var state = State('articles/:id': {
 }
 
 });
+```
+
+### Example 2:
+```javascript
+var Async = Abyssa.Async;
+
+var state = State('articles/:id': {
+
+  enter: function(params) {
+    $('button.refresh').click(function() {
+      // The user clicked on a button: Load some data before performing the action.
+      // Loading the data is asynchronous, and the response should be ignored if the user
+      // navigated away to another state in the meantime.
+      Async(loadData()).then(function(data) {
+        // Perform the action safely; the router is still in the right state.
+      });
+    });
+  }
+}
 ```
 
 <a name="anchor-interception"></a>
@@ -536,6 +568,15 @@ Abyssa uses the following libraries:
 [**crossroads.js**](https://github.com/millermedeiros/crossroads.js): A stateless, solid traditional low level router. Abyssa builds on top of it.  
 [**signals.js**](https://github.com/millermedeiros/js-signals): A dependency of crossroads.js; Provide an alternative to string based events. Abyssa uses signals instead of events.  
 [**q.js**](https://github.com/kriskowal/q): The reference implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
+
+
+<a name="code-examples"></a>
+# Code examples
+
+## Demo app
+
+Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)  
+Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/client/javascripts)  
 
 
 <a name="cookbook"></a>
@@ -582,7 +623,7 @@ router.changed.add(function(state) {
 
 Or  
 
-**2) Create a specialized State type to deal with that common concern**  
+**2) Create a specialized State factory to deal with that common concern**  
 
 ```javascript
 
