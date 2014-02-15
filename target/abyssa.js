@@ -1,4 +1,4 @@
-/* abyssa 5.0.3 - A stateful router library for single page applications */
+/* abyssa 6.0.0 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -141,11 +141,7 @@ function Router(declarativeStates) {
   }
 
   function transitionError(error) {
-    // Transition errors are not fatal, so just log them.
-    if (error.isTransitionError)
-      return logError(error);
-
-    // For developer errors, rethrow the error outside
+    // Rethrow the error outside
     // of the promise context to retain the script and line of the error.
     setTimeout(function() { throw error; }, 0);
   }
@@ -561,12 +557,14 @@ function Router(declarativeStates) {
   // Shorter alias for transition.completed: The most commonly used signal
   router.changed = router.transition.completed;
 
-  router.transition.completed.add(transitionEnded);
-  router.transition.failed.add(transitionEnded);
-  router.transition.cancelled.add(transitionEnded);
+  router.transition.completed.add(transitionEnded('completed'));
+  router.transition.failed.add(transitionEnded('failed'));
+  router.transition.cancelled.add(transitionEnded('cancelled'));
 
-  function transitionEnded(newState, oldState) {
-    router.transition.ended.dispatch(newState, oldState);
+  function transitionEnded(reason) {
+    return function(newState, oldState) {
+      router.transition.ended.dispatch(newState, oldState, reason);
+    }
   }
 
   return router;
@@ -614,7 +612,7 @@ var async = require('./Transition').asyncPromises.register;
 * State({options}) // Its path is the empty string.
 *
 * options is an object with the following optional properties:
-* enter, exit, enterPrereqs, exitPrereqs.
+* enter, update, exit.
 *
 * Child states can also be specified in the options:
 * State({ myChildStateName: State() })
@@ -641,8 +639,6 @@ function State() {
   state.enter = options.enter || util.noop;
   state.update = options.update;
   state.exit = options.exit || util.noop;
-  state.enterPrereqs = options.enterPrereqs;
-  state.exitPrereqs = options.exitPrereqs;
 
   state.ownData = options.data || {};
 
@@ -918,9 +914,9 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 
   asyncPromises.newTransitionStarted();
 
-  transitionPromise = prereqs(enters, params, isUpdate).then(function() {
-    if (!cancelled) doTransition(enters, exits, params, transition, isUpdate);
-  });
+  transitionPromise = isNullTransition(isUpdate, reload, paramDiff)
+    ? Q('null')
+    : startTransition(enters, exits, params, transition, isUpdate);
 
   function then(completed, failed) {
     return transitionPromise.then(
@@ -937,46 +933,49 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 }
 
 /*
-* Return the promise of the prerequisites for all the states involved in the transition.
+* Whether there is no need to actually perform a transition.
 */
-function prereqs(enters, params, isUpdate) {
-  enters.forEach(function(state) {
-    if (!state.enterPrereqs || (isUpdate && state.update)) return;
-
-    var prereqs = state._enterPrereqs = Q(state.enterPrereqs(params)).then(
-      function success(value) {
-        if (state._enterPrereqs == prereqs) state._enterPrereqs.value = value;
-      },
-      function fail(cause) {
-        var message = util.makeMessage('Failed to resolve ENTER prereqs of "{0}"', state.fullName);
-        throw TransitionError(message, cause);
-      }
-    );
-  });
-
-  return Q.all(enters.map(function(state) {
-    return state._enterPrereqs;
-  }));
+function isNullTransition(isUpdate, reload, paramDiff) {
+  return (isUpdate && !reload && util.objectSize(paramDiff) == 0);
 }
 
-function doTransition(enters, exits, params, transition, isUpdate) {
+function startTransition(enters, exits, params, transition, isUpdate) {
+  var promise = Q();
+
   exits.forEach(function(state) {
     if (isUpdate && state.update) return;
-    state.exit(state._exitPrereqs && state._exitPrereqs.value);
+    promise = promise.then(call(state, 'exit'));
   });
 
   enters.forEach(function(state) {
-    if (transition.cancelled) return;
-
-    transition.currentState = state;
-
-    if (isUpdate && state.update)
-      state.update(params);
-    else {
-      state.enter(params, state._enterPrereqs && state._enterPrereqs.value);
-      if (state.update) state.update(params);
-    }
+    var fn = (isUpdate && state.update) ? 'update' : 'enter';
+    promise = promise.then(call(state, fn));
   });
+
+  function call(state, fn) {
+    return function(value) {
+      checkCancellation();
+
+      var result = state[fn](params, value);
+
+      checkCancellation();
+
+      // If the current function doesn't return anything useful,
+      // use the last known value for propagation purpose.
+      if (result === undefined) result = value;
+
+      transition.currentState = (fn == 'exit') ? state.parent : state;
+
+      return result;
+    };
+  }
+
+  function checkCancellation() {
+    if (transition.cancelled)
+      throw new Error('transition cancelled');
+  }
+
+  return promise;
 }
 
 /*
@@ -1023,18 +1022,6 @@ function withParents(state, upTo, inclusive) {
 function transitionStates(state, root, isUpdate) {
   var inclusive = !root || isUpdate;
   return withParents(state, root || state.root, inclusive);
-}
-
-function TransitionError(message, cause) {
-  var error = new Error(message);
-  error.isTransitionError = true;
-  error.cause = cause;
-
-  error.toString = function() {
-    return util.makeMessage('{0} (cause: {1})', message, cause);
-  };
-
-  return error;
 }
 
 
