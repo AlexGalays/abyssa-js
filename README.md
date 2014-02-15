@@ -97,13 +97,13 @@ Use one of the provided prebuilt files in the target folder.
 
 ## Example
 
-![transition-example](http://i171.photobucket.com/albums/u320/boubiyeah/states_zps9052c00a.png)
+![transition-example](http://i171.photobucket.com/albums/u320/boubiyeah/states1_zps7eb66af6.png)
 
 A few notes:  
-- There are several root states. The router doesn't enforce the use of a single, top level state like some state machine implementations do.  
 - Only leaf-states can be transitionned to.  
 - Each transition step can return a promise to temporarily halt the transition. The resolved promise value will be passed
 as the second argument of the next step's callback.  
+- There can be several root states. The router doesn't enforce the use of a single, top level state like some state machine implementations do.  
 
 The transition from the state `A1` to the state `B` would consist of the following steps:  
 
