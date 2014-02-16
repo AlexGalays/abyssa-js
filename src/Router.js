@@ -68,7 +68,7 @@ function Router(declarativeStates) {
     currentState = toState;
 
     if (!urlChanged && !firstTransition && !reload) {
-      log('Updating URL: {0}', currentPathQuery);
+      logger.log('Updating URL: {0}', currentPathQuery);
       updateURLFromState(currentPathQuery, document.title, currentPathQuery);
     }
 
@@ -76,7 +76,8 @@ function Router(declarativeStates) {
       fromState,
       toState,
       paramDiff(fromState && fromState.params, params),
-      reload);
+      reload,
+      logger);
 
     startingTransition(fromState, toState);
 
@@ -103,7 +104,7 @@ function Router(declarativeStates) {
   }
 
   function cancelTransition() {
-    log('Cancelling existing transition from {0} to {1}',
+    logger.log('Cancelling existing transition from {0} to {1}',
       transition.from, transition.to);
 
     transition.cancel();
@@ -113,13 +114,13 @@ function Router(declarativeStates) {
   }
 
   function startingTransition(fromState, toState) {
-    log('Starting transition from {0} to {1}', fromState, toState);
+    logger.log('Starting transition from {0} to {1}', fromState, toState);
 
     router.transition.started.dispatch(toState, fromState);
   }
 
   function transitionCompleted(fromState, toState) {
-    log('Transition from {0} to {1} completed', fromState, toState);
+    logger.log('Transition from {0} to {1} completed', fromState, toState);
 
     firstTransition = false;
 
@@ -129,7 +130,7 @@ function Router(declarativeStates) {
   }
 
   function transitionFailed(fromState, toState, error) {
-    logError('Transition from {0} to {1} failed: {2}', fromState, toState, error);
+    logger.error('Transition from {0} to {1} failed: {2}', fromState, toState, error);
     router.transition.failed.dispatch(toState, fromState);
     throw error;
   }
@@ -185,7 +186,7 @@ function Router(declarativeStates) {
   * Transition to the 'notFound' state if the developer specified it or else throw an error.
   */
   function notFound(state) {
-    log('State not found: {0}', state);
+    logger.log('State not found: {0}', state);
 
     if (options.notFound)
       setState(leafStates[options.notFound] || options.notFound, {});
@@ -218,14 +219,14 @@ function Router(declarativeStates) {
     if (options.interceptAnchors)
       interceptAnchors(router);
 
-    log('Router init');
+    logger.log('Router init');
 
     initStates();
     logStateTree();
 
     initState = (initState !== undefined) ? initState : getInitState();
 
-    log('Initializing to state {0}', initState || '""');
+    logger.log('Initializing to state {0}', initState || '""');
     state(initState, initParams);
 
     listenToURLChanges();
@@ -256,7 +257,7 @@ function Router(declarativeStates) {
       // in this case, evt.state is null.
       var newState = isHashMode() ? urlPathQuery() : evt.state || urlPathQuery();
 
-      log('URL changed: {0}', newState);
+      logger.log('URL changed: {0}', newState);
       urlChanged = true;
       setStateForPathQuery(newState);
     }
@@ -319,7 +320,7 @@ function Router(declarativeStates) {
   function state(pathQueryOrName, params) {
     var isName = leafStates[pathQueryOrName] !== undefined;
 
-    log('Changing state to {0}', pathQueryOrName || '""');
+    logger.log('Changing state to {0}', pathQueryOrName || '""');
 
     urlChanged = false;
     if (isName) setStateByName(pathQueryOrName, params || {});
@@ -330,7 +331,7 @@ function Router(declarativeStates) {
   * An alias of 'state'. You can use 'redirect' when it makes more sense semantically.
   */
   function redirect(pathQueryOrName, params) {
-    log('Redirecting...');
+    logger.log('Redirecting...');
     state(pathQueryOrName, params);
   }
 
@@ -488,7 +489,7 @@ function Router(declarativeStates) {
   }
 
   function logStateTree() {
-    if (!logEnabled) return;
+    if (!logger.enabled) return;
 
     var indent = function(level) {
       if (level == 0) return '';
@@ -508,7 +509,7 @@ function Router(declarativeStates) {
     msg += util.objectToArray(states).map(stateTree).join('');
     msg += '\n';
 
-    log(msg);
+    logger.log(msg);
   }
 
 
@@ -567,19 +568,21 @@ function Router(declarativeStates) {
 
 // Logging
 
-var log = util.noop,
-    logError = util.noop,
-    logEnabled;
+var logger = {
+  log: util.noop,
+  error: util.noop,
+  enabled: false
+};
 
 Router.enableLogs = function() {
-  logEnabled = true;
+  logger.enabled = true;
 
-  log = function() {
+  logger.log = function() {
     var message = util.makeMessage.apply(null, arguments);
     console.log(message);
   };
 
-  logError = function() {
+  logger.error = function() {
     var message = util.makeMessage.apply(null, arguments);
     console.error(message);
   };

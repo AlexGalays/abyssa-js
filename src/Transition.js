@@ -8,7 +8,7 @@ var Q    = require('q'),
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
+function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, logger) {
   var root,
       cancelled,
       enters,
@@ -43,7 +43,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload) {
 
   transitionPromise = isNullTransition(isUpdate, reload, paramDiff)
     ? Q('null')
-    : startTransition(enters, exits, params, transition, isUpdate);
+    : startTransition(enters, exits, params, transition, isUpdate, logger);
 
   function then(completed, failed) {
     return transitionPromise.then(
@@ -66,7 +66,7 @@ function isNullTransition(isUpdate, reload, paramDiff) {
   return (isUpdate && !reload && util.objectSize(paramDiff) == 0);
 }
 
-function startTransition(enters, exits, params, transition, isUpdate) {
+function startTransition(enters, exits, params, transition, isUpdate, logger) {
   var promise = Q();
 
   exits.forEach(function(state) {
@@ -82,6 +82,11 @@ function startTransition(enters, exits, params, transition, isUpdate) {
   function call(state, fn) {
     return function(value) {
       checkCancellation();
+
+      if (logger.enabled) {
+        var capitalizedStep = fn[0].toUpperCase() + fn.slice(1);
+        logger.log(capitalizedStep + ' ' + state.fullName);
+      }
 
       var result = state[fn](params, value);
 
