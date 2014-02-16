@@ -95,8 +95,7 @@ function Router(declarativeStates) {
         transition = null;
         transitionFailed(fromState, toState, error);
       }
-    )
-    .fail(transitionError);
+    );
   }
 
   function transitionPrevented(toState) {
@@ -131,11 +130,13 @@ function Router(declarativeStates) {
 
   function transitionFailed(fromState, toState, error) {
     logger.error('Transition from {0} to {1} failed: {2}', fromState, toState, error);
-    router.transition.failed.dispatch(toState, fromState);
-    throw error;
-  }
 
-  function transitionError(error) {
+    var defaultPrevented;
+    function preventDefault() { defaultPrevented = true; }
+
+    router.transition.failed.dispatch(toState, fromState, error, preventDefault);
+    if (defaultPrevented) return;
+
     // Rethrow the error outside
     // of the promise context to retain the script and line of the error.
     setTimeout(function() { throw error; }, 0);

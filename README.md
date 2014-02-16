@@ -95,6 +95,17 @@ Use one of the provided prebuilt files in the target folder.
 <a name="transitions"></a>
 # Transitions
 
+## Error handling
+
+Since transitions are asynchronous and backed by promises, errors are caught centrally.  
+By default, any error occuring during the transition will simply be rethrown. This behavior might be unsuitable in production and can be disabled with the following code:  
+```javascript
+  router.transition.failed.add(function(newState, oldState, error, preventDefault) {
+    preventDefault(); // Do not let the router rethrow the error
+    // do something with the passed Error instance.
+  });
+```
+
 ## Example
 
 ![transition-example](http://i171.photobucket.com/albums/u320/boubiyeah/states1_zps7eb66af6.png)

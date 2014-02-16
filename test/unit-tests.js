@@ -821,6 +821,50 @@ asyncTest('Each step of a transition can block', function() {
 });
 
 
+asyncTest('handling async transition errors', function() {
+
+  var childEntered = false;
+
+  var router = Router({
+    index: State(),
+    broken: State('broken', {
+      enter: function() { return failPromise(50, 'oops') },
+
+      child: State('child', function() {
+        childEntered = true;
+      })
+    })
+  })
+  .init('');
+
+  whenSignal(router.changed)
+    .then(goToBrokenChild)
+    .then(assertions)
+    .done(start);
+
+  function goToBrokenChild() {
+    router.state('broken.child');
+  }
+
+  function assertions() {
+    router.transition.failed.addOnce(function(s1, s2, e, preventDefault) {
+      preventDefault();
+    });
+
+    return whenSignal(router.transition.failed).then(function(signalArgs) {
+      var error = signalArgs[2];
+
+      equal(error.message, 'oops');
+      equal(childEntered, false);
+      // The transition failed. The router is in an inconsistent state: A non leaf state.
+      // However, it is the correct state to transition from next time.
+      equal(router.currentState().fullName, 'broken');
+    });
+  }
+
+});
+
+
 asyncTest('Data can be stored on states and later retrieved', function() {
 
   var router = Router({
@@ -1504,8 +1548,8 @@ function successPromise(time, value, afterResolveCallback) {
   return promise;
 }
 
-function failPromise(time) {
-  return delay(time).then(function() { throw new Error('error'); });
+function failPromise(time, message) {
+  return delay(time).then(function() { throw new Error(message || 'error'); });
 }
 
 function nextTick() {
@@ -1514,11 +1558,13 @@ function nextTick() {
 
 function whenSignal(signal) {
   var defer = when.defer();
-  signal.addOnce(defer.resolve);
+  signal.addOnce(function() {
+    defer.resolve(arguments);
+  });
   return defer.promise;
 }
 
 
 function stubHistory() {
-  window.history.pushState = function() {}; 
+  window.history.pushState = function() {};
 }
