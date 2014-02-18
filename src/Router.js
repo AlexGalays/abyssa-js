@@ -67,11 +67,6 @@ function Router(declarativeStates) {
     previousState = currentState;
     currentState = toState;
 
-    if (!urlChanged && !firstTransition && !reload) {
-      logger.log('Updating URL: {0}', currentPathQuery);
-      updateURLFromState(currentPathQuery, document.title, currentPathQuery);
-    }
-
     var t = transition = Transition(
       fromState,
       toState,
@@ -87,12 +82,12 @@ function Router(declarativeStates) {
 
     transition.then(
       function success() {
-        transition = null;
+        finalizeTransition(reload);
         transitionCompleted(fromState, toState);
       },
       function fail(error) {
         currentState = transition.currentState;
-        transition = null;
+        finalizeTransition(reload);
         transitionFailed(fromState, toState, error);
       }
     );
@@ -121,8 +116,6 @@ function Router(declarativeStates) {
   function transitionCompleted(fromState, toState) {
     logger.log('Transition from {0} to {1} completed', fromState, toState);
 
-    firstTransition = false;
-
     toState.state.lastParams = toState.params;
 
     router.transition.completed.dispatch(toState, fromState);
@@ -140,6 +133,16 @@ function Router(declarativeStates) {
     // Rethrow the error outside
     // of the promise context to retain the script and line of the error.
     setTimeout(function() { throw error; }, 0);
+  }
+
+  function finalizeTransition(reload) {
+    if (!urlChanged && !firstTransition && !reload) {
+      logger.log('Updating URL: {0}', currentPathQuery);
+      updateURLFromState(currentPathQuery, document.title, currentPathQuery);
+    }
+
+    transition = null;
+    firstTransition = false;
   }
 
   function updateURLFromState(state, title, url) {
