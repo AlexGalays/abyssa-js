@@ -898,6 +898,69 @@ asyncTest('Data can be stored on states and later retrieved', function() {
 });
 
 
+asyncTest('flash data can be read during the next transition', function() {
+
+  var lastFlashData;
+
+  var router = Router({
+    index: State('', recordFlashData),
+    one: State('one/one', recordFlashData)
+  }).init('');
+
+
+  whenSignal(router.changed)
+    .then(goToOne)
+    .then(flashDataWasPassed)
+    .then(goToIndex)
+    .then(onlyMostRecentFlashDataAvailable)
+    .then(goToOneWithoutFlashData)
+    .then(noFlashDataAvailable)
+    .done(start);
+
+  function goToOne() {
+    router.state('one/one', {myFlash: 789});
+  }
+
+  function flashDataWasPassed() {
+    return nextTick().then(function() {
+      strictEqual(lastFlashData.myFlash, 789);
+      lastFlashData = null;
+    });
+  }
+
+  function goToIndex() {
+    router.state('index', {}, {myOtherFlash: 123});
+  }
+
+  function onlyMostRecentFlashDataAvailable() {
+    return nextTick().then(function() {
+      strictEqual(lastFlashData.myFlash, undefined);
+      strictEqual(lastFlashData.myOtherFlash, 123);
+      lastFlashData = null;
+    });
+  }
+
+  function goToOneWithoutFlashData() {
+    router.state('one');
+  }
+
+  function noFlashDataAvailable() {
+    return nextTick().then(function() {
+      strictEqual(lastFlashData.myFlash, undefined);
+      strictEqual(lastFlashData.myOtherFlash, undefined);
+    });
+  }
+
+  function recordFlashData() {
+    lastFlashData = {
+      myFlash: this.data('myFlash'),
+      myOtherFlash: this.data('myOtherFlash')
+    };
+  }
+
+});
+
+
 test('Reverse routing', function() {
   var router = Router({
 

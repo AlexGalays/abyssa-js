@@ -102,7 +102,9 @@ function Router(declarativeStates) {
       transition.from, transition.to);
 
     transition.cancel();
+
     firstTransition = false;
+    router.flashData = null;
 
     router.transition.cancelled.dispatch(transition.to, transition.from);
   }
@@ -143,6 +145,7 @@ function Router(declarativeStates) {
 
     transition = null;
     firstTransition = false;
+    router.flashData = null;
   }
 
   function updateURLFromState(state, title, url) {
@@ -321,10 +324,14 @@ function Router(declarativeStates) {
   * state('my.target.state', {id: 33, filter: 'desc'})
   * state('target/33?filter=desc')
   */
-  function state(pathQueryOrName, params) {
+  function state(pathQueryOrName) {
     var isName = leafStates[pathQueryOrName] !== undefined;
+    var params = isName ? arguments[1] : null;
+    var flashData = isName ? arguments[2] : arguments[1];
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
+
+    router.flashData = flashData;
 
     urlChanged = false;
     if (isName) setStateByName(pathQueryOrName, params || {});
@@ -334,9 +341,9 @@ function Router(declarativeStates) {
   /*
   * An alias of 'state'. You can use 'redirect' when it makes more sense semantically.
   */
-  function redirect(pathQueryOrName, params) {
+  function redirect() {
     logger.log('Redirecting...');
-    state(pathQueryOrName, params);
+    state.apply(null, arguments);
   }
 
   /*
