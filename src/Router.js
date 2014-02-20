@@ -104,7 +104,6 @@ function Router(declarativeStates) {
     transition.cancel();
 
     firstTransition = false;
-    router.flashData = null;
 
     router.transition.cancelled.dispatch(transition.to, transition.from);
   }
