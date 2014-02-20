@@ -1,4 +1,4 @@
-/* abyssa 6.1.0 - A stateful router library for single page applications */
+/* abyssa 6.1.1 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -4278,6 +4278,14 @@ function hrefForEvent(evt) {
   if (href.charAt(0) == '#') return;
   if (anchor.getAttribute('target') == '_blank') return;
   if (!isLocalLink(anchor)) return;
+
+  // At this point, we have a valid href to follow.
+  // Did the navigation already occur on mousedown though?
+  if (evt.type == 'click' && dataNav == 'mousedown') {
+    if (evt.preventDefault) evt.preventDefault();
+    else evt.returnValue = false;
+    return;
+  }
 
   return href;
 }

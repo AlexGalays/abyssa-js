@@ -51,6 +51,14 @@ function hrefForEvent(evt) {
   if (anchor.getAttribute('target') == '_blank') return;
   if (!isLocalLink(anchor)) return;
 
+  // At this point, we have a valid href to follow.
+  // Did the navigation already occur on mousedown though?
+  if (evt.type == 'click' && dataNav == 'mousedown') {
+    if (evt.preventDefault) evt.preventDefault();
+    else evt.returnValue = false;
+    return;
+  }
+
   return href;
 }
 
