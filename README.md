@@ -149,8 +149,8 @@ The router will immediately initiate a transition to, in order of priority:
 Add a new root state to the router.  
 Returns the router to allow chaining.
 
-### state (stateName: String, params: Object, flashData: Object): void
-### state (pathQuery: String, flashData: Object): void
+### state (stateName: String, params: Object, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
+### state (pathQuery: String, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
 Request a programmatic state change.  
 Only leaf states can be transitionned to.  
 While you can change state programmatically, the more idiomatic way to do it is sometimes using anchor tags with the proper href.  
@@ -169,15 +169,15 @@ state('my.target.state', {}, {myData: 123});
 // Then, in any state participating in the transition:  this.data('myData') === 123
 ```
 
-### redirect (stateName: String, params: Object, flashData: Object): void
-### redirect (pathQuery: String, flashData: Object): void
+### redirect (stateName: String, params: Object, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
+### redirect (pathQuery: String, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
 An alias of `state`. You can use `redirect` when it makes more sense semantically.
 
-### backTo (stateName: String, defaultParams: Object): void
+### backTo (stateName: String, defaultParams: Object): Promise[[StateWithParams](#api-stateWithParams)]
 Attempt to navigate to 'stateName' with its previous params or  
 fallback to the defaultParams parameter if the state was never entered.
 
-### reload(): void
+### reload(): Promise[[StateWithParams](#api-stateWithParams)]
 Reload the current state with its current params.  
 All states up to the root are exited then reentered.  
 This can be useful when some internal state not captured in the url changed and the current state should update because of it.

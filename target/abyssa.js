@@ -1,4 +1,4 @@
-/* abyssa 6.1.2 - A stateful router library for single page applications */
+/* abyssa 6.1.3 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -10,6 +10,7 @@ return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requi
 
 var Signal           = require('signals').Signal,
     crossroads       = require('crossroads'),
+    Q                = require('q'),
     interceptAnchors = require('./anchors'),
     StateWithParams  = require('./StateWithParams'),
     Transition       = require('./Transition'),
@@ -39,7 +40,6 @@ function Router(declarativeStates) {
       previousState,
       transition,
       leafStates,
-      stateFound,
       urlChanged,
       initialized;
 
@@ -55,7 +55,8 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params, reload) {
-    if (!reload && isSameState(state, params)) return transitionPrevented(currentState);
+    if (!reload && isSameState(state, params))
+      return transitionPrevented(currentState);
 
     var fromState, oldPreviousState;
     var toState = StateWithParams(state, params, currentPathQuery);
@@ -73,6 +74,8 @@ function Router(declarativeStates) {
     previousState = currentState;
     currentState = toState;
 
+    var previousTransition = transition;
+
     var t = transition = Transition(
       fromState,
       toState,
@@ -84,7 +87,7 @@ function Router(declarativeStates) {
 
     // setState() was reentered because of a redirect inside a transition.started handler.
     // The end of this method is obsolete.
-    if (transition != t) return;
+    if (transition != t) return transitionPromise(transition);
 
     transition.then(
       function success() {
@@ -97,10 +100,40 @@ function Router(declarativeStates) {
         transitionFailed(fromState, toState, error);
       }
     );
+
+    return transitionPromise(previousTransition || transition);
+  }
+
+  /*
+  * Returns a promise that should be resolved the next time
+  * a transition can complete (so redirects are seen as being part of the same transition)
+  */
+  function transitionPromise(forTransition) {
+    if (forTransition.promise)
+      return forTransition.promise;
+
+    var deferred = Q.defer();
+
+    router.transition.completed.addOnce(completed);
+    router.transition.failed.addOnce(failed);
+
+    function completed(newState) {
+      router.transition.failed.remove(failed);
+      deferred.resolve(newState);
+    }
+
+    function failed(newState, oldState, error) {
+      router.transition.completed.remove(completed);
+      deferred.reject(error);
+    }
+
+    forTransition.promise = deferred.promise;
+    return forTransition.promise;
   }
 
   function transitionPrevented(toState) {
     router.transition.prevented.dispatch(toState);
+    return Q.reject(new Error('prevented'));
   }
 
   function cancelTransition() {
@@ -201,7 +234,7 @@ function Router(declarativeStates) {
     logger.log('State not found: {0}', state);
 
     if (options.notFound)
-      setState(leafStates[options.notFound] || options.notFound, {});
+      return setState(leafStates[options.notFound] || options.notFound, {});
     else throw new Error ('State "' + state + '" could not be found');
   }
 
@@ -295,11 +328,9 @@ function Router(declarativeStates) {
     eachLeafState(function(state) {
       leafStates[state.fullName] = state;
 
-      state.route = roads.addRoute(state.fullPath() + ":?query:");
-      state.route.matched.add(function() {
-        stateFound = true;
-        setState(state, fromCrossroadsParams(state, arguments));
-      });
+      var route = roads.addRoute(state.fullPath() + ":?query:");
+      state.route = route;
+      route.abyssaState = state;
     });
   }
 
@@ -339,8 +370,11 @@ function Router(declarativeStates) {
     router.flashData = flashData;
 
     urlChanged = false;
-    if (isName) setStateByName(pathQueryOrName, params || {});
-    else setStateForPathQuery(pathQueryOrName);
+
+    if (isName)
+      return setStateByName(pathQueryOrName, params || {});
+    else
+      return setStateForPathQuery(pathQueryOrName);
   }
 
   /*
@@ -348,7 +382,7 @@ function Router(declarativeStates) {
   */
   function redirect() {
     logger.log('Redirecting...');
-    state.apply(null, arguments);
+    return state.apply(null, arguments);
   }
 
   /*
@@ -357,7 +391,7 @@ function Router(declarativeStates) {
   */
   function backTo(stateName, defaultParams) {
     var params = leafStates[stateName].lastParams || defaultParams;
-    state(stateName, params);
+    return state(stateName, params);
   }
 
   /*
@@ -367,15 +401,28 @@ function Router(declarativeStates) {
   * and the current state should update because of it.
   */
   function reload() {
-    setState(currentState.state, currentState.params, true);
+    return setState(currentState.state, currentState.params, true);
   }
 
   function setStateForPathQuery(pathQuery) {
-    currentPathQuery = util.normalizePathQuery(pathQuery);
-    stateFound = false;
-    roads.parse(currentPathQuery);
+    var promise, routeData;
 
-    if (!stateFound) notFound(currentPathQuery);
+    currentPathQuery = util.normalizePathQuery(pathQuery);
+
+    roads.routed.add(routed);
+    roads.parse(currentPathQuery);
+    roads.routed.remove(routed);
+
+    function routed(_, data) {
+      routeData = data;
+    }
+
+    if (routeData)
+      promise = setState(
+        routeData.route.abyssaState,
+        fromCrossroadsParams(routeData.route.abyssaState, routeData.params)) 
+
+    return promise || notFound(currentPathQuery);
   }
 
   function setStateByName(name, params) {
@@ -384,7 +431,7 @@ function Router(declarativeStates) {
     if (!state) return notFound(name);
 
     var pathQuery = state.route.interpolate(toCrossroadsParams(state, params));
-    setStateForPathQuery(pathQuery);
+    return setStateForPathQuery(pathQuery);
   }
 
   /*
@@ -607,7 +654,7 @@ Router.enableLogs = function() {
 
 
 module.exports = Router;
-},{"./StateWithParams":4,"./Transition":5,"./anchors":6,"./util":8,"crossroads":1,"signals":1}],3:[function(require,module,exports){
+},{"./StateWithParams":4,"./Transition":5,"./anchors":6,"./util":8,"crossroads":1,"q":1,"signals":1}],3:[function(require,module,exports){
 
 'use strict';
 

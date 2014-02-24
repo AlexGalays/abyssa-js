@@ -16,6 +16,8 @@ asyncTest('Simple states', function() {
       lastArticleId,
       lastFilter;
 
+  var promiseValue;
+
   var router = Router({
 
     index: State({
@@ -58,12 +60,15 @@ asyncTest('Simple states', function() {
   }
 
   function goToArticles() {
-    router.state('articles', {id: 38, filter: 555});
+    router.state('articles', {id: 38, filter: 555}).then(function(value) {
+      promiseValue = value;
+    });
   }
 
   function articlesWasEntered() {
     return nextTick().then(function() {
       deepEqual(events, ['indexExit', 'articlesEnter']);
+      strictEqual(promiseValue.name, 'articles');
       strictEqual(lastArticleId, 38);
       strictEqual(lastFilter, 555);
       events = [];
@@ -825,6 +830,8 @@ asyncTest('handling async transition errors', function() {
 
   var childEntered = false;
 
+  var promiseValue;
+
   var router = Router({
     index: State(),
     broken: State('broken', {
@@ -843,7 +850,9 @@ asyncTest('handling async transition errors', function() {
     .done(start);
 
   function goToBrokenChild() {
-    router.state('broken.child');
+    router.state('broken.child').fail(function(error) {
+      promiseValue = error;
+    });
   }
 
   function assertions() {
@@ -854,6 +863,7 @@ asyncTest('handling async transition errors', function() {
     return whenSignal(router.transition.failed).then(function(signalArgs) {
       var error = signalArgs[2];
 
+      equal(promiseValue, error);
       equal(error.message, 'oops');
       equal(childEntered, false);
       // The transition failed. The router is in an inconsistent state: A non leaf state.
@@ -981,6 +991,8 @@ test('Reverse routing', function() {
 asyncTest('registering async promises', function() {
   var promiseValue = null;
 
+  var cancelledNavPromiseValue;
+
   var router = Router({
 
     index: State(),
@@ -1002,7 +1014,7 @@ asyncTest('registering async promises', function() {
       .then(exitThenReEnterStateOne)
       .then(cancelNavigation)
       .then(promiseShouldNotHaveBeenResolved)
-      .then(start);
+      .done(start);
   }
 
   function promiseWasResolved() {
@@ -1013,7 +1025,9 @@ asyncTest('registering async promises', function() {
   function exitThenReEnterStateOne() {
     router.state('index');
     return nextTick().then(function() {
-      router.state('one');
+      router.state('one').then(function(value) {
+        cancelledNavPromiseValue = value;
+      });
     });
   }
 
@@ -1026,6 +1040,7 @@ asyncTest('registering async promises', function() {
   function promiseShouldNotHaveBeenResolved() {
     return delay(200).then(function() {
       strictEqual(promiseValue, null);
+      equal(cancelledNavPromiseValue.state.fullName, 'one');
     });
   }
 
@@ -1231,7 +1246,7 @@ asyncTest('Redirecting from transition.started', function() {
     .then(addListener)
     .then(goToUno)
     .then(assertions)
-    .then(start);
+    .done(start);
 
 
   function addListener() {
