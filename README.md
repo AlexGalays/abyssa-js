@@ -295,8 +295,9 @@ var state = router.currentState();
 <a name="api-state"></a>
 ## State
 
+### Basics
 States represent path segments of an url.  
-Additionally, a state can own a list of query params: While all states will be able to read these params, isolated changes to these
+A state can own a list of query params: While all states will be able to read these params, isolated changes to these
 will only trigger a transition up to the state owning them (it will be exited and re-entered). The same applies to dynamic query params.   
 How much you decompose your applications into states is completely up to you;  
 For instance you could have just one state:
@@ -312,6 +313,19 @@ State('some', {
     })
   })
 })
+```
+
+### Rest segments
+Additionaly, the last path segment can end with a `*` to match any number of extra path segments:
+
+```javascript
+State('path/:rest*')
+
+// All these state changes will result in that state being entered:  
+
+// router.state('path'); // params.rest === undefined
+// router.state('path/other'); // params.rest === 'other'
+// router.state('path/other/yetAnother'); // params.rest === 'other/yetAnother'
 ```
 
 ### addState (name: String, state: State): State

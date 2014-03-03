@@ -220,12 +220,23 @@ function getArgs(args) {
     result.queryParams = util.arrayToObject(result.queryParams.split('&'));
   }
 
-  // Replace dynamic params like :id with {id}, which is what crossroads uses,
+  // Replace dynamic params like :id with {id} or :rest* with :rest*:, which is what crossroads uses,
   // and store them for later lookup.
-  result.path = result.path.replace(/:\w*/g, function(match) {
+  result.path = result.path.replace(/:[^\\?\/]*/g, function(match) {
+    var isRestParam;
+
     param = match.substring(1);
+
+    if (param[param.length - 1] == '*') {
+      param = param.slice(0, -1);
+      isRestParam = true;
+    }
+
     result.params[param] = 1;
-    return '{' + param + '}';
+
+    return isRestParam
+      ? (':' + param + '*:')
+      : ('{' + param + '}');
   });
 
   return result;

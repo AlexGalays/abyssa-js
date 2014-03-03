@@ -464,16 +464,23 @@ function Router(declarativeStates) {
   * Translate the crossroads argument format to what we want to use.
   * We want to keep the path and query names and merge them all in one object for convenience.
   */
+  var crossroadsParam = /\{\w*\}/g;
+  var crossroadsRestParam = /:\w*\*:/;
   function fromCrossroadsParams(state, crossroadsArgs) {
     var args   = Array.prototype.slice.apply(crossroadsArgs),
         query  = args.pop(),
         params = {},
         pathName;
 
-    state.fullPath().replace(/\{\w*\}/g, function(match) {
+    state.fullPath().replace(crossroadsParam, function(match) {
       pathName = match.slice(1, -1);
       params[pathName] = args.shift();
       return '';
+    });
+
+    state.fullPath().replace(crossroadsRestParam, function(match) {
+      pathName = match.slice(1, -2);
+      params[pathName] = args.shift();
     });
 
     if (query) util.mergeObjects(params, query);

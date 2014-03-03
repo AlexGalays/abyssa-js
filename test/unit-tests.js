@@ -1273,6 +1273,59 @@ asyncTest('Redirecting from transition.started', function() {
 });
 
 
+asyncTest('rest params', function() {
+
+  var lastParams;
+
+  var router = Router({
+    index: State(),
+    colors: State('colors/:rest*', function(params) {
+      lastParams = params;
+    })
+  }).init('');
+
+  whenSignal(router.changed)
+    .then(goToColors)
+    .then(wentToColorsOk)
+    .then(goToColors2)
+    .then(wentToColors2Ok)
+    .then(goToColors3)
+    .then(wentToColors3Ok)
+    .done(start);
+
+  function goToColors() {
+    router.state('colors');
+  }
+
+  function wentToColorsOk() {
+    return nextTick().then(function() {
+      strictEqual(lastParams.rest, undefined);
+    });
+  }
+
+  function goToColors2() {
+    router.state('colors/red');
+  }
+
+  function wentToColors2Ok() {
+    return nextTick().then(function() {
+      strictEqual(lastParams.rest, 'red');
+    });
+  }
+
+  function goToColors3() {
+    router.state('colors/red/blue');
+  }
+
+  function wentToColors3Ok() {
+    return nextTick().then(function() {
+      strictEqual(lastParams.rest, 'red/blue');
+    });
+  }
+
+});
+
+
 asyncTest('backTo', function() {
   var passedParams;
 
