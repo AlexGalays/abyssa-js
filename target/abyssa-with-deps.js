@@ -1,4 +1,4 @@
-/* abyssa 6.1.3 - A stateful router library for single page applications */
+/* abyssa 6.1.4 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -3606,16 +3606,23 @@ function Router(declarativeStates) {
   * Translate the crossroads argument format to what we want to use.
   * We want to keep the path and query names and merge them all in one object for convenience.
   */
+  var crossroadsParam = /\{\w*\}/g;
+  var crossroadsRestParam = /:\w*\*:/;
   function fromCrossroadsParams(state, crossroadsArgs) {
     var args   = Array.prototype.slice.apply(crossroadsArgs),
         query  = args.pop(),
         params = {},
         pathName;
 
-    state.fullPath().replace(/\{\w*\}/g, function(match) {
+    state.fullPath().replace(crossroadsParam, function(match) {
       pathName = match.slice(1, -1);
       params[pathName] = args.shift();
       return '';
+    });
+
+    state.fullPath().replace(crossroadsRestParam, function(match) {
+      pathName = match.slice(1, -2);
+      params[pathName] = args.shift();
     });
 
     if (query) util.mergeObjects(params, query);
@@ -4013,12 +4020,23 @@ function getArgs(args) {
     result.queryParams = util.arrayToObject(result.queryParams.split('&'));
   }
 
-  // Replace dynamic params like :id with {id}, which is what crossroads uses,
+  // Replace dynamic params like :id with {id} or :rest* with :rest*:, which is what crossroads uses,
   // and store them for later lookup.
-  result.path = result.path.replace(/:\w*/g, function(match) {
+  result.path = result.path.replace(/:[^\\?\/]*/g, function(match) {
+    var isRestParam;
+
     param = match.substring(1);
+
+    if (param[param.length - 1] == '*') {
+      param = param.slice(0, -1);
+      isRestParam = true;
+    }
+
     result.params[param] = 1;
-    return '{' + param + '}';
+
+    return isRestParam
+      ? (':' + param + '*:')
+      : ('{' + param + '}');
   });
 
   return result;
