@@ -101,6 +101,35 @@ asyncTest('Simple states', function() {
 });
 
 
+asyncTest('New states can be added after init', function() {
+  var enteredArticles;
+
+  var router = Router({
+    index: State()
+  }).init('');
+
+  whenSignal(router.changed)
+    .then(addAndMoveToState)
+    .then(articlesWasEntered)
+    .done(start);
+
+  function addAndMoveToState() {
+    router.addState('articles', State('articles', function() {
+      enteredArticles = true;
+    }));
+
+    router.state('articles');
+  }
+
+  function articlesWasEntered() {
+    return nextTick().then(function() {
+      ok(enteredArticles);
+    });
+  }
+
+});
+
+
 asyncTest('Custom initial state', function() {
 
   var router = Router({

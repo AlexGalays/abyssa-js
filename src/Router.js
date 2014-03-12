@@ -12,7 +12,7 @@ var Signal           = require('signals').Signal,
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
-* More states can be added using addState() before the router is initialized.
+* More states can be added using addState().
 *
 * Because a router manages global state (the URL), only one instance of Router
 * should be used inside an application.
@@ -246,7 +246,7 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Initialize and freeze the router (states can not be added afterwards).
+  * Initialize the router.
   * The router will immediately initiate a transition to, in order of priority:
   * 1) The init state passed as an argument
   * 2) The state captured by the current URL
@@ -319,32 +319,33 @@ function Router(declarativeStates) {
     leafStates = {};
 
     // Only leaf states can be transitioned to.
-    eachLeafState(function(state) {
-      leafStates[state.fullName] = state;
-
-      var route = roads.addRoute(state.fullPath() + ":?query:");
-      state.route = route;
-      route.abyssaState = state;
-    });
+    addRouteForEachLeafState(states);
   }
 
   function eachRootState(callback) {
     for (var name in states) callback(name, states[name]);
   }
 
-  function eachLeafState(callback) {
-    var name, state;
+  function addRouteForEachLeafState(states) {
 
-    function callbackIfLeaf(states) {
+    function addRoutes(states) {
       states.forEach(function(state) {
         if (state.children.length)
-          callbackIfLeaf(state.children);
+          addRoutes(state.children);
         else
-          callback(state);
+          addRouteForLeafState(state);
       });
     }
 
-    callbackIfLeaf(util.objectToArray(states));
+    function addRouteForLeafState(state) {
+      leafStates[state.fullName] = state;
+
+      var route = roads.addRoute(state.fullPath() + ":?query:");
+      state.route = route;
+      route.abyssaState = state;
+    }
+
+    addRoutes(util.objectToArray(states));
   }
 
   /*
@@ -433,13 +434,15 @@ function Router(declarativeStates) {
   * The name must be unique among root states.
   */
   function addState(name, state) {
-    if (initialized)
-      throw new Error('States can only be added before the Router is initialized');
-
     if (states[name])
       throw new Error('A state already exist in the router with the name ' + name);
 
     states[name] = state;
+
+    if (initialized) {
+      state.init(router, name);
+      addRouteForEachLeafState({name: state});
+    }
 
     return router;
   }

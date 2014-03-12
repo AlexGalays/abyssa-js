@@ -140,7 +140,7 @@ The available options are:
   - 'hash': The router uses the hash part of the URL for all browsers.
 
 ### init (initState: String, initParams: Object): Router
-Initialize and freeze the router (states can not be updated or added afterwards).  
+Initialize the router.  
 The router will immediately initiate a transition to, in order of priority:  
 1) The init state passed as an argument (useful for testing and debugging)  
 2) The state captured by the current URL  
@@ -247,8 +247,8 @@ router.addState('index', State());
 
 <a name="api-stateWithParams"></a>
 ## StateWithParams
-StateWithParams is the merge between a State object (created and added to the router before init)
-and params (both path and query params, extracted from the URL after init).  
+StateWithParams is the merge between a State object (created and added to the router)
+and params (both path and query params, extracted from the URL when transitions occur).  
 Instances of StateWithParams are returned from `router.previousState()`, `router.currentState()` and passed in signal handlers.  
 
 ### name: String
