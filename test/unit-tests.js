@@ -943,7 +943,11 @@ asyncTest('flash data can be read during the next transition', function() {
 
   var router = Router({
     index: State('', recordFlashData),
-    one: State('one/one', recordFlashData)
+    one: State('one/one', function() {
+      router.redirect('two', {}, {flashFromRedirect: 'flash'});
+    }),
+    two: State('two', recordFlashData),
+    three: State('three', recordFlashData)
   }).init('');
 
 
@@ -952,7 +956,7 @@ asyncTest('flash data can be read during the next transition', function() {
     .then(flashDataWasPassed)
     .then(goToIndex)
     .then(onlyMostRecentFlashDataAvailable)
-    .then(goToOneWithoutFlashData)
+    .then(goToThreeWithoutFlashData)
     .then(noFlashDataAvailable)
     .done(start);
 
@@ -963,6 +967,7 @@ asyncTest('flash data can be read during the next transition', function() {
   function flashDataWasPassed() {
     return nextTick().then(function() {
       strictEqual(lastFlashData.myFlash, 789);
+      strictEqual(lastFlashData.flashFromRedirect, 'flash');
       lastFlashData = null;
     });
   }
@@ -974,18 +979,20 @@ asyncTest('flash data can be read during the next transition', function() {
   function onlyMostRecentFlashDataAvailable() {
     return nextTick().then(function() {
       strictEqual(lastFlashData.myFlash, undefined);
+      strictEqual(lastFlashData.flashFromRedirect, undefined);
       strictEqual(lastFlashData.myOtherFlash, 123);
       lastFlashData = null;
     });
   }
 
-  function goToOneWithoutFlashData() {
-    router.state('one');
+  function goToThreeWithoutFlashData() {
+    router.state('three');
   }
 
   function noFlashDataAvailable() {
     return nextTick().then(function() {
       strictEqual(lastFlashData.myFlash, undefined);
+      strictEqual(lastFlashData.flashFromRedirect, undefined);
       strictEqual(lastFlashData.myOtherFlash, undefined);
     });
   }
@@ -993,7 +1000,8 @@ asyncTest('flash data can be read during the next transition', function() {
   function recordFlashData() {
     lastFlashData = {
       myFlash: this.data('myFlash'),
-      myOtherFlash: this.data('myOtherFlash')
+      myOtherFlash: this.data('myOtherFlash'),
+      flashFromRedirect: this.data('flashFromRedirect')
     };
   }
 
