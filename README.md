@@ -173,7 +173,7 @@ state('my.target.state', {}, {myData: 123});
 ### redirect (pathQuery: String, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
 An alias of `state`. You can use `redirect` when it makes more sense semantically.
 
-### backTo (stateName: String, defaultParams: Object): Promise[[StateWithParams](#api-stateWithParams)]
+### backTo (stateName: String, defaultParams: Object, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
 Attempt to navigate to 'stateName' with its previous params or  
 fallback to the defaultParams parameter if the state was never entered.
 

@@ -1,4 +1,4 @@
-/* abyssa 6.2.1 - A stateful router library for single page applications */
+/* abyssa 6.2.2 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -3492,8 +3492,8 @@ function Router(declarativeStates) {
   * Request a programmatic state change.
   *
   * Two notations are supported:
-  * state('my.target.state', {id: 33, filter: 'desc'})
-  * state('target/33?filter=desc')
+  * state('my.target.state', {id: 33, filter: 'desc'}, {myFlashData: 10})
+  * state('target/33?filter=desc', {myFlashData: 10})
   */
   function state(pathQueryOrName) {
     var isName = leafStates[pathQueryOrName] !== undefined;
@@ -3502,7 +3502,11 @@ function Router(declarativeStates) {
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
 
-    router.flashData = flashData;
+    var newFlashData = {};
+    util.mergeObjects(newFlashData, router.flashData);
+    util.mergeObjects(newFlashData, flashData);
+
+    router.flashData = newFlashData;
 
     urlChanged = false;
 
@@ -3524,9 +3528,9 @@ function Router(declarativeStates) {
   * Attempt to navigate to 'stateName' with its previous params or 
   * fallback to the defaultParams parameter if the state was never entered.
   */
-  function backTo(stateName, defaultParams) {
+  function backTo(stateName, defaultParams, flashData) {
     var params = leafStates[stateName].lastParams || defaultParams;
-    return state(stateName, params);
+    return state(stateName, params, flashData);
   }
 
   /*
