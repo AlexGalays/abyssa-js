@@ -386,7 +386,7 @@ Same as the enter function but called when the state is exited.
 This is where you could teardown any state or side effects introduced by the enter function, if needed.
 
 #### update (params: Object, value: Any): void
-The update callback is called when the router is moving to the same state as the current state, but with different params or because `reload()` was called.  
+The update callback is called when the router is moving to the same state as the current state, but with different path/query params.  
 Specifying an update callback can be seen as an optimization preventing doing wasteful work in exit/enter, e.g removing and adding the same DOM elements that were already present in the document before the state change.  
 
 ```javascript

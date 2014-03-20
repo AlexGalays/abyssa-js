@@ -428,6 +428,7 @@ asyncTest('Forcing reload on same state transition is possible', function() {
 
     articles: State('articles/:id', {
       enter: function() { events.push('articlesEnter'); },
+      update: function() { events.push('articlesUpdate'); },
       exit: function() { events.push('articlesExit'); },
 
       today: State('today', {
@@ -794,7 +795,7 @@ asyncTest('Each step of a transition can block', function() {
     .then(childWasNotUpdated)
     .then(resolveParentUpdate)
     .then(childWasUpdated)
-    .then(start);
+    .done(start);
 
   function goToChild() {
     router.state('parent.child');
@@ -829,7 +830,7 @@ asyncTest('Each step of a transition can block', function() {
   }
 
   function updateChild() {
-    router.reload();
+    router.state('parent/child?forceReload=1');
   }
 
   function childWasNotUpdated() {
