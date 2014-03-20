@@ -1,4 +1,4 @@
-/* abyssa 6.2.2 - A stateful router library for single page applications */
+/* abyssa 6.3.0 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -980,6 +980,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, l
   var toState = toStateWithParams.state;
   var params = toStateWithParams.params;
   var isUpdate = (fromState == toState);
+  var callUpdates = isUpdate && !reload;
 
   var transition = {
     from: fromState,
@@ -1003,7 +1004,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, l
 
   transitionPromise = isNullTransition(isUpdate, reload, paramDiff)
     ? Q('null')
-    : startTransition(enters, exits, params, transition, isUpdate, logger);
+    : startTransition(enters, exits, params, transition, callUpdates, logger);
 
   function then(completed, failed) {
     return transitionPromise.then(
@@ -1026,16 +1027,16 @@ function isNullTransition(isUpdate, reload, paramDiff) {
   return (isUpdate && !reload && util.objectSize(paramDiff) == 0);
 }
 
-function startTransition(enters, exits, params, transition, isUpdate, logger) {
+function startTransition(enters, exits, params, transition, callUpdates, logger) {
   var promise = Q();
 
   exits.forEach(function(state) {
-    if (isUpdate && state.update) return;
+    if (callUpdates && state.update) return;
     promise = promise.then(call(state, 'exit'));
   });
 
   enters.forEach(function(state) {
-    var fn = (isUpdate && state.update) ? 'update' : 'enter';
+    var fn = (callUpdates && state.update) ? 'update' : 'enter';
     promise = promise.then(call(state, fn));
   });
 
