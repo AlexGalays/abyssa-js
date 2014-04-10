@@ -1,4 +1,4 @@
-/* abyssa 6.3.0 - A stateful router library for single page applications */
+/* abyssa 6.4.0 - A stateful router library for single page applications */
 
 !function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
 return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -183,7 +183,7 @@ function Router(declarativeStates) {
 
     transition = null;
     firstTransition = false;
-    router.flashData = null;
+    router.flash = null;
   }
 
   function updateURLFromState(state, title, url) {
@@ -364,15 +364,18 @@ function Router(declarativeStates) {
   function state(pathQueryOrName) {
     var isName = leafStates[pathQueryOrName] !== undefined;
     var params = isName ? arguments[1] : null;
-    var flashData = isName ? arguments[2] : arguments[1];
+    var newFlash = isName ? arguments[2] : arguments[1];
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
 
-    var newFlashData = {};
-    util.mergeObjects(newFlashData, router.flashData);
-    util.mergeObjects(newFlashData, flashData);
+    if (util.isPlainObject(router.flash) && util.isPlainObject(newFlash)) {
+      var merged = {};
+      util.mergeObjects(merged, router.flash);
+      util.mergeObjects(merged, newFlash);
+      newFlash = merged;
+    }
 
-    router.flashData = newFlashData;
+    router.flash = newFlash;
 
     urlChanged = false;
 
@@ -821,9 +824,7 @@ function State() {
     while (currentState.ownData[key] === undefined && currentState.parent)
       currentState = currentState.parent;
 
-    var flashData = state.router.flashData;
-
-    return currentState.ownData[key] || (flashData && flashData[key]);
+    return currentState.ownData[key];
   }
 
   function eachChildState(callback) {
@@ -1318,6 +1319,10 @@ function mergeObjects(to, from) {
   for (var key in from) to[key] = from[key];
 }
 
+function isPlainObject(obj) {
+  return obj && (obj.constructor === Object);
+}
+
 function objectSize(obj) {
   var size = 0;
   for (var key in obj) size++;
@@ -1353,6 +1358,7 @@ module.exports = {
   objectToArray: objectToArray,
   copyObject: copyObject,
   mergeObjects: mergeObjects,
+  isPlainObject: isPlainObject,
   objectSize: objectSize,
   makeMessage: makeMessage,
   normalizePathQuery: normalizePathQuery
