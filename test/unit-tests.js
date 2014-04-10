@@ -938,17 +938,17 @@ asyncTest('Data can be stored on states and later retrieved', function() {
 });
 
 
-asyncTest('flash data can be read during the next transition', function() {
+asyncTest('flash data can only be read during the next transition', function() {
 
-  var lastFlashData;
+  var flash;
 
   var router = Router({
-    index: State('', recordFlashData),
+    index: State('', recordFlash),
     one: State('one/one', function() {
       router.redirect('two', {}, {flashFromRedirect: 'flash'});
     }),
-    two: State('two', recordFlashData),
-    three: State('three', recordFlashData)
+    two: State('two', recordFlash),
+    three: State('three', recordFlash)
   }).init('');
 
 
@@ -967,22 +967,19 @@ asyncTest('flash data can be read during the next transition', function() {
 
   function flashDataWasPassed() {
     return nextTick().then(function() {
-      strictEqual(lastFlashData.myFlash, 789);
-      strictEqual(lastFlashData.flashFromRedirect, 'flash');
-      lastFlashData = null;
+      // The flash data is merged
+      strictEqual(flash.myFlash, 789);
+      strictEqual(flash.flashFromRedirect, 'flash');
     });
   }
 
   function goToIndex() {
-    router.state('index', {}, {myOtherFlash: 123});
+    router.state('index', {}, 'flash');
   }
 
   function onlyMostRecentFlashDataAvailable() {
     return nextTick().then(function() {
-      strictEqual(lastFlashData.myFlash, undefined);
-      strictEqual(lastFlashData.flashFromRedirect, undefined);
-      strictEqual(lastFlashData.myOtherFlash, 123);
-      lastFlashData = null;
+      strictEqual(flash, 'flash');
     });
   }
 
@@ -992,18 +989,12 @@ asyncTest('flash data can be read during the next transition', function() {
 
   function noFlashDataAvailable() {
     return nextTick().then(function() {
-      strictEqual(lastFlashData.myFlash, undefined);
-      strictEqual(lastFlashData.flashFromRedirect, undefined);
-      strictEqual(lastFlashData.myOtherFlash, undefined);
+      equal(flash, null);
     });
   }
 
-  function recordFlashData() {
-    lastFlashData = {
-      myFlash: this.data('myFlash'),
-      myOtherFlash: this.data('myOtherFlash'),
-      flashFromRedirect: this.data('flashFromRedirect')
-    };
+  function recordFlash() {
+    flash = router.flash;
   }
 
 });

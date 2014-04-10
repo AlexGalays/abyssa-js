@@ -150,9 +150,7 @@ function State() {
     while (currentState.ownData[key] === undefined && currentState.parent)
       currentState = currentState.parent;
 
-    var flashData = state.router.flashData;
-
-    return currentState.ownData[key] || (flashData && flashData[key]);
+    return currentState.ownData[key];
   }
 
   function eachChildState(callback) {

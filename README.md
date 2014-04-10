@@ -149,8 +149,8 @@ The router will immediately initiate a transition to, in order of priority:
 Add a new root state to the router.  
 Returns the router to allow chaining.
 
-### state (stateName: String, params: Object, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
-### state (pathQuery: String, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
+### state (stateName: String, params: Object, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
+### state (pathQuery: String, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
 Request a programmatic state change.  
 Only leaf states can be transitionned to.  
 While you can change state programmatically, the more idiomatic way to do it is sometimes using anchor tags with the proper href.  
@@ -165,15 +165,15 @@ state('target/33?filter=desc')
 The flashData argument can be used to expose custom data for the next transition. This data will no longer be available
 after that transition.
 ```javascript
-state('my.target.state', {}, {myData: 123});
-// Then, in any state participating in the transition:  this.data('myData') === 123
+state('my.target.state', {}, 123);
+// Then, in any state participating in the transition: this.router.flash === 123
 ```
 
-### redirect (stateName: String, params: Object, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
-### redirect (pathQuery: String, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
+### redirect (stateName: String, params: Object, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
+### redirect (pathQuery: String, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
 An alias of `state`. You can use `redirect` when it makes more sense semantically.
 
-### backTo (stateName: String, defaultParams: Object, flashData: Object): Promise[[StateWithParams](#api-stateWithParams)]
+### backTo (stateName: String, defaultParams: Object, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
 Attempt to navigate to 'stateName' with its previous params or  
 fallback to the defaultParams parameter if the state was never entered.
 

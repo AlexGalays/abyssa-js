@@ -177,7 +177,7 @@ function Router(declarativeStates) {
 
     transition = null;
     firstTransition = false;
-    router.flashData = null;
+    router.flash = null;
   }
 
   function updateURLFromState(state, title, url) {
@@ -358,15 +358,18 @@ function Router(declarativeStates) {
   function state(pathQueryOrName) {
     var isName = leafStates[pathQueryOrName] !== undefined;
     var params = isName ? arguments[1] : null;
-    var flashData = isName ? arguments[2] : arguments[1];
+    var newFlash = isName ? arguments[2] : arguments[1];
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
 
-    var newFlashData = {};
-    util.mergeObjects(newFlashData, router.flashData);
-    util.mergeObjects(newFlashData, flashData);
+    if (util.isPlainObject(router.flash) && util.isPlainObject(newFlash)) {
+      var merged = {};
+      util.mergeObjects(merged, router.flash);
+      util.mergeObjects(merged, newFlash);
+      newFlash = merged;
+    }
 
-    router.flashData = newFlashData;
+    router.flash = newFlash;
 
     urlChanged = false;
 
