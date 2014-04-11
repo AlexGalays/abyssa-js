@@ -60,7 +60,7 @@ asyncTest('Simple states', function() {
   }
 
   function goToArticles() {
-    router.state('articles', {id: 38, filter: 555}).then(function(value) {
+    router.state('articles', {id: 38, filter: 'dark green'}).then(function(value) {
       promiseValue = value;
     });
   }
@@ -70,7 +70,7 @@ asyncTest('Simple states', function() {
       deepEqual(events, ['indexExit', 'articlesEnter']);
       strictEqual(promiseValue.name, 'articles');
       strictEqual(lastArticleId, 38);
-      strictEqual(lastFilter, 555);
+      strictEqual(lastFilter, 'dark green');
       events = [];
     });
   }
@@ -1005,14 +1005,17 @@ test('Reverse routing', function() {
 
     index: State(),
 
-    one: State('one?filter', {
-      two: State(':id')
+    one: State('one?filter&pizza', {
+      two: State(':id/:color')
     })
 
   }).init('');
 
-  var href = router.link('one.two', {id: 33, filter: 'bloup', bla: 55});
-  equal(href, '/one/33?filter=bloup');
+  var href = router.link('one.two', {id: 33, color: 'dark green', filter: 'a&b', pizza: 123, bla: 55});
+  equal(href, '/one/33/dark%20green?filter=a%26b&pizza=123');
+
+  href = router.link('one.two', {id: 33, color: 'dark green'});
+  equal(href, '/one/33/dark%20green')
 
 });
 

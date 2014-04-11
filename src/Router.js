@@ -432,7 +432,7 @@ function Router(declarativeStates) {
 
     if (!state) return notFound(name);
 
-    var pathQuery = state.route.interpolate(toCrossroadsParams(state, params));
+    var pathQuery = interpolate(state, params);
     return setStateForPathQuery(pathQuery);
   }
 
@@ -535,9 +535,26 @@ function Router(declarativeStates) {
     var state = leafStates[stateName];
     if (!state) throw new Error('Cannot find state ' + stateName);
 
-    var crossroadsParams = toCrossroadsParams(state, params);
+    var interpolated = interpolate(state, params);
 
-    return util.normalizePathQuery(state.route.interpolate(crossroadsParams));
+    return util.normalizePathQuery(interpolated);
+  }
+
+  function interpolate(state, params) {
+    var encodedParams = {};
+    for (var key in params) {
+      encodedParams[key] = encodeURIComponent(params[key]);
+    }
+
+    var crossroadsParams = toCrossroadsParams(state, encodedParams);
+    var interpolated = state.route.interpolate(crossroadsParams);
+
+    // Fixes https://github.com/millermedeiros/crossroads.js/issues/101
+    var pathQuery = interpolated.split('?');
+    var path = pathQuery[0], query = pathQuery[1];
+    interpolated = path + (query ? ('?' + decodeURI(query)) : '');
+
+    return interpolated;
   }
 
   /*
