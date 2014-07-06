@@ -293,6 +293,7 @@ function Router(declarativeStates) {
       }
 
       // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
+      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes;
       // in this case, evt.state is null.
       var newState = isHashMode() ? urlPathQuery() : evt.state || urlPathQuery();
 
@@ -389,6 +390,7 @@ function Router(declarativeStates) {
 
   /*
   * Attempt to navigate to 'stateName' with its previous params or 
+  * Attempt to navigate to 'stateName' with its previous params or
   * fallback to the defaultParams parameter if the state was never entered.
   */
   function backTo(stateName, defaultParams, flashData) {
@@ -400,6 +402,8 @@ function Router(declarativeStates) {
   * Reload the current state with its current params.
   * All states up to the root are exited then reentered.  
   * This can be useful when some internal state not captured in the url changed 
+  * All states up to the root are exited then reentered.
+  * This can be useful when some internal state not captured in the url changed
   * and the current state should update because of it.
   */
   function reload() {
@@ -423,6 +427,7 @@ function Router(declarativeStates) {
       promise = setState(
         routeData.route.abyssaState,
         fromCrossroadsParams(routeData.route.abyssaState, routeData.params)) 
+        fromCrossroadsParams(routeData.route.abyssaState, routeData.params))
 
     return promise || notFound(currentPathQuery);
   }
@@ -566,6 +571,7 @@ function Router(declarativeStates) {
 
   /*
   * Returns a StateWithParams object representing the previous state of the router 
+  * Returns a StateWithParams object representing the previous state of the router
   * or null if the router is still in its initial state.
   */
   function getPreviousState() {
