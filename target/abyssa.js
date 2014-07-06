@@ -1,20 +1,19 @@
 /* abyssa 6.5.0 - A stateful router library for single page applications */
 
-!function(e){"object"==typeof exports?module.exports=e():"function"==typeof define&&define.amd?define(e):"undefined"!=typeof window?window.Abyssa=e():"undefined"!=typeof global?global.Abyssa=e():"undefined"!=typeof self&&(self.Abyssa=e())}(function(){var define,module,exports;
-return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+!function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Abyssa=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
-},{}],2:[function(require,module,exports){
+},{}],2:[function(_dereq_,module,exports){
 
 'use strict';
 
 
-var Signal           = require('signals').Signal,
-    crossroads       = require('crossroads'),
-    Q                = require('q'),
-    interceptAnchors = require('./anchors'),
-    StateWithParams  = require('./StateWithParams'),
-    Transition       = require('./Transition'),
-    util             = require('./util');
+var Signal           = _dereq_('signals').Signal,
+    crossroads       = _dereq_('crossroads'),
+    Q                = _dereq_('q'),
+    interceptAnchors = _dereq_('./anchors'),
+    StateWithParams  = _dereq_('./StateWithParams'),
+    Transition       = _dereq_('./Transition'),
+    util             = _dereq_('./util');
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
@@ -32,7 +31,8 @@ function Router(declarativeStates) {
         enableLogs: false,
         interceptAnchors: true,
         notFound: null,
-        urlSync: true
+        urlSync: true,
+        hashPrefix: ''
       },
       ignoreNextURLChange = false,
       currentPathQuery,
@@ -41,7 +41,8 @@ function Router(declarativeStates) {
       transition,
       leafStates,
       urlChanged,
-      initialized;
+      initialized,
+      hashSlashString;
 
   // Routes params should be type casted. e.g the dynamic path items/:id when id is 33
   // will end up passing the integer 33 as an argument, not the string "33".
@@ -194,7 +195,7 @@ function Router(declarativeStates) {
       ignoreNextURLChange = true;
 
     if (isHashMode())
-      location.hash = url;
+      location.hash = options.hashPrefix + url;
     else
       history.pushState(state, title, url);
   }
@@ -245,6 +246,7 @@ function Router(declarativeStates) {
   *   interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.
   *   notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null.
   *   urlSync: Whether the router should maintain the current state and the url in sync. Defaults to true.
+  *   hashPrefix: Customize the hash separator. Set to '!' in order to have a hashbang like '/#!/'. Defaults to empty string.
   */
   function configure(withOptions) {
     util.mergeObjects(options, withOptions);
@@ -263,6 +265,8 @@ function Router(declarativeStates) {
 
     if (options.interceptAnchors)
       interceptAnchors(router);
+
+    hashSlashString = '#' + options.hashPrefix + '/'
 
     logger.log('Router init');
 
@@ -298,7 +302,7 @@ function Router(declarativeStates) {
         return;
       }
 
-      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
+      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes;
       // in this case, evt.state is null.
       var newState = isHashMode() ? urlPathQuery() : evt.state || urlPathQuery();
 
@@ -394,7 +398,7 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Attempt to navigate to 'stateName' with its previous params or 
+  * Attempt to navigate to 'stateName' with its previous params or
   * fallback to the defaultParams parameter if the state was never entered.
   */
   function backTo(stateName, defaultParams, flashData) {
@@ -404,8 +408,8 @@ function Router(declarativeStates) {
 
   /*
   * Reload the current state with its current params.
-  * All states up to the root are exited then reentered.  
-  * This can be useful when some internal state not captured in the url changed 
+  * All states up to the root are exited then reentered.
+  * This can be useful when some internal state not captured in the url changed
   * and the current state should update because of it.
   */
   function reload() {
@@ -428,7 +432,7 @@ function Router(declarativeStates) {
     if (routeData)
       promise = setState(
         routeData.route.abyssaState,
-        fromCrossroadsParams(routeData.route.abyssaState, routeData.params)) 
+        fromCrossroadsParams(routeData.route.abyssaState, routeData.params))
 
     return promise || notFound(currentPathQuery);
   }
@@ -464,9 +468,9 @@ function Router(declarativeStates) {
   * Read the path/query from the URL.
   */
   function urlPathQuery() {
-    var hashSlash = location.href.indexOf('#/');
+    var hashSlash = location.href.indexOf(hashSlashString);
     var pathQuery = hashSlash > -1
-      ? location.href.slice(hashSlash + 2)
+      ? location.href.slice(hashSlash + hashSlashString.length)
       : (location.pathname + location.search).slice(1);
 
     return util.normalizePathQuery(pathQuery);
@@ -571,7 +575,7 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Returns a StateWithParams object representing the previous state of the router 
+  * Returns a StateWithParams object representing the previous state of the router
   * or null if the router is still in its initial state.
   */
   function getPreviousState() {
@@ -688,13 +692,14 @@ Router.enableLogs = function() {
 
 
 module.exports = Router;
-},{"./StateWithParams":4,"./Transition":5,"./anchors":6,"./util":8,"crossroads":1,"q":1,"signals":1}],3:[function(require,module,exports){
+
+},{"./StateWithParams":4,"./Transition":5,"./anchors":6,"./util":8,"crossroads":1,"q":1,"signals":1}],3:[function(_dereq_,module,exports){
 
 'use strict';
 
 
-var util  = require('./util');
-var async = require('./Transition').asyncPromises.register;
+var util  = _dereq_('./util');
+var async = _dereq_('./Transition').asyncPromises.register;
 
 /*
 * Create a new State instance.
@@ -933,7 +938,7 @@ function getArgs(args) {
 
 
 module.exports = State;
-},{"./Transition":5,"./util":8}],4:[function(require,module,exports){
+},{"./Transition":5,"./util":8}],4:[function(_dereq_,module,exports){
 
 'use strict';
 
@@ -975,13 +980,13 @@ function toString() {
 
 
 module.exports = StateWithParams;
-},{}],5:[function(require,module,exports){
+},{}],5:[function(_dereq_,module,exports){
 
 'use strict';
 
 
-var Q    = require('q'),
-    util = require('./util');
+var Q    = _dereq_('q'),
+    util = _dereq_('./util');
 
 /*
 * Create a new Transition instance.
@@ -1179,7 +1184,7 @@ var asyncPromises = Transition.asyncPromises = (function () {
 
 
 module.exports = Transition;
-},{"./util":8,"q":1}],6:[function(require,module,exports){
+},{"./util":8,"q":1}],6:[function(_dereq_,module,exports){
 
 'use strict';
 
@@ -1288,21 +1293,21 @@ module.exports = function interceptAnchors(forRouter) {
     document.attachEvent('onclick', onMouseClick);
   }
 };
-},{}],7:[function(require,module,exports){
+},{}],7:[function(_dereq_,module,exports){
 
 'use strict';
 
 
 var Abyssa = {
-  Router: require('./Router'),
-  State:  require('./State'),
-  Async:  require('./Transition').asyncPromises.register,
+  Router: _dereq_('./Router'),
+  State:  _dereq_('./State'),
+  Async:  _dereq_('./Transition').asyncPromises.register,
 
-  util:   require('./util')
+  util:   _dereq_('./util')
 };
 
 module.exports = Abyssa;
-},{"./Router":2,"./State":3,"./Transition":5,"./util":8}],8:[function(require,module,exports){
+},{"./Router":2,"./State":3,"./Transition":5,"./util":8}],8:[function(_dereq_,module,exports){
 
 'use strict';
 
@@ -1383,4 +1388,3 @@ module.exports = {
 },{}]},{},[7])
 (7)
 });
-;

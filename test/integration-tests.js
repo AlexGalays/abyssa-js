@@ -156,7 +156,7 @@ asyncTest('history.back()', function() {
 
 });
 
-// The history.js shim completely hijacks the hashchange listeners 
+// The history.js shim completely hijacks the hashchange listeners
 // and many other things on the window object, preventing this test from working properly.
 // So just test modern/non shimmed browsers for now.
 // Ideally, this test should be ran for all browsers and without the history.js shim but that would require a *third* SauceLabs account.
@@ -277,10 +277,145 @@ asyncTest('urlSync switched off', function() {
 
 });
 
+if (isHTML5Browser && !isUsingShims)
+  asyncTest('customize hashbang', function() {
+
+    var lastParams;
+
+    window.addEventListener('hashchange', startTest);
+    window.location.hash = '!/category1/56';
+
+    function startTest() {
+      window.removeEventListener('hashchange', startTest);
+
+      router = Router({
+
+        index: State(''),
+
+        category1: State('category1', {
+          detail: State(':id', function(params) {
+            lastParams = params;
+          })
+        })
+
+      })
+      .configure({
+        urlSync: 'hash',
+        hashPrefix: '!'
+      })
+      .init();
+
+      whenSignal(router.changed)
+        .then(stateShouldBeCategoryDetail)
+        .then(goToIndex)
+        .then(stateShouldBeIndex)
+        .then(goToCategoryDetail)
+        .then(stateShouldBeCategoryDetail2)
+        .done(startLater);
+
+      function stateShouldBeCategoryDetail() {
+        strictEqual(router.currentState().fullName, 'category1.detail');
+        strictEqual(lastParams.id, 56);
+        strictEqual(window.location.hash, '#!/category1/56');
+      }
+
+      function goToIndex() {
+        router.state('/');
+      }
+
+      function stateShouldBeIndex() {
+        return nextTick().then(function() {
+          strictEqual(router.currentState().fullName, 'index');
+          strictEqual(window.location.hash, '#!/');
+        });
+      }
+
+      function goToCategoryDetail() {
+        router.state('category1.detail', {id: 88});
+      }
+
+      function stateShouldBeCategoryDetail2() {
+        return nextTick().then(function() {
+          strictEqual(router.currentState().fullName, 'category1.detail');
+          strictEqual(lastParams.id, 88);
+          strictEqual(window.location.hash, '#!/category1/88');
+        });
+      }
+    }
+
+  });
+
+if (isHTML5Browser && !isUsingShims)
+  asyncTest('customize hashbang the funny way', function() {
+
+    var lastParams;
+
+    window.addEventListener('hashchange', startTest);
+    window.location.hash = 'iAmLimitless@ndW!thStuff/category1/56';
+
+    function startTest() {
+      window.removeEventListener('hashchange', startTest);
+
+      router = Router({
+
+        index: State(''),
+
+        category1: State('category1', {
+          detail: State(':id', function(params) {
+            lastParams = params;
+          })
+        })
+
+      })
+      .configure({
+        urlSync: 'hash',
+        hashPrefix: 'iAmLimitless@ndW!thStuff'
+      })
+      .init();
+
+      whenSignal(router.changed)
+        .then(stateShouldBeCategoryDetail)
+        .then(goToIndex)
+        .then(stateShouldBeIndex)
+        .then(goToCategoryDetail)
+        .then(stateShouldBeCategoryDetail2)
+        .done(startLater);
+
+      function stateShouldBeCategoryDetail() {
+        strictEqual(router.currentState().fullName, 'category1.detail');
+        strictEqual(lastParams.id, 56);
+        strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/category1/56');
+      }
+
+      function goToIndex() {
+        router.state('/');
+      }
+
+      function stateShouldBeIndex() {
+        return nextTick().then(function() {
+          strictEqual(router.currentState().fullName, 'index');
+          strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/');
+        });
+      }
+
+      function goToCategoryDetail() {
+        router.state('category1.detail', {id: 88});
+      }
+
+      function stateShouldBeCategoryDetail2() {
+        return nextTick().then(function() {
+          strictEqual(router.currentState().fullName, 'category1.detail');
+          strictEqual(lastParams.id, 88);
+          strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/category1/88');
+        });
+      }
+    }
+
+  });
 
 
 function changeURL(pathQuery) {
-  if (history.pushState) 
+  if (history.pushState)
     history.pushState('', '', pathQuery);
 }
 
@@ -328,7 +463,7 @@ function nextTick() {
 }
 
 // The hashchange event is dispatched asynchronously.
-// At the end of a test changing the hash, give the event enough time to be dispatched 
+// At the end of a test changing the hash, give the event enough time to be dispatched
 // so that the following test's router doesn't try to react to it.
 function startLater() {
   delay(80).then(start);

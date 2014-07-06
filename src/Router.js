@@ -26,7 +26,8 @@ function Router(declarativeStates) {
         enableLogs: false,
         interceptAnchors: true,
         notFound: null,
-        urlSync: true
+        urlSync: true,
+        hashPrefix: ''
       },
       ignoreNextURLChange = false,
       currentPathQuery,
@@ -35,7 +36,8 @@ function Router(declarativeStates) {
       transition,
       leafStates,
       urlChanged,
-      initialized;
+      initialized,
+      hashSlashString;
 
   // Routes params should be type casted. e.g the dynamic path items/:id when id is 33
   // will end up passing the integer 33 as an argument, not the string "33".
@@ -188,7 +190,7 @@ function Router(declarativeStates) {
       ignoreNextURLChange = true;
 
     if (isHashMode())
-      location.hash = url;
+      location.hash = options.hashPrefix + url;
     else
       history.pushState(state, title, url);
   }
@@ -239,6 +241,7 @@ function Router(declarativeStates) {
   *   interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.
   *   notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null.
   *   urlSync: Whether the router should maintain the current state and the url in sync. Defaults to true.
+  *   hashPrefix: Customize the hash separator. Set to '!' in order to have a hashbang like '/#!/'. Defaults to empty string.
   */
   function configure(withOptions) {
     util.mergeObjects(options, withOptions);
@@ -257,6 +260,8 @@ function Router(declarativeStates) {
 
     if (options.interceptAnchors)
       interceptAnchors(router);
+
+    hashSlashString = '#' + options.hashPrefix + '/'
 
     logger.log('Router init');
 
@@ -292,7 +297,6 @@ function Router(declarativeStates) {
         return;
       }
 
-      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes; 
       // history.js will dispatch fake popstate events on HTML4 browsers' hash changes;
       // in this case, evt.state is null.
       var newState = isHashMode() ? urlPathQuery() : evt.state || urlPathQuery();
@@ -389,7 +393,6 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Attempt to navigate to 'stateName' with its previous params or 
   * Attempt to navigate to 'stateName' with its previous params or
   * fallback to the defaultParams parameter if the state was never entered.
   */
@@ -400,8 +403,6 @@ function Router(declarativeStates) {
 
   /*
   * Reload the current state with its current params.
-  * All states up to the root are exited then reentered.  
-  * This can be useful when some internal state not captured in the url changed 
   * All states up to the root are exited then reentered.
   * This can be useful when some internal state not captured in the url changed
   * and the current state should update because of it.
@@ -426,7 +427,6 @@ function Router(declarativeStates) {
     if (routeData)
       promise = setState(
         routeData.route.abyssaState,
-        fromCrossroadsParams(routeData.route.abyssaState, routeData.params)) 
         fromCrossroadsParams(routeData.route.abyssaState, routeData.params))
 
     return promise || notFound(currentPathQuery);
@@ -463,9 +463,9 @@ function Router(declarativeStates) {
   * Read the path/query from the URL.
   */
   function urlPathQuery() {
-    var hashSlash = location.href.indexOf('#/');
+    var hashSlash = location.href.indexOf(hashSlashString);
     var pathQuery = hashSlash > -1
-      ? location.href.slice(hashSlash + 2)
+      ? location.href.slice(hashSlash + hashSlashString.length)
       : (location.pathname + location.search).slice(1);
 
     return util.normalizePathQuery(pathQuery);
@@ -570,7 +570,6 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Returns a StateWithParams object representing the previous state of the router 
   * Returns a StateWithParams object representing the previous state of the router
   * or null if the router is still in its initial state.
   */
