@@ -74,6 +74,19 @@ module.exports = function(grunt) {
       }
     },
 
+    qunit: {
+      all: {
+        options: {
+          urls: [
+            'http://127.0.0.1:9999/test/unitTests.html',
+            'http://127.0.0.1:9999/test/unitTestsWithShims.html',
+            'http://127.0.0.1:9999/test/integrationTests.html',
+            'http://127.0.0.1:9999/test/integrationTestsWithShims.html'
+          ]
+        }
+      }
+    },
+
     'saucelabs-qunit': {
       normal: {
         options: {
@@ -111,9 +124,11 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-browserify');
 
   grunt.loadNpmTasks('grunt-contrib-connect');
+  grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-saucelabs');
 
   grunt.registerTask('default', ['browserify', 'concat', 'uglify']);
   grunt.registerTask('dev', ['default', 'watch']);
   grunt.registerTask('saucelabs', ['connect', 'saucelabs-qunit']);
+  grunt.registerTask('test', ['default', 'connect', 'qunit']);
 };
