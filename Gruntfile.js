@@ -18,14 +18,19 @@ module.exports = function(grunt) {
       build: {
         files: {'target/abyssa.js': ['src/main.js']},
         options: {
-          standalone: 'Abyssa',
-          ignore: dependencies
+          ignore: dependencies,
+
+          bundleOptions: {
+            standalone: 'Abyssa'
+          }
         }
       },
       buildWithDeps: {
         files: {'target/abyssa-with-deps.js': ['src/main.js'] },
         options: {
-          standalone: 'Abyssa'
+          bundleOptions: {
+            standalone: 'Abyssa'
+          }
         }
       }
     },
