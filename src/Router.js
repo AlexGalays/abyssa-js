@@ -261,7 +261,7 @@ function Router(declarativeStates) {
     if (options.interceptAnchors)
       interceptAnchors(router);
 
-    hashSlashString = '#' + options.hashPrefix + '/'
+    hashSlashString = '#' + options.hashPrefix + '/';
 
     logger.log('Router init');
 

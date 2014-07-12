@@ -138,6 +138,7 @@ The available options are:
   - true: The router uses the history pushState API. The history.js shim can be used to also support IE8/IE9.
   - false: The url is never read or updated. The starting state is the path-less, default state.
   - 'hash': The router uses the hash part of the URL for all browsers.
+- hashPrefix: Customize the hash separator. Set to '!' in order to have a hashbang like '/#!/'. Defaults to empty string.
 
 ### init (initState: String, initParams: Object): Router
 Initialize the router.  
