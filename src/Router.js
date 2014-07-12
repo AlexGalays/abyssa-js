@@ -464,9 +464,18 @@ function Router(declarativeStates) {
   */
   function urlPathQuery() {
     var hashSlash = location.href.indexOf(hashSlashString);
-    var pathQuery = hashSlash > -1
-      ? location.href.slice(hashSlash + hashSlashString.length)
-      : (location.pathname + location.search).slice(1);
+
+    var pathQuery;
+
+    if (hashSlash > -1) {
+      pathQuery = location.href.slice(hashSlash + hashSlashString.length);
+    }
+    else if (isHashMode()) {
+      pathQuery = '/';
+    }
+    else {
+      pathQuery = (location.pathname + location.search).slice(1);
+    }
 
     return util.normalizePathQuery(pathQuery);
   }
