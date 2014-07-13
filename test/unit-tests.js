@@ -68,7 +68,7 @@ asyncTest('Simple states', function() {
   function articlesWasEntered() {
     return nextTick().then(function() {
       deepEqual(events, ['indexExit', 'articlesEnter']);
-      strictEqual(promiseValue.name, 'articles');
+      strictEqual(promiseValue.state.name, 'articles');
       strictEqual(lastArticleId, 38);
       strictEqual(lastFilter, 'dark green');
       events = [];
@@ -441,7 +441,7 @@ asyncTest('Forcing reload on same state transition is possible', function() {
   .init('articles/33/today');
 
   router.transition.prevented.addOnce(function(stateCandidate) {
-    if (stateCandidate.fullName == 'articles.today') router.reload();
+    if (stateCandidate.state.fullName == 'articles.today') router.reload();
   });
 
   router.changed.addOnce(function() {
@@ -898,7 +898,8 @@ asyncTest('handling async transition errors', function() {
       equal(childEntered, false);
       // The transition failed. The router is in an inconsistent state: A non leaf state.
       // However, it is the correct state to transition from next time.
-      equal(router.currentState().fullName, 'broken');
+      console.log(router.currentState());
+      equal(router.currentState().state.fullName, 'broken');
     });
   }
 
@@ -926,8 +927,8 @@ asyncTest('Data can be stored on states and later retrieved', function() {
   router.changed.add(function(newState) {
 
     // A child state can see the data of its parent
-    equal(newState.data('someArbitraryData'), 3);
-    equal(newState.data('otherData'), 5);
+    equal(newState.state.data('someArbitraryData'), 3);
+    equal(newState.state.data('otherData'), 5);
 
     // The parent can see its own data
     equal(newState.state.parent.data('someArbitraryData'), 3);
@@ -1294,7 +1295,7 @@ asyncTest('Redirecting from transition.started', function() {
   function assertions() {
     return nextTick().then(function() {
       equal(completedCount, 1);
-      equal(router.currentState().name, 'dos');
+      equal(router.currentState().state.name, 'dos');
     });
   }
 
@@ -1516,28 +1517,26 @@ asyncTest('reload', function() {
   function allStatesWereReentered() {
     return nextTick().then(function() {
       strictEqual(articleId, 99);
-      strictEqual(router.currentState().fullName, 'articles.show');
+      strictEqual(router.currentState().state.fullName, 'articles.show');
     });
   }
 
 });
 
 
-function stateWithParamsAssertions(state) {
-  ok(state.name, 'state1Child');
-  ok(state.fullName, 'state1.state1Child');
+function stateWithParamsAssertions(stateWithParams) {
+  equal(stateWithParams.state.name, 'state1Child');
+  equal(stateWithParams.state.fullName, 'state1.state1Child');
 
-  ok(state.data('myData'), 666);
+  ok(stateWithParams.state.data('myData'), 666);
 
-  ok(state.params.id, 33);
-  ok(state.params.category, 'misc');
-  ok(state.params.filter, true);
+  ok(stateWithParams.params.id, 33);
+  ok(stateWithParams.params.category, 'misc');
+  ok(stateWithParams.params.filter, true);
 
-  equal(state.fullName, 'state1.state1Child');
-  notEqual(state.fullName, 'state1');
-  ok(state.isIn('state1'));
-  ok(state.isIn('state1.state1Child'));
-  ok(!state.isIn('state2'));
+  ok(stateWithParams.isIn('state1'));
+  ok(stateWithParams.isIn('state1.state1Child'));
+  ok(!stateWithParams.isIn('state2'));
 }
 
 asyncTest('signal handlers are passed StateWithParams objects', function() {
@@ -1591,7 +1590,7 @@ asyncTest('router.currentState and router.previousState', function() {
       equal(previousState, state);
       stateWithParamsAssertions(previousState);
 
-      equal(router.currentState().fullName, 'state2');
+      equal(router.currentState().state.fullName, 'state2');
 
       start();
     });
@@ -1689,7 +1688,7 @@ asyncTest('can prevent a transition by navigating to self from the exit handler'
       // Only the initial event is here. 
       // Since the exit was interrupted, there's no reason to re-enter.
       deepEqual(events, ['unoEnter']);
-      equal(router.currentState().name, 'uno');
+      equal(router.currentState().state.name, 'uno');
     });
   }
 

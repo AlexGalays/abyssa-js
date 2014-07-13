@@ -196,7 +196,7 @@ if (isHTML5Browser && !isUsingShims)
         .done(startLater);
 
       function stateShouldBeCategoryDetail() {
-        strictEqual(router.currentState().fullName, 'category1.detail');
+        strictEqual(router.currentState().state.fullName, 'category1.detail');
         strictEqual(lastParams.id, 56);
         strictEqual(window.location.hash, '#/category1/56');
       }
@@ -207,7 +207,7 @@ if (isHTML5Browser && !isUsingShims)
 
       function stateShouldBeIndex() {
         return nextTick().then(function() {
-          strictEqual(router.currentState().fullName, 'index');
+          strictEqual(router.currentState().state.fullName, 'index');
           strictEqual(window.location.hash, '#/');
         });
       }
@@ -218,7 +218,7 @@ if (isHTML5Browser && !isUsingShims)
 
       function stateShouldBeCategoryDetail2() {
         return nextTick().then(function() {
-          strictEqual(router.currentState().fullName, 'category1.detail');
+          strictEqual(router.currentState().state.fullName, 'category1.detail');
           strictEqual(lastParams.id, 88);
           strictEqual(window.location.hash, '#/category1/88');
         });
@@ -259,7 +259,7 @@ asyncTest('urlSync switched off', function() {
 
 
   function ShouldDefaultToIndex() {
-    strictEqual(router.currentState().fullName, 'index');
+    strictEqual(router.currentState().state.fullName, 'index');
     strictEqual(window.location.href, defaultURL);
   }
 
@@ -269,7 +269,7 @@ asyncTest('urlSync switched off', function() {
 
   function shouldBeInCategoryDetail() {
     return nextTick().then(function() {
-      strictEqual(router.currentState().fullName, 'category1.detail');
+      strictEqual(router.currentState().state.fullName, 'category1.detail');
       strictEqual(lastParams.id, 33);
       strictEqual(window.location.href, defaultURL);
     });
@@ -314,7 +314,7 @@ if (isHTML5Browser && !isUsingShims)
         .done(startLater);
 
       function stateShouldBeCategoryDetail() {
-        strictEqual(router.currentState().fullName, 'category1.detail');
+        strictEqual(router.currentState().state.fullName, 'category1.detail');
         strictEqual(lastParams.id, 56);
         strictEqual(window.location.hash, '#!/category1/56');
       }
@@ -325,7 +325,7 @@ if (isHTML5Browser && !isUsingShims)
 
       function stateShouldBeIndex() {
         return nextTick().then(function() {
-          strictEqual(router.currentState().fullName, 'index');
+          strictEqual(router.currentState().state.fullName, 'index');
           strictEqual(window.location.hash, '#!/');
         });
       }
@@ -336,7 +336,7 @@ if (isHTML5Browser && !isUsingShims)
 
       function stateShouldBeCategoryDetail2() {
         return nextTick().then(function() {
-          strictEqual(router.currentState().fullName, 'category1.detail');
+          strictEqual(router.currentState().state.fullName, 'category1.detail');
           strictEqual(lastParams.id, 88);
           strictEqual(window.location.hash, '#!/category1/88');
         });
@@ -382,7 +382,7 @@ if (isHTML5Browser && !isUsingShims)
         .done(startLater);
 
       function stateShouldBeCategoryDetail() {
-        strictEqual(router.currentState().fullName, 'category1.detail');
+        strictEqual(router.currentState().state.fullName, 'category1.detail');
         strictEqual(lastParams.id, 56);
         strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/category1/56');
       }
@@ -393,7 +393,7 @@ if (isHTML5Browser && !isUsingShims)
 
       function stateShouldBeIndex() {
         return nextTick().then(function() {
-          strictEqual(router.currentState().fullName, 'index');
+          strictEqual(router.currentState().state.fullName, 'index');
           strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/');
         });
       }
@@ -404,7 +404,7 @@ if (isHTML5Browser && !isUsingShims)
 
       function stateShouldBeCategoryDetail2() {
         return nextTick().then(function() {
-          strictEqual(router.currentState().fullName, 'category1.detail');
+          strictEqual(router.currentState().state.fullName, 'category1.detail');
           strictEqual(lastParams.id, 88);
           strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/category1/88');
         });

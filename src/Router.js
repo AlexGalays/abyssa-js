@@ -91,7 +91,7 @@ function Router(declarativeStates) {
         transitionCompleted(fromState, toState);
       },
       function fail(error) {
-        currentState = transition.currentState;
+        currentState = StateWithParams(transition.currentState, transition.toParams);
         finalizeTransition(reload);
         transitionFailed(fromState, toState, error);
       }

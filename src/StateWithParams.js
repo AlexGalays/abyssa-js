@@ -11,11 +11,8 @@
 function StateWithParams(state, params, pathQuery) {
   return {
     state: state,
-    name: state && state.name,
-    fullName: state && state.fullName,
-    pathQuery: pathQuery,
-    data: state && state.data,
     params: params,
+    pathQuery: pathQuery,
     isIn: isIn,
     toString: toString
   };
@@ -34,7 +31,7 @@ function isIn(fullStateName) {
 }
 
 function toString() {
-  return this.fullName + ':' + JSON.stringify(this.params)
+  return this.state.fullName + ':' + JSON.stringify(this.params)
 }
 
 
