@@ -31,6 +31,7 @@ function Router(declarativeStates) {
       },
       ignoreNextURLChange = false,
       currentPathQuery,
+      currentParamDiff = {},
       currentState,
       previousState,
       transition,
@@ -51,11 +52,13 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params, reload) {
-    if (!reload && isSameState(state, params))
+    var diff = util.objectDiff(currentState && currentState.params, params);
+
+    if (!reload && isSameState(state, diff))
       return transitionPrevented(currentState);
 
     var fromState, oldPreviousState;
-    var toState = StateWithParams(state, params, currentPathQuery);
+    var toState = StateWithParams(state, params);
 
     if (transition) {
       cancelTransition();
@@ -70,12 +73,14 @@ function Router(declarativeStates) {
     previousState = currentState;
     currentState = toState;
 
+    currentParamDiff = diff;
+
     var previousTransition = transition;
 
     var t = transition = Transition(
       fromState,
       toState,
-      paramDiff(fromState && fromState.params, params),
+      diff,
       reload,
       logger);
 
@@ -199,27 +204,10 @@ function Router(declarativeStates) {
   * Return whether the passed state is the same as the current one;
   * in which case the router can ignore the change.
   */
-  function isSameState(newState, newParams) {
+  function isSameState(newState, diff) {
     if (!currentState) return false;
 
-    var diff = paramDiff(currentState.params, newParams);
     return (newState == currentState.state) && (util.objectSize(diff) == 0);
-  }
-
-  /*
-  * Return the set of all the params that changed (Either added, removed or changed).
-  */
-  function paramDiff(oldParams, newParams) {
-    var diff = {},
-        oldParams = oldParams || {};
-
-    for (var name in oldParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
-
-    for (var name in newParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
-
-    return diff;
   }
 
   /*
@@ -522,11 +510,7 @@ function Router(declarativeStates) {
   */
   function toCrossroadsParams(state, abyssaParams) {
     var params = {},
-        allQueryParams = {};
-
-    [state].concat(state.parents).forEach(function(s) {
-      util.mergeObjects(allQueryParams, s.queryParams);
-    });
+        allQueryParams = state.allQueryParams();
 
     for (var key in abyssaParams) {
       if (allQueryParams[key]) {
@@ -587,6 +571,52 @@ function Router(declarativeStates) {
   }
 
   /*
+  * Returns the path portion of the current url
+  */
+  function getPath() {
+    return currentPathQuery.split('?')[0];
+  }
+
+  /*
+  * Returns the query portion of the current url
+  */
+  function getQuery() {
+    return currentPathQuery.split('?')[1];
+  }
+
+  /*
+  * Returns all params (path and query) associated to the current state
+  */
+  function getParams() {
+    return util.copyObject(currentState.params);
+  }
+
+  /*
+  * Returns the query params associated to the current state
+  */
+  function getQueryParams() {
+    var queryParams = currentState.state.allQueryParams();
+    var allParams = currentState.params;
+
+    var params = {};
+
+    for (var param in allParams) {
+      if (param in queryParams)
+        params[param] = allParams[param];
+    }
+
+    return params;
+  }
+
+  /*
+  * Returns the diff between the current params and the previous ones, e.g:
+  * { id: 'modified', q: 'added', section: 'removed' }
+  */
+  function getParamDiff() {
+    return currentParamDiff;
+  }
+
+  /*
   * Returns whether the router is executing its first transition.
   */
   function isFirstTransition() {
@@ -631,6 +661,11 @@ function Router(declarativeStates) {
   router.currentState = getCurrentState;
   router.previousState = getPreviousState;
   router.isFirstTransition = isFirstTransition;
+  router.path = getPath;
+  router.query = getQuery;
+  router.params = getParams;
+  router.queryParams = getQueryParams;
+  router.paramDiff = getParamDiff;
 
   // Used for testing
   router.urlPathQuery = urlPathQuery;

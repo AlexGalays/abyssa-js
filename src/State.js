@@ -132,6 +132,12 @@ function State() {
     }, '') + state.name;
   }
 
+  function allQueryParams() {
+    return state.parents.reduce(function(acc, parent) {
+      return util.mergeObjects(acc, parent.queryParams);
+    }, util.copyObject(state.queryParams));
+  }
+
   /*
   * Get or Set some arbitrary data by key on this state.
   * child states have access to their parents' data.
@@ -182,6 +188,7 @@ function State() {
 
   state.init = init;
   state.fullPath = fullPath;
+  state.allQueryParams = allQueryParams;
 
   // Public methods
 

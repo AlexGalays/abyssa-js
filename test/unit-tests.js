@@ -898,7 +898,6 @@ asyncTest('handling async transition errors', function() {
       equal(childEntered, false);
       // The transition failed. The router is in an inconsistent state: A non leaf state.
       // However, it is the correct state to transition from next time.
-      console.log(router.currentState());
       equal(router.currentState().state.fullName, 'broken');
     });
   }
@@ -1677,7 +1676,7 @@ asyncTest('can prevent a transition by navigating to self from the exit handler'
   whenSignal(router.changed)
     .then(goToDos)
     .then(unoWontLetGo)
-    .then(start);
+    .done(start);
 
   function goToDos() {
     router.state('dos');
@@ -1689,6 +1688,68 @@ asyncTest('can prevent a transition by navigating to self from the exit handler'
       // Since the exit was interrupted, there's no reason to re-enter.
       deepEqual(events, ['unoEnter']);
       equal(router.currentState().state.name, 'uno');
+    });
+  }
+
+});
+
+
+asyncTest('router path/query/params utils', function() {
+
+  var queryParams = ['q1', 'q2', 'q3'].join('&');
+
+  var router = Router({
+    parent: State('?parentQuery', {
+      book: State('books/:id/category/:cat?' + queryParams)
+    })
+  })
+  .init('books/33/category/sci-fi?q1=11&q2=yes');
+
+  bookAssertions();
+
+  whenSignal(router.changed)
+    .then(bookAssertions)
+    .then(updateBook)
+    .then(updatedBookAssertions)
+    .done(start);
+
+  function bookAssertions() {
+    equal(router.path(), '/books/33/category/sci-fi');
+    equal(router.query(), 'q1=11&q2=yes');
+
+    deepEqual(router.params(), { id: 33, cat: 'sci-fi', q1: 11, q2: 'yes' });
+    deepEqual(router.queryParams(), { q1: 11, q2: 'yes' });
+
+    deepEqual(router.paramDiff(), {
+      id: 'added',
+      cat: 'added',
+      q1: 'added',
+      q2: 'added'
+    });
+  }
+
+  function updateBook() {
+    var params = router.params();
+    params.id = 44;
+    params.q1 = 'red';
+    params.q3 = 'new';
+    delete params.q2;
+
+    return router.state('parent.book', params).then(nextTick);
+  }
+
+  function updatedBookAssertions() {
+    equal(router.path(), '/books/44/category/sci-fi');
+    equal(router.query(), 'q1=red&q3=new');
+
+    deepEqual(router.params(), { id: 44, cat: 'sci-fi', q1: 'red', q3: 'new' });
+    deepEqual(router.queryParams(), { q1: 'red', q3: 'new' });
+
+    deepEqual(router.paramDiff(), {
+      id: 'modified',
+      q1: 'modified',
+      q2: 'removed',
+      q3: 'added'
     });
   }
 

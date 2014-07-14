@@ -8,11 +8,10 @@
 * StateWithParams is the merge between a State object (created and added to the router before init)
 * and params (both path and query params, extracted from the URL after init)
 */
-function StateWithParams(state, params, pathQuery) {
+function StateWithParams(state, params) {
   return {
     state: state,
     params: params,
-    pathQuery: pathQuery,
     isIn: isIn,
     toString: toString
   };

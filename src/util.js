@@ -29,6 +29,7 @@ function copyObject(obj) {
 
 function mergeObjects(to, from) {
   for (var key in from) to[key] = from[key];
+  return to;
 }
 
 function isPlainObject(obj) {
@@ -39,6 +40,29 @@ function objectSize(obj) {
   var size = 0;
   for (var key in obj) size++;
   return size;
+}
+
+/*
+* Return the set of all the keys that changed (either added, removed or modified).
+*/
+function objectDiff(obj1, obj2) {
+  var diff = {},
+      name,
+      obj1 = obj1 || {};
+
+  for (name in obj1) {
+    if (!(name in obj2))
+      diff[name] = 'removed';
+    else if (obj1[name] != obj2[name])
+      diff[name] = 'modified';
+  }
+
+  for (name in obj2) {
+    if (!(name in obj1))
+      diff[name] = 'added';
+  }
+
+  return diff;
 }
 
 function makeMessage() {
@@ -73,5 +97,6 @@ module.exports = {
   isPlainObject: isPlainObject,
   objectSize: objectSize,
   makeMessage: makeMessage,
-  normalizePathQuery: normalizePathQuery
+  normalizePathQuery: normalizePathQuery,
+  objectDiff: objectDiff
 };

@@ -196,6 +196,23 @@ Returns the current state of the router.
 ### isFirstTransition(): Boolean
 Returns whether the router is executing its first transition.
 
+### path(): String
+Returns the path portion of the current url
+
+### query(): String
+Returns the query portion of the current url
+
+### params(): Object
+Returns all params (path and query) associated to the current state
+
+### queryParams(): Object
+Returns the query params associated to the current state
+
+### paramDiff(): Object
+Returns the diff between the current params and the previous ones
+```javascript
+var diff = router.paramDiff(); //  { id: 'modified', q: 'added', section: 'removed' }
+```
 
 ### Signals
 
@@ -252,17 +269,11 @@ StateWithParams is the merge between a State object (created and added to the ro
 and params (both path and query params, extracted from the URL when transitions occur).  
 Instances of StateWithParams are returned from `router.previousState()`, `router.currentState()` and passed in signal handlers.  
 
-### name: String
-Same as State's name.
+### state: State
+The state reference
 
-### fullName: String
-Same as State's fullName.
-
-### pathQuery: String
-The path/query at the time this state was active.
-
-### data (key: String, value: Any): Any | State
-Same as State's data.
+### params: Object
+The path and query params set for this state
 
 ### isIn(fullName: String):Boolean
 Returns whether this state or any of its parents has the given fullName.
@@ -285,10 +296,8 @@ var state = router.currentState();
 // state looks as follow:
 
 {
-  name: 'listing',
-  fullName: 'books.listing',
+  state: State(),
   params: {kind: 'scifi', limit: 10},
-  data, // Here, state.data('myData') == 33
   isIn // state.isIn('books') == true
 }
 ```
@@ -678,5 +687,36 @@ var router = Router({
   section2: NavState('section2')
 
 }).init('section1');
+
+```
+
+## Handling the change of some params differently in `update`
+
+`update` is an optional hook that will be called whenever the router moves to the same state but with updated path/query params.
+
+Not all params are equal, a change in the path param representing the resource id may induce more work than the change of some secondary query param.
+
+Example of a conditional update:  
+
+```javascript
+
+var state = State({
+  enter: function(params) {
+    loadResourceForId(params.id);
+  },
+
+  update: function(params) {
+    var diff = state.router.paramDiff();
+
+    // The id was changed
+    if (diff.id) {
+      loadResourceForId(params.id);
+    }
+    // Some other params were changed
+    else {
+      filterInPlace(params);
+    }
+  }
+});
 
 ```
