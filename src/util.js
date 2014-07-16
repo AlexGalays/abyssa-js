@@ -46,21 +46,28 @@ function objectSize(obj) {
 * Return the set of all the keys that changed (either added, removed or modified).
 */
 function objectDiff(obj1, obj2) {
-  var diff = {},
+  var diff, update = {}, enter = {}, exit = {}, all = {},
       name,
       obj1 = obj1 || {};
 
   for (name in obj1) {
     if (!(name in obj2))
-      diff[name] = 'removed';
+      exit[name] = all[name] = true;
     else if (obj1[name] != obj2[name])
-      diff[name] = 'modified';
+      update[name] = all[name] = true;
   }
 
   for (name in obj2) {
     if (!(name in obj1))
-      diff[name] = 'added';
+      enter[name] = all[name] = true;
   }
+
+  diff = {
+    all: all,
+    update: update,
+    enter: enter,
+    exit: exit
+  };
 
   return diff;
 }

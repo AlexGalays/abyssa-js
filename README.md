@@ -208,10 +208,27 @@ Returns all params (path and query) associated to the current state
 ### queryParams(): Object
 Returns the query params associated to the current state
 
-### paramDiff(): Object
+### paramsDiff(): Object
 Returns the diff between the current params and the previous ones
 ```javascript
-var diff = router.paramDiff(); //  { id: 'modified', q: 'added', section: 'removed' }
+var diff = router.paramsDiff();
+
+{
+  update: {
+    id: true
+  },
+  enter: {
+    q: true
+  },
+  exit: {
+    section: true
+  },
+  all: {
+    id: true,
+    q: true,
+    section: true
+  }
+}
 ```
 
 ### Signals
@@ -706,10 +723,10 @@ var state = State({
   },
 
   update: function(params) {
-    var diff = state.router.paramDiff();
+    var diff = state.router.paramsDiff();
 
     // The id was changed
-    if (diff.id) {
+    if (diff.update.id) {
       loadResourceForId(params.id);
     }
     // Some other params were changed

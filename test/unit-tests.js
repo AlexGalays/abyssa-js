@@ -1720,11 +1720,11 @@ asyncTest('router path/query/params utils', function() {
     deepEqual(router.params(), { id: 33, cat: 'sci-fi', q1: 11, q2: 'yes' });
     deepEqual(router.queryParams(), { q1: 11, q2: 'yes' });
 
-    deepEqual(router.paramDiff(), {
-      id: 'added',
-      cat: 'added',
-      q1: 'added',
-      q2: 'added'
+    deepEqual(router.paramsDiff(), {
+      update: {},
+      enter:  { id: true, cat: true, q1: true, q2: true },
+      exit:   {},
+      all:    { id: true, cat: true, q1: true, q2: true }
     });
   }
 
@@ -1745,11 +1745,11 @@ asyncTest('router path/query/params utils', function() {
     deepEqual(router.params(), { id: 44, cat: 'sci-fi', q1: 'red', q3: 'new' });
     deepEqual(router.queryParams(), { q1: 'red', q3: 'new' });
 
-    deepEqual(router.paramDiff(), {
-      id: 'modified',
-      q1: 'modified',
-      q2: 'removed',
-      q3: 'added'
+    deepEqual(router.paramsDiff(), {
+      update: { id: true, q1: true },
+      enter:  { q3: true },
+      exit:   { q2: true },
+      all:    { id: true, q1: true, q2: true, q3: true }
     });
   }
 

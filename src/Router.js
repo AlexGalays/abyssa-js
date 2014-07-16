@@ -31,7 +31,7 @@ function Router(declarativeStates) {
       },
       ignoreNextURLChange = false,
       currentPathQuery,
-      currentParamDiff = {},
+      currentParamsDiff = {},
       currentState,
       previousState,
       transition,
@@ -73,7 +73,7 @@ function Router(declarativeStates) {
     previousState = currentState;
     currentState = toState;
 
-    currentParamDiff = diff;
+    currentParamsDiff = diff;
 
     var previousTransition = transition;
 
@@ -207,7 +207,7 @@ function Router(declarativeStates) {
   function isSameState(newState, diff) {
     if (!currentState) return false;
 
-    return (newState == currentState.state) && (util.objectSize(diff) == 0);
+    return (newState == currentState.state) && (util.objectSize(diff.all) == 0);
   }
 
   /*
@@ -612,8 +612,8 @@ function Router(declarativeStates) {
   * Returns the diff between the current params and the previous ones, e.g:
   * { id: 'modified', q: 'added', section: 'removed' }
   */
-  function getParamDiff() {
-    return currentParamDiff;
+  function getParamsDiff() {
+    return currentParamsDiff;
   }
 
   /*
@@ -665,7 +665,7 @@ function Router(declarativeStates) {
   router.query = getQuery;
   router.params = getParams;
   router.queryParams = getQueryParams;
-  router.paramDiff = getParamDiff;
+  router.paramsDiff = getParamsDiff;
 
   // Used for testing
   router.urlPathQuery = urlPathQuery;

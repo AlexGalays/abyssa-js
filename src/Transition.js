@@ -8,7 +8,7 @@ var Q    = require('q'),
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, logger) {
+function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, logger) {
   var root,
       cancelled,
       enters,
@@ -34,7 +34,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, l
 
   // The first transition has no fromState.
   if (fromState) {
-    root = reload ? toState.root : transitionRoot(fromState, toState, isUpdate, paramDiff);
+    root = reload ? toState.root : transitionRoot(fromState, toState, isUpdate, paramsDiff);
     exits = transitionStates(fromState, root, isUpdate);
   }
 
@@ -42,7 +42,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, l
 
   asyncPromises.newTransitionStarted();
 
-  transitionPromise = isNullTransition(isUpdate, reload, paramDiff)
+  transitionPromise = isNullTransition(isUpdate, reload, paramsDiff)
     ? Q('null')
     : startTransition(enters, exits, params, transition, callUpdates, logger);
 
@@ -63,8 +63,8 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, l
 /*
 * Whether there is no need to actually perform a transition.
 */
-function isNullTransition(isUpdate, reload, paramDiff) {
-  return (isUpdate && !reload && util.objectSize(paramDiff) == 0);
+function isNullTransition(isUpdate, reload, paramsDiff) {
+  return (isUpdate && !reload && util.objectSize(paramsDiff.all) == 0);
 }
 
 function startTransition(enters, exits, params, transition, callUpdates, logger) {
@@ -114,7 +114,7 @@ function startTransition(enters, exits, params, transition, callUpdates, logger)
 /*
 * The top-most current state's parent that must be exited.
 */
-function transitionRoot(fromState, toState, isUpdate, paramDiff) {
+function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
   var root,
       parent,
       param;
@@ -124,7 +124,7 @@ function transitionRoot(fromState, toState, isUpdate, paramDiff) {
     [fromState].concat(fromState.parents).reverse().forEach(function(parent) {
       if (root) return;
 
-      for (param in paramDiff) {
+      for (param in paramsDiff.all) {
         if (parent.params[param] || parent.queryParams[param]) {
           root = parent;
           break;
