@@ -1,6 +1,6 @@
-/* abyssa 6.5.0 - A stateful router library for single page applications */
+/* abyssa 6.6.0 - A stateful router library for single page applications */
 
-!function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Abyssa=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Abyssa=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /** @license
  * crossroads <http://millermedeiros.github.com/crossroads.js/>
  * Author: Miller Medeiros | MIT License
@@ -3183,6 +3183,7 @@ function Router(declarativeStates) {
       },
       ignoreNextURLChange = false,
       currentPathQuery,
+      currentParamsDiff = {},
       currentState,
       previousState,
       transition,
@@ -3203,11 +3204,13 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params, reload) {
-    if (!reload && isSameState(state, params))
+    var diff = util.objectDiff(currentState && currentState.params, params);
+
+    if (!reload && isSameState(state, diff))
       return transitionPrevented(currentState);
 
     var fromState, oldPreviousState;
-    var toState = StateWithParams(state, params, currentPathQuery);
+    var toState = StateWithParams(state, params);
 
     if (transition) {
       cancelTransition();
@@ -3222,12 +3225,14 @@ function Router(declarativeStates) {
     previousState = currentState;
     currentState = toState;
 
+    currentParamsDiff = diff;
+
     var previousTransition = transition;
 
     var t = transition = Transition(
       fromState,
       toState,
-      paramDiff(fromState && fromState.params, params),
+      diff,
       reload,
       logger);
 
@@ -3243,7 +3248,7 @@ function Router(declarativeStates) {
         transitionCompleted(fromState, toState);
       },
       function fail(error) {
-        currentState = transition.currentState;
+        currentState = StateWithParams(transition.currentState, transition.toParams);
         finalizeTransition(reload);
         transitionFailed(fromState, toState, error);
       }
@@ -3351,27 +3356,10 @@ function Router(declarativeStates) {
   * Return whether the passed state is the same as the current one;
   * in which case the router can ignore the change.
   */
-  function isSameState(newState, newParams) {
+  function isSameState(newState, diff) {
     if (!currentState) return false;
 
-    var diff = paramDiff(currentState.params, newParams);
-    return (newState == currentState.state) && (util.objectSize(diff) == 0);
-  }
-
-  /*
-  * Return the set of all the params that changed (Either added, removed or changed).
-  */
-  function paramDiff(oldParams, newParams) {
-    var diff = {},
-        oldParams = oldParams || {};
-
-    for (var name in oldParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
-
-    for (var name in newParams)
-      if (oldParams[name] != newParams[name]) diff[name] = 1;
-
-    return diff;
+    return (newState == currentState.state) && (util.objectSize(diff.all) == 0);
   }
 
   /*
@@ -3413,7 +3401,7 @@ function Router(declarativeStates) {
     if (options.interceptAnchors)
       interceptAnchors(router);
 
-    hashSlashString = '#' + options.hashPrefix + '/'
+    hashSlashString = '#' + options.hashPrefix + '/';
 
     logger.log('Router init');
 
@@ -3616,9 +3604,18 @@ function Router(declarativeStates) {
   */
   function urlPathQuery() {
     var hashSlash = location.href.indexOf(hashSlashString);
-    var pathQuery = hashSlash > -1
-      ? location.href.slice(hashSlash + hashSlashString.length)
-      : (location.pathname + location.search).slice(1);
+
+    var pathQuery;
+
+    if (hashSlash > -1) {
+      pathQuery = location.href.slice(hashSlash + hashSlashString.length);
+    }
+    else if (isHashMode()) {
+      pathQuery = '/';
+    }
+    else {
+      pathQuery = (location.pathname + location.search).slice(1);
+    }
 
     return util.normalizePathQuery(pathQuery);
   }
@@ -3665,11 +3662,7 @@ function Router(declarativeStates) {
   */
   function toCrossroadsParams(state, abyssaParams) {
     var params = {},
-        allQueryParams = {};
-
-    [state].concat(state.parents).forEach(function(s) {
-      util.mergeObjects(allQueryParams, s.queryParams);
-    });
+        allQueryParams = state.allQueryParams();
 
     for (var key in abyssaParams) {
       if (allQueryParams[key]) {
@@ -3730,6 +3723,52 @@ function Router(declarativeStates) {
   }
 
   /*
+  * Returns the path portion of the current url
+  */
+  function getPath() {
+    return currentPathQuery.split('?')[0];
+  }
+
+  /*
+  * Returns the query portion of the current url
+  */
+  function getQuery() {
+    return currentPathQuery.split('?')[1];
+  }
+
+  /*
+  * Returns all params (path and query) associated to the current state
+  */
+  function getParams() {
+    return util.copyObject(currentState.params);
+  }
+
+  /*
+  * Returns the query params associated to the current state
+  */
+  function getQueryParams() {
+    var queryParams = currentState.state.allQueryParams();
+    var allParams = currentState.params;
+
+    var params = {};
+
+    for (var param in allParams) {
+      if (param in queryParams)
+        params[param] = allParams[param];
+    }
+
+    return params;
+  }
+
+  /*
+  * Returns the diff between the current params and the previous ones, e.g:
+  * { id: 'modified', q: 'added', section: 'removed' }
+  */
+  function getParamsDiff() {
+    return currentParamsDiff;
+  }
+
+  /*
   * Returns whether the router is executing its first transition.
   */
   function isFirstTransition() {
@@ -3774,6 +3813,11 @@ function Router(declarativeStates) {
   router.currentState = getCurrentState;
   router.previousState = getPreviousState;
   router.isFirstTransition = isFirstTransition;
+  router.path = getPath;
+  router.query = getQuery;
+  router.params = getParams;
+  router.queryParams = getQueryParams;
+  router.paramsDiff = getParamsDiff;
 
   // Used for testing
   router.urlPathQuery = urlPathQuery;
@@ -3839,7 +3883,6 @@ Router.enableLogs = function() {
 
 
 module.exports = Router;
-
 },{"./StateWithParams":7,"./Transition":8,"./anchors":9,"./util":11,"crossroads":1,"q":3,"signals":4}],6:[function(_dereq_,module,exports){
 
 'use strict';
@@ -3975,6 +4018,12 @@ function State() {
     }, '') + state.name;
   }
 
+  function allQueryParams() {
+    return state.parents.reduce(function(acc, parent) {
+      return util.mergeObjects(acc, parent.queryParams);
+    }, util.copyObject(state.queryParams));
+  }
+
   /*
   * Get or Set some arbitrary data by key on this state.
   * child states have access to their parents' data.
@@ -4025,6 +4074,7 @@ function State() {
 
   state.init = init;
   state.fullPath = fullPath;
+  state.allQueryParams = allQueryParams;
 
   // Public methods
 
@@ -4096,13 +4146,9 @@ module.exports = State;
 * StateWithParams is the merge between a State object (created and added to the router before init)
 * and params (both path and query params, extracted from the URL after init)
 */
-function StateWithParams(state, params, pathQuery) {
+function StateWithParams(state, params) {
   return {
     state: state,
-    name: state && state.name,
-    fullName: state && state.fullName,
-    pathQuery: pathQuery,
-    data: state && state.data,
     params: params,
     isIn: isIn,
     toString: toString
@@ -4122,7 +4168,7 @@ function isIn(fullStateName) {
 }
 
 function toString() {
-  return this.fullName + ':' + JSON.stringify(this.params)
+  return this.state.fullName + ':' + JSON.stringify(this.params)
 }
 
 
@@ -4138,7 +4184,7 @@ var Q    = _dereq_('q'),
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, logger) {
+function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, logger) {
   var root,
       cancelled,
       enters,
@@ -4164,7 +4210,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, l
 
   // The first transition has no fromState.
   if (fromState) {
-    root = reload ? toState.root : transitionRoot(fromState, toState, isUpdate, paramDiff);
+    root = reload ? toState.root : transitionRoot(fromState, toState, isUpdate, paramsDiff);
     exits = transitionStates(fromState, root, isUpdate);
   }
 
@@ -4172,7 +4218,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, l
 
   asyncPromises.newTransitionStarted();
 
-  transitionPromise = isNullTransition(isUpdate, reload, paramDiff)
+  transitionPromise = isNullTransition(isUpdate, reload, paramsDiff)
     ? Q('null')
     : startTransition(enters, exits, params, transition, callUpdates, logger);
 
@@ -4193,8 +4239,8 @@ function Transition(fromStateWithParams, toStateWithParams, paramDiff, reload, l
 /*
 * Whether there is no need to actually perform a transition.
 */
-function isNullTransition(isUpdate, reload, paramDiff) {
-  return (isUpdate && !reload && util.objectSize(paramDiff) == 0);
+function isNullTransition(isUpdate, reload, paramsDiff) {
+  return (isUpdate && !reload && util.objectSize(paramsDiff.all) == 0);
 }
 
 function startTransition(enters, exits, params, transition, callUpdates, logger) {
@@ -4244,7 +4290,7 @@ function startTransition(enters, exits, params, transition, callUpdates, logger)
 /*
 * The top-most current state's parent that must be exited.
 */
-function transitionRoot(fromState, toState, isUpdate, paramDiff) {
+function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
   var root,
       parent,
       param;
@@ -4254,7 +4300,7 @@ function transitionRoot(fromState, toState, isUpdate, paramDiff) {
     [fromState].concat(fromState.parents).reverse().forEach(function(parent) {
       if (root) return;
 
-      for (param in paramDiff) {
+      for (param in paramsDiff.all) {
         if (parent.params[param] || parent.queryParams[param]) {
           root = parent;
           break;
@@ -4486,6 +4532,7 @@ function copyObject(obj) {
 
 function mergeObjects(to, from) {
   for (var key in from) to[key] = from[key];
+  return to;
 }
 
 function isPlainObject(obj) {
@@ -4496,6 +4543,36 @@ function objectSize(obj) {
   var size = 0;
   for (var key in obj) size++;
   return size;
+}
+
+/*
+* Return the set of all the keys that changed (either added, removed or modified).
+*/
+function objectDiff(obj1, obj2) {
+  var diff, update = {}, enter = {}, exit = {}, all = {},
+      name,
+      obj1 = obj1 || {};
+
+  for (name in obj1) {
+    if (!(name in obj2))
+      exit[name] = all[name] = true;
+    else if (obj1[name] != obj2[name])
+      update[name] = all[name] = true;
+  }
+
+  for (name in obj2) {
+    if (!(name in obj1))
+      enter[name] = all[name] = true;
+  }
+
+  diff = {
+    all: all,
+    update: update,
+    enter: enter,
+    exit: exit
+  };
+
+  return diff;
 }
 
 function makeMessage() {
@@ -4530,7 +4607,8 @@ module.exports = {
   isPlainObject: isPlainObject,
   objectSize: objectSize,
   makeMessage: makeMessage,
-  normalizePathQuery: normalizePathQuery
+  normalizePathQuery: normalizePathQuery,
+  objectDiff: objectDiff
 };
 },{}]},{},[10])
 (10)
