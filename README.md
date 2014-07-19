@@ -638,6 +638,8 @@ Abyssa uses the following libraries:
 Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)  
 Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/client)  
 
+## Abyssa + React
+[JSFiddle](http://jsfiddle.net/DvULQ/)
 
 <a name="cookbook"></a>
 # Cookbook
