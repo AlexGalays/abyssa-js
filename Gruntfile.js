@@ -90,7 +90,7 @@ module.exports = function(grunt) {
     },
 
     'saucelabs-qunit': {
-      options: {
+      all: {
         username: 'bagonzago',
         key: process.env.SAUCE_KEY || '',
         testname: 'Abyssa',
