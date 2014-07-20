@@ -190,12 +190,10 @@ function Router(declarativeStates) {
   function updateURLFromState(state, title, url) {
     if (!options.urlSync) return;
 
-    // The first check is a workaround for https://github.com/devote/HTML5-History-API/issues/44
-    if (history.emulate || isHashMode())
+    if (isHashMode()) {
       ignoreNextURLChange = true;
-
-    if (isHashMode())
       location.hash = options.hashPrefix + url;
+    }
     else
       history.pushState(state, title, url);
   }
@@ -285,9 +283,7 @@ function Router(declarativeStates) {
         return;
       }
 
-      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes;
-      // in this case, evt.state is null.
-      var newState = isHashMode() ? urlPathQuery() : evt.state || urlPathQuery();
+      var newState = isHashMode() ? urlPathQuery() : evt.state;
 
       logger.log('URL changed: {0}', newState);
       urlChanged = true;

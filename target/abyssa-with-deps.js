@@ -1,4 +1,4 @@
-/* abyssa 6.6.0 - A stateful router library for single page applications */
+/* abyssa 6.7.0 - A stateful router library for single page applications */
 
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Abyssa=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /** @license
@@ -3342,12 +3342,10 @@ function Router(declarativeStates) {
   function updateURLFromState(state, title, url) {
     if (!options.urlSync) return;
 
-    // The first check is a workaround for https://github.com/devote/HTML5-History-API/issues/44
-    if (history.emulate || isHashMode())
+    if (isHashMode()) {
       ignoreNextURLChange = true;
-
-    if (isHashMode())
       location.hash = options.hashPrefix + url;
+    }
     else
       history.pushState(state, title, url);
   }
@@ -3437,9 +3435,7 @@ function Router(declarativeStates) {
         return;
       }
 
-      // history.js will dispatch fake popstate events on HTML4 browsers' hash changes;
-      // in this case, evt.state is null.
-      var newState = isHashMode() ? urlPathQuery() : evt.state || urlPathQuery();
+      var newState = isHashMode() ? urlPathQuery() : evt.state;
 
       logger.log('URL changed: {0}', newState);
       urlChanged = true;
@@ -4382,13 +4378,9 @@ module.exports = Transition;
 'use strict';
 
 
-var ieButton, router;
+var router;
 
 function onMouseDown(evt) {
-  // IE does not provide the correct event.button information on 'onclick' handlers 
-  // but it does on mousedown/mouseup handlers.
-  ieButton = (evt || window.event).button;
-
   var href = hrefForEvent(evt);
 
   if (href !== undefined)
@@ -4399,23 +4391,16 @@ function onMouseClick(evt) {
   var href = hrefForEvent(evt);
 
   if (href !== undefined) {
-    if (evt.preventDefault) evt.preventDefault();
-    else evt.returnValue = false;
+    evt.preventDefault();
 
     router.state(href);
   }
 }
 
 function hrefForEvent(evt) {
-  evt = evt || window.event;
+  if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButton(evt)) return;
 
-  var defaultPrevented = ('defaultPrevented' in evt)
-    ? evt.defaultPrevented
-    : (evt.returnValue === false);
-
-  if (defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButton(evt)) return;
-
-  var target = evt.target || evt.srcElement;
+  var target = evt.target;
   var anchor = anchorTarget(target);
   if (!anchor) return;
 
@@ -4434,8 +4419,7 @@ function hrefForEvent(evt) {
   // At this point, we have a valid href to follow.
   // Did the navigation already occur on mousedown though?
   if (evt.type == 'click' && dataNav == 'mousedown') {
-    if (evt.preventDefault) evt.preventDefault();
-    else evt.returnValue = false;
+    evt.preventDefault();
     return;
   }
 
@@ -4443,9 +4427,7 @@ function hrefForEvent(evt) {
 }
 
 function isLeftButton(evt) {
-  evt = evt || window.event;
-  var button = (evt.which !== undefined) ? evt.which : ieButton;
-  return button == 1;
+  return evt.which == 1;
 }
 
 function anchorTarget(target) {
@@ -4459,7 +4441,7 @@ function isLocalLink(anchor) {
   var hostname = anchor.hostname;
   var port = anchor.port;
 
-  // IE10 and below can lose the hostname/port property when setting a relative href from JS
+  // IE10 can lose the hostname/port property when setting a relative href from JS
   if (!hostname) {
     var tempAnchor = document.createElement("a");
     tempAnchor.href = anchor.href;
@@ -4477,14 +4459,8 @@ function isLocalLink(anchor) {
 module.exports = function interceptAnchors(forRouter) {
   router = forRouter;
 
-  if (document.addEventListener) {
-    document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('click', onMouseClick);
-  }
-  else {
-    document.attachEvent('onmousedown', onMouseDown);
-    document.attachEvent('onclick', onMouseClick);
-  }
+  document.addEventListener('mousedown', onMouseDown);
+  document.addEventListener('click', onMouseClick);
 };
 },{}],10:[function(_dereq_,module,exports){
 

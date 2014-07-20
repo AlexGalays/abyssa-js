@@ -9,7 +9,6 @@ module.exports = function(grunt) {
   ];
 
   var supportedBrowsers = grunt.file.readJSON('test/supportedBrowsers.json');
-  var supportedBrowsersWithShims = supportedBrowsers.concat(grunt.file.readJSON('test/supportedBrowsersWithShims.json'));
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
@@ -84,40 +83,23 @@ module.exports = function(grunt) {
         options: {
           urls: [
             'http://127.0.0.1:9999/test/unitTests.html',
-            'http://127.0.0.1:9999/test/unitTestsWithShims.html',
-            'http://127.0.0.1:9999/test/integrationTests.html',
-            'http://127.0.0.1:9999/test/integrationTestsWithShims.html'
+            'http://127.0.0.1:9999/test/integrationTests.html'
           ]
         }
       }
     },
 
     'saucelabs-qunit': {
-      normal: {
-        options: {
-          username: 'bagonzago',
-          key: process.env.SAUCE_KEY || '',
-          testname: 'Abyssa without shims',
-          tags: ['master'],
-          build: +new Date(),
-          concurrency: 2,
-          testTimeout: 15 * 1000,
-          urls: ['http://127.0.0.1:9999/test/unitTests.html', 'http://127.0.0.1:9999/test/integrationTests.html'],
-          browsers: supportedBrowsers
-        }
-      },
-      withShims: {
-        options: {
-          username: 'boubiyeah',
-          key: process.env.SAUCE_KEY_WITH_SHIMS || '',
-          testname: 'Abyssa with shims',
-          tags: ['master'],
-          build: +new Date(),
-          concurrency: 2,
-          testTimeout: 15 * 1000,
-          urls: ['http://127.0.0.1:9999/test/unitTestsWithShims.html', 'http://127.0.0.1:9999/test/integrationTestsWithShims.html'],
-          browsers: supportedBrowsersWithShims
-        }
+      options: {
+        username: 'bagonzago',
+        key: process.env.SAUCE_KEY || '',
+        testname: 'Abyssa',
+        tags: ['master'],
+        build: +new Date(),
+        concurrency: 2,
+        testTimeout: 15 * 1000,
+        urls: ['http://127.0.0.1:9999/test/unitTests.html', 'http://127.0.0.1:9999/test/integrationTests.html'],
+        browsers: supportedBrowsers
       }
     }
 

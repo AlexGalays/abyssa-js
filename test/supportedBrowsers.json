@@ -33,7 +33,7 @@
     {
         "browserName": "firefox",
         "platform": "Windows 8",
-        "version": "16"
+        "version": "30"
     },
     {
         "browserName":"iphone",
@@ -69,6 +69,11 @@
         "browserName":"android",
         "platform": "Linux",
         "version": "4.0"
+    },
+    {
+        "browserName":"android",
+        "platform": "Linux",
+        "version": "4.3"
     },
     {
         "browserName":"android",

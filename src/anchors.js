@@ -2,13 +2,9 @@
 'use strict';
 
 
-var ieButton, router;
+var router;
 
 function onMouseDown(evt) {
-  // IE does not provide the correct event.button information on 'onclick' handlers 
-  // but it does on mousedown/mouseup handlers.
-  ieButton = (evt || window.event).button;
-
   var href = hrefForEvent(evt);
 
   if (href !== undefined)
@@ -19,23 +15,16 @@ function onMouseClick(evt) {
   var href = hrefForEvent(evt);
 
   if (href !== undefined) {
-    if (evt.preventDefault) evt.preventDefault();
-    else evt.returnValue = false;
+    evt.preventDefault();
 
     router.state(href);
   }
 }
 
 function hrefForEvent(evt) {
-  evt = evt || window.event;
+  if (evt.defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButton(evt)) return;
 
-  var defaultPrevented = ('defaultPrevented' in evt)
-    ? evt.defaultPrevented
-    : (evt.returnValue === false);
-
-  if (defaultPrevented || evt.metaKey || evt.ctrlKey || !isLeftButton(evt)) return;
-
-  var target = evt.target || evt.srcElement;
+  var target = evt.target;
   var anchor = anchorTarget(target);
   if (!anchor) return;
 
@@ -54,8 +43,7 @@ function hrefForEvent(evt) {
   // At this point, we have a valid href to follow.
   // Did the navigation already occur on mousedown though?
   if (evt.type == 'click' && dataNav == 'mousedown') {
-    if (evt.preventDefault) evt.preventDefault();
-    else evt.returnValue = false;
+    evt.preventDefault();
     return;
   }
 
@@ -63,9 +51,7 @@ function hrefForEvent(evt) {
 }
 
 function isLeftButton(evt) {
-  evt = evt || window.event;
-  var button = (evt.which !== undefined) ? evt.which : ieButton;
-  return button == 1;
+  return evt.which == 1;
 }
 
 function anchorTarget(target) {
@@ -79,7 +65,7 @@ function isLocalLink(anchor) {
   var hostname = anchor.hostname;
   var port = anchor.port;
 
-  // IE10 and below can lose the hostname/port property when setting a relative href from JS
+  // IE10 can lose the hostname/port property when setting a relative href from JS
   if (!hostname) {
     var tempAnchor = document.createElement("a");
     tempAnchor.href = anchor.href;
@@ -97,12 +83,6 @@ function isLocalLink(anchor) {
 module.exports = function interceptAnchors(forRouter) {
   router = forRouter;
 
-  if (document.addEventListener) {
-    document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('click', onMouseClick);
-  }
-  else {
-    document.attachEvent('onmousedown', onMouseDown);
-    document.attachEvent('onclick', onMouseClick);
-  }
+  document.addEventListener('mousedown', onMouseDown);
+  document.addEventListener('click', onMouseClick);
 };

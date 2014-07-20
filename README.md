@@ -18,14 +18,9 @@ A stateful router library for single page applications.
 <a name="browser-support"></a>
 # Browser support
 
-With shims ([es5-shim](https://github.com/kriskowal/es5-shim) and [history.js](https://github.com/devote/HTML5-History-API))  
-
-[![SauceLabs Status](https://saucelabs.com/browser-matrix/boubiyeah.svg)](https://saucelabs.com/u/boubiyeah)
-
-Without shims  
-
 [![SauceLabs Status](https://saucelabs.com/browser-matrix/bagonzago.svg)](https://saucelabs.com/u/bagonzago)
 
+With IE8/IE9, The router won't throw any errors at script evaluation time, so it can be used to support these browsers in degraded mode.
 
 <a name="introduction"></a>
 # Introduction
@@ -135,7 +130,7 @@ The available options are:
 - interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.  
 - notFound: The State to enter when no state matching the current path query or name could be found. Either a State instance or a string representing the fullName of an existing state can be passed. Defaults to null.  
 - urlSync: How the router state and the URL should be kept in sync. Defaults to true. Possible values are:  
-  - true: The router uses the history pushState API. The history.js shim can be used to also support IE8/IE9.
+  - true: The router uses the history pushState API.
   - false: The url is never read or updated. The starting state is the path-less, default state.
   - 'hash': The router uses the hash part of the URL for all browsers.
 - hashPrefix: Customize the hash separator. Set to '!' in order to have a hashbang like '/#!/'. Defaults to empty string.

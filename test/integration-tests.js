@@ -7,7 +7,6 @@ Async  = Abyssa.Async;
 
 //Router.enableLogs();
 
-var isHTML5Browser = !history.emulate;
 var initialURL = window.location.href;
 var testElements = document.getElementById('test-elements');
 var router;
@@ -15,7 +14,7 @@ var router;
 QUnit.config.testTimeout = 4000;
 
 QUnit.testDone(function() {
-  if (isHTML5Browser) changeURL(initialURL);
+  changeURL(initialURL);
   testElements.innerHTML = '';
   router.terminate();
 });
@@ -156,76 +155,72 @@ asyncTest('history.back()', function() {
 
 });
 
-// The history.js shim completely hijacks the hashchange listeners
-// and many other things on the window object, preventing this test from working properly.
-// So just test modern/non shimmed browsers for now.
-// Ideally, this test should be ran for all browsers and without the history.js shim but that would require a *third* SauceLabs account.
-if (isHTML5Browser && !isUsingShims)
-  asyncTest('hash mode switched on', function() {
 
-    var lastParams;
+asyncTest('hash mode switched on', function() {
 
-    window.addEventListener('hashchange', startTest);
-    window.location.hash = '/category1/56';
+  var lastParams;
 
-    function startTest() {
-      window.removeEventListener('hashchange', startTest);
+  window.addEventListener('hashchange', startTest);
+  window.location.hash = '/category1/56';
 
-      router = Router({
+  function startTest() {
+    window.removeEventListener('hashchange', startTest);
 
-        index: State(''),
+    router = Router({
 
-        category1: State('category1', {
-          detail: State(':id', function(params) {
-            lastParams = params;
-          })
+      index: State(''),
+
+      category1: State('category1', {
+        detail: State(':id', function(params) {
+          lastParams = params;
         })
-
       })
-      .configure({
-        urlSync: 'hash'
-      })
-      .init();
 
-      whenSignal(router.changed)
-        .then(stateShouldBeCategoryDetail)
-        .then(goToIndex)
-        .then(stateShouldBeIndex)
-        .then(goToCategoryDetail)
-        .then(stateShouldBeCategoryDetail2)
-        .done(startLater);
+    })
+    .configure({
+      urlSync: 'hash'
+    })
+    .init();
 
-      function stateShouldBeCategoryDetail() {
-        strictEqual(router.currentState().state.fullName, 'category1.detail');
-        strictEqual(lastParams.id, 56);
-        strictEqual(window.location.hash, '#/category1/56');
-      }
+    whenSignal(router.changed)
+      .then(stateShouldBeCategoryDetail)
+      .then(goToIndex)
+      .then(stateShouldBeIndex)
+      .then(goToCategoryDetail)
+      .then(stateShouldBeCategoryDetail2)
+      .done(startLater);
 
-      function goToIndex() {
-        router.state('/');
-      }
-
-      function stateShouldBeIndex() {
-        return nextTick().then(function() {
-          strictEqual(router.currentState().state.fullName, 'index');
-          strictEqual(window.location.hash, '#/');
-        });
-      }
-
-      function goToCategoryDetail() {
-        router.state('category1.detail', {id: 88});
-      }
-
-      function stateShouldBeCategoryDetail2() {
-        return nextTick().then(function() {
-          strictEqual(router.currentState().state.fullName, 'category1.detail');
-          strictEqual(lastParams.id, 88);
-          strictEqual(window.location.hash, '#/category1/88');
-        });
-      }
+    function stateShouldBeCategoryDetail() {
+      strictEqual(router.currentState().state.fullName, 'category1.detail');
+      strictEqual(lastParams.id, 56);
+      strictEqual(window.location.hash, '#/category1/56');
     }
 
-  });
+    function goToIndex() {
+      router.state('/');
+    }
+
+    function stateShouldBeIndex() {
+      return nextTick().then(function() {
+        strictEqual(router.currentState().state.fullName, 'index');
+        strictEqual(window.location.hash, '#/');
+      });
+    }
+
+    function goToCategoryDetail() {
+      router.state('category1.detail', {id: 88});
+    }
+
+    function stateShouldBeCategoryDetail2() {
+      return nextTick().then(function() {
+        strictEqual(router.currentState().state.fullName, 'category1.detail');
+        strictEqual(lastParams.id, 88);
+        strictEqual(window.location.hash, '#/category1/88');
+      });
+    }
+  }
+
+});
 
 
 asyncTest('urlSync switched off', function() {
@@ -277,173 +272,157 @@ asyncTest('urlSync switched off', function() {
 
 });
 
-if (isHTML5Browser && !isUsingShims)
-  asyncTest('customize hashbang', function() {
 
-    var lastParams;
+asyncTest('customize hashbang', function() {
 
-    window.addEventListener('hashchange', startTest);
-    window.location.hash = '!/category1/56';
+  var lastParams;
 
-    function startTest() {
-      window.removeEventListener('hashchange', startTest);
+  window.addEventListener('hashchange', startTest);
+  window.location.hash = '!/category1/56';
 
-      router = Router({
+  function startTest() {
+    window.removeEventListener('hashchange', startTest);
 
-        index: State(''),
+    router = Router({
 
-        category1: State('category1', {
-          detail: State(':id', function(params) {
-            lastParams = params;
-          })
+      index: State(''),
+
+      category1: State('category1', {
+        detail: State(':id', function(params) {
+          lastParams = params;
         })
-
       })
-      .configure({
-        urlSync: 'hash',
-        hashPrefix: '!'
-      })
-      .init();
 
-      whenSignal(router.changed)
-        .then(stateShouldBeCategoryDetail)
-        .then(goToIndex)
-        .then(stateShouldBeIndex)
-        .then(goToCategoryDetail)
-        .then(stateShouldBeCategoryDetail2)
-        .done(startLater);
+    })
+    .configure({
+      urlSync: 'hash',
+      hashPrefix: '!'
+    })
+    .init();
 
-      function stateShouldBeCategoryDetail() {
-        strictEqual(router.currentState().state.fullName, 'category1.detail');
-        strictEqual(lastParams.id, 56);
-        strictEqual(window.location.hash, '#!/category1/56');
-      }
+    whenSignal(router.changed)
+      .then(stateShouldBeCategoryDetail)
+      .then(goToIndex)
+      .then(stateShouldBeIndex)
+      .then(goToCategoryDetail)
+      .then(stateShouldBeCategoryDetail2)
+      .done(startLater);
 
-      function goToIndex() {
-        router.state('/');
-      }
-
-      function stateShouldBeIndex() {
-        return nextTick().then(function() {
-          strictEqual(router.currentState().state.fullName, 'index');
-          strictEqual(window.location.hash, '#!/');
-        });
-      }
-
-      function goToCategoryDetail() {
-        router.state('category1.detail', {id: 88});
-      }
-
-      function stateShouldBeCategoryDetail2() {
-        return nextTick().then(function() {
-          strictEqual(router.currentState().state.fullName, 'category1.detail');
-          strictEqual(lastParams.id, 88);
-          strictEqual(window.location.hash, '#!/category1/88');
-        });
-      }
+    function stateShouldBeCategoryDetail() {
+      strictEqual(router.currentState().state.fullName, 'category1.detail');
+      strictEqual(lastParams.id, 56);
+      strictEqual(window.location.hash, '#!/category1/56');
     }
 
-  });
-
-if (isHTML5Browser && !isUsingShims)
-  asyncTest('customize hashbang the funny way', function() {
-
-    var lastParams;
-
-    window.addEventListener('hashchange', startTest);
-    window.location.hash = 'iAmLimitless@ndW!thStuff/category1/56';
-
-    function startTest() {
-      window.removeEventListener('hashchange', startTest);
-
-      router = Router({
-
-        index: State(''),
-
-        category1: State('category1', {
-          detail: State(':id', function(params) {
-            lastParams = params;
-          })
-        })
-
-      })
-      .configure({
-        urlSync: 'hash',
-        hashPrefix: 'iAmLimitless@ndW!thStuff'
-      })
-      .init();
-
-      whenSignal(router.changed)
-        .then(stateShouldBeCategoryDetail)
-        .then(goToIndex)
-        .then(stateShouldBeIndex)
-        .then(goToCategoryDetail)
-        .then(stateShouldBeCategoryDetail2)
-        .done(startLater);
-
-      function stateShouldBeCategoryDetail() {
-        strictEqual(router.currentState().state.fullName, 'category1.detail');
-        strictEqual(lastParams.id, 56);
-        strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/category1/56');
-      }
-
-      function goToIndex() {
-        router.state('/');
-      }
-
-      function stateShouldBeIndex() {
-        return nextTick().then(function() {
-          strictEqual(router.currentState().state.fullName, 'index');
-          strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/');
-        });
-      }
-
-      function goToCategoryDetail() {
-        router.state('category1.detail', {id: 88});
-      }
-
-      function stateShouldBeCategoryDetail2() {
-        return nextTick().then(function() {
-          strictEqual(router.currentState().state.fullName, 'category1.detail');
-          strictEqual(lastParams.id, 88);
-          strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/category1/88');
-        });
-      }
+    function goToIndex() {
+      router.state('/');
     }
 
-  });
+    function stateShouldBeIndex() {
+      return nextTick().then(function() {
+        strictEqual(router.currentState().state.fullName, 'index');
+        strictEqual(window.location.hash, '#!/');
+      });
+    }
+
+    function goToCategoryDetail() {
+      router.state('category1.detail', {id: 88});
+    }
+
+    function stateShouldBeCategoryDetail2() {
+      return nextTick().then(function() {
+        strictEqual(router.currentState().state.fullName, 'category1.detail');
+        strictEqual(lastParams.id, 88);
+        strictEqual(window.location.hash, '#!/category1/88');
+      });
+    }
+  }
+
+});
+
+
+asyncTest('customize hashbang the funny way', function() {
+
+  var lastParams;
+
+  window.addEventListener('hashchange', startTest);
+  window.location.hash = 'iAmLimitless@ndW!thStuff/category1/56';
+
+  function startTest() {
+    window.removeEventListener('hashchange', startTest);
+
+    router = Router({
+
+      index: State(''),
+
+      category1: State('category1', {
+        detail: State(':id', function(params) {
+          lastParams = params;
+        })
+      })
+
+    })
+    .configure({
+      urlSync: 'hash',
+      hashPrefix: 'iAmLimitless@ndW!thStuff'
+    })
+    .init();
+
+    whenSignal(router.changed)
+      .then(stateShouldBeCategoryDetail)
+      .then(goToIndex)
+      .then(stateShouldBeIndex)
+      .then(goToCategoryDetail)
+      .then(stateShouldBeCategoryDetail2)
+      .done(startLater);
+
+    function stateShouldBeCategoryDetail() {
+      strictEqual(router.currentState().state.fullName, 'category1.detail');
+      strictEqual(lastParams.id, 56);
+      strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/category1/56');
+    }
+
+    function goToIndex() {
+      router.state('/');
+    }
+
+    function stateShouldBeIndex() {
+      return nextTick().then(function() {
+        strictEqual(router.currentState().state.fullName, 'index');
+        strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/');
+      });
+    }
+
+    function goToCategoryDetail() {
+      router.state('category1.detail', {id: 88});
+    }
+
+    function stateShouldBeCategoryDetail2() {
+      return nextTick().then(function() {
+        strictEqual(router.currentState().state.fullName, 'category1.detail');
+        strictEqual(lastParams.id, 88);
+        strictEqual(window.location.hash, '#iAmLimitless@ndW!thStuff/category1/88');
+      });
+    }
+  }
+
+});
 
 
 function changeURL(pathQuery) {
-  if (history.pushState)
-    history.pushState('', '', pathQuery);
+  history.pushState('', '', pathQuery);
 }
 
 function simulateClick(element) {
-  if (document.createEvent) {
-    var event = document.createEvent('MouseEvents');
-    event.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
-    element.dispatchEvent(event);
-  }
-  else {
-    var params = document.createEventObject();
-    params.button = 1;
-    element.fireEvent('onmousedown', params);
-    element.fireEvent('onclick');
-  }
+  var event = document.createEvent('MouseEvents');
+  event.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+  element.dispatchEvent(event);
 }
 
 function simulateMousedown(element) {
-  if (document.createEvent) {
-    var event = document.createEvent('MouseEvents');
-    event.initMouseEvent('mousedown', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
-    element.dispatchEvent(event);
-  }
-  else {
-    var params = document.createEventObject();
-    params.button = 1;
-    element.fireEvent('onmousedown', params);
-  }
+  var event = document.createEvent('MouseEvents');
+  event.initMouseEvent('mousedown', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+  element.dispatchEvent(event);
 }
 
 function whenSignal(signal) {
