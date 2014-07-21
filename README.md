@@ -634,7 +634,7 @@ Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)
 Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/client)  
 
 ## Abyssa + React
-[JSFiddle](http://jsfiddle.net/5P82m/)
+[JSFiddle](http://jsfiddle.net/Wp3Yx/)
 
 <a name="cookbook"></a>
 # Cookbook
