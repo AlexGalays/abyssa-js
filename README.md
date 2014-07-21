@@ -1,7 +1,7 @@
 
 ![abyssa-logo](http://i171.photobucket.com/albums/u320/boubiyeah/abyssa-logo_zps745ae9eb.png)
 
-A stateful router library for single page applications.
+Hierarchical router library for single page applications.
 
 # Content
 * [Browser support](#browser-support)
@@ -634,7 +634,7 @@ Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)
 Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/client)  
 
 ## Abyssa + React
-[JSFiddle](http://jsfiddle.net/DvULQ/)
+[JSFiddle](http://jsfiddle.net/5P82m/)
 
 <a name="cookbook"></a>
 # Cookbook
