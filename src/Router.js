@@ -25,6 +25,7 @@ function Router(declarativeStates) {
       options = {
         enableLogs: false,
         interceptAnchors: true,
+        shouldTypecast: true,
         notFound: null,
         urlSync: true,
         hashPrefix: ''
@@ -40,9 +41,6 @@ function Router(declarativeStates) {
       initialized,
       hashSlashString;
 
-  // Routes params should be type casted. e.g the dynamic path items/:id when id is 33
-  // will end up passing the integer 33 as an argument, not the string "33".
-  roads.shouldTypecast = true;
   // Nil transitions are prevented from our side.
   roads.ignoreState = true;
 
@@ -246,6 +244,9 @@ function Router(declarativeStates) {
 
     if (options.interceptAnchors)
       interceptAnchors(router);
+
+    if (options.shouldTypecast)
+      roads.shouldTypecast = true;
 
     hashSlashString = '#' + options.hashPrefix + '/';
 
