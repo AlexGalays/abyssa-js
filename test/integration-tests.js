@@ -156,6 +156,50 @@ asyncTest('history.back()', function() {
 });
 
 
+asyncTest('history.back() on the notFound state', function() {
+
+  router = Router({
+    index: State('index')
+  })
+  .configure({
+    notFound: State('notFound')
+  })
+  .init('index');
+
+  whenSignal(router.changed)
+    .then(goToWrongState)
+    .then(goToIndex)
+    .then(doHistoryBack)
+    .then(pathnameShouldBeNotFound)
+    .done(startLater);
+
+  function goToWrongState() {
+    router.state('/wat');
+  }
+
+  function goToIndex() {
+    return nextTick().then(function() {
+      router.state('index');
+    });
+  }
+
+  function doHistoryBack() {
+    return nextTick().then(function() {
+      history.back();
+    });
+  }
+
+  function pathnameShouldBeNotFound() {
+    return delay(60).then(function() {
+      equal(router.urlPathQuery(), '/notFound');
+      console.log('hey ye now', router.currentState());
+      equal(router.currentState().state.name, 'notFound');
+    });
+  }
+
+});
+
+
 asyncTest('hash mode switched on', function() {
 
   var lastParams;
