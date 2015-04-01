@@ -6,7 +6,7 @@ var util = require('./util');
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, logger) {
+function Transition(fromStateWithParams, toStateWithParams, paramsDiff, logger) {
   var root,
       enters,
       error,
@@ -16,7 +16,6 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, 
   var toState = toStateWithParams.state;
   var params = toStateWithParams.params;
   var isUpdate = (fromState == toState);
-  var callUpdates = isUpdate && !reload;
 
   var transition = {
     from: fromState,
@@ -30,15 +29,15 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, 
 
   // The first transition has no fromState.
   if (fromState) {
-    root = reload ? toState.root : transitionRoot(fromState, toState, isUpdate, paramsDiff);
+    root = transitionRoot(fromState, toState, isUpdate, paramsDiff);
     exits = transitionStates(fromState, root, isUpdate);
   }
 
   enters = transitionStates(toState, root, isUpdate).reverse();
 
   function start() {
-    if (!isNullTransition(isUpdate, reload, paramsDiff))
-      startTransition(enters, exits, params, transition, callUpdates, logger);
+    if (!isNullTransition(isUpdate, paramsDiff))
+      startTransition(enters, exits, params, transition, isUpdate, logger);
   }
 
   function cancel() {
@@ -51,8 +50,8 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, 
 /*
 * Whether there is no need to actually perform a transition.
 */
-function isNullTransition(isUpdate, reload, paramsDiff) {
-  return (isUpdate && !reload && util.objectSize(paramsDiff.all) == 0);
+function isNullTransition(isUpdate, paramsDiff) {
+  return (isUpdate && util.objectSize(paramsDiff.all) == 0);
 }
 
 function startTransition(enters, exits, params, transition, isUpdate, logger) {

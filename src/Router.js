@@ -48,10 +48,10 @@ function Router(declarativeStates) {
   * A successful transition will result in the URL being changed.
   * A failed transition will leave the router in its current state.
   */
-  function setState(state, params, reload) {
+  function setState(state, params) {
     var diff = util.objectDiff(currentState && currentState.params, params);
 
-    if (!reload && isSameState(state, diff)) return;
+    if (isSameState(state, diff)) return;
 
     var fromState, oldPreviousState;
     var toState = StateWithParams(state, params);
@@ -74,7 +74,6 @@ function Router(declarativeStates) {
       fromState,
       toState,
       diff,
-      reload,
       logger
     );
 
@@ -83,7 +82,7 @@ function Router(declarativeStates) {
     // In case of a redirect() called from 'startingTransition', the transition was already ended.
     if (transition) {
       transition.start();
-      endingTransition(fromState, toState, reload);
+      endingTransition(fromState, toState);
     }
   }
 
@@ -102,8 +101,8 @@ function Router(declarativeStates) {
     router.transition.started.dispatch(toState, fromState);
   }
 
-  function endingTransition(fromState, toState, reload) {
-    if (!urlChanged && !firstTransition && !reload) {
+  function endingTransition(fromState, toState) {
+    if (!urlChanged && !firstTransition) {
       logger.log('Updating URL: {0}', currentPathQuery);
       updateURLFromState(currentPathQuery, document.title, currentPathQuery);
     }
@@ -318,16 +317,6 @@ function Router(declarativeStates) {
   function backTo(stateName, defaultParams, flashData) {
     var params = leafStates[stateName].lastParams || defaultParams;
     state(stateName, params, flashData);
-  }
-
-  /*
-  * Reload the current state with its current params.
-  * All states up to the root are exited then reentered.
-  * This can be useful when some internal state not captured in the url changed
-  * and the current state should update because of it.
-  */
-  function reload() {
-    return setState(currentState.state, currentState.params, true);
   }
 
   function setStateForPathQuery(pathQuery) {
@@ -585,7 +574,6 @@ function Router(declarativeStates) {
   router.state = state;
   router.redirect = redirect;
   router.backTo = backTo;
-  router.reload = reload;
   router.addState = addState;
   router.link = link;
   router.currentState = getCurrentState;
