@@ -121,8 +121,6 @@ function Router(declarativeStates) {
   }
 
   function updateURLFromState(state, title, url) {
-    if (!options.urlSync) return;
-
     if (isHashMode()) {
       ignoreNextURLChange = true;
       location.hash = options.hashPrefix + url;
@@ -159,7 +157,7 @@ function Router(declarativeStates) {
   *   enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.
   *   interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.
   *   notFound: The State to enter when no state matching the current path query or name could be found. Defaults to null.
-  *   urlSync: Whether the router should maintain the current state and the url in sync. Defaults to true.
+  *   urlSync: How should the router maintain the current state and the url in sync. Defaults to true (history API).
   *   hashPrefix: Customize the hash separator. Set to '!' in order to have a hashbang like '/#!/'. Defaults to empty string.
   */
   function configure(withOptions) {
@@ -187,7 +185,7 @@ function Router(declarativeStates) {
     initStates();
     logStateTree();
 
-    initState = (initState !== undefined) ? initState : getInitState();
+    initState = (initState !== undefined) ? initState : urlPathQuery();
 
     logger.log('Initializing to state {0}', initState || '""');
     state(initState, initParams);
@@ -208,7 +206,6 @@ function Router(declarativeStates) {
   }
 
   function listenToURLChanges() {
-    if (!options.urlSync) return;
 
     function onURLChange(evt) {
       if (ignoreNextURLChange) {
@@ -224,10 +221,6 @@ function Router(declarativeStates) {
     }
 
     window[isHashMode() ? 'onhashchange' : 'onpopstate'] = onURLChange;
-  }
-
-  function getInitState() {
-    return options.urlSync ? urlPathQuery() : '';
   }
 
   function initStates() {
