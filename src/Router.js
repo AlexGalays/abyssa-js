@@ -112,7 +112,6 @@ function Router(declarativeStates) {
     }
 
     firstTransition = false;
-    router.flash = null;
 
     logger.log('Transition from {0} to {1} ended', fromState, toState);
 
@@ -275,24 +274,14 @@ function Router(declarativeStates) {
   * Request a programmatic state change.
   *
   * Two notations are supported:
-  * state('my.target.state', {id: 33, filter: 'desc'}, {myFlashData: 10})
-  * state('target/33?filter=desc', {myFlashData: 10})
+  * state('my.target.state', {id: 33, filter: 'desc'})
+  * state('target/33?filter=desc')
   */
   function state(pathQueryOrName) {
     var isName = leafStates[pathQueryOrName] !== undefined;
     var params = isName ? arguments[1] : null;
-    var newFlash = isName ? arguments[2] : arguments[1];
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
-
-    if (util.isPlainObject(router.flash) && util.isPlainObject(newFlash)) {
-      var merged = {};
-      util.mergeObjects(merged, router.flash);
-      util.mergeObjects(merged, newFlash);
-      newFlash = merged;
-    }
-
-    router.flash = newFlash;
 
     urlChanged = false;
 
@@ -306,9 +295,9 @@ function Router(declarativeStates) {
   * Attempt to navigate to 'stateName' with its previous params or
   * fallback to the defaultParams parameter if the state was never entered.
   */
-  function backTo(stateName, defaultParams, flashData) {
+  function backTo(stateName, defaultParams) {
     var params = leafStates[stateName].lastParams || defaultParams;
-    state(stateName, params, flashData);
+    state(stateName, params);
   }
 
   function setStateForPathQuery(pathQuery) {

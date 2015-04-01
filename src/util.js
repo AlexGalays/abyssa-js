@@ -32,10 +32,6 @@ function mergeObjects(to, from) {
   return to;
 }
 
-function isPlainObject(obj) {
-  return obj && (obj.constructor === Object);
-}
-
 function objectSize(obj) {
   var size = 0;
   for (var key in obj) size++;
@@ -101,7 +97,6 @@ module.exports = {
   objectToArray: objectToArray,
   copyObject: copyObject,
   mergeObjects: mergeObjects,
-  isPlainObject: isPlainObject,
   objectSize: objectSize,
   makeMessage: makeMessage,
   normalizePathQuery: normalizePathQuery,
