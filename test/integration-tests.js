@@ -79,7 +79,7 @@ asyncTest('Redirect', function() {
   router = Router({
 
     index: State('index', function() {
-      router.redirect('articles');
+      router.state('articles');
     }),
 
     articles: State('articles')

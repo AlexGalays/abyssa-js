@@ -57,7 +57,7 @@ function Router(declarativeStates) {
     var diff = util.objectDiff(fromState && fromState.params, params);
 
     if (preventTransition(fromState, toState, diff)) {
-      if (transition && transition.exiting) transition.cancel();
+      if (transition && transition.exiting) cancelTransition();
       return;
     }
 
@@ -300,14 +300,6 @@ function Router(declarativeStates) {
       setStateByName(pathQueryOrName, params || {});
     else
       setStateForPathQuery(pathQueryOrName);
-  }
-
-  /*
-  * An alias of 'state'. You can use 'redirect' when it makes more sense semantically.
-  */
-  function redirect() {
-    logger.log('Redirecting...');
-    state.apply(null, arguments);
   }
 
   /*
@@ -571,7 +563,6 @@ function Router(declarativeStates) {
   router.configure = configure;
   router.init = init;
   router.state = state;
-  router.redirect = redirect;
   router.backTo = backTo;
   router.addState = addState;
   router.link = link;

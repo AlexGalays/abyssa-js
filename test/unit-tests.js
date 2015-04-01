@@ -647,7 +647,7 @@ test('redirect', function() {
 
     oldRoute: State('oldRoute', {
       enter: function() {
-        router.redirect('newRoute'); 
+        router.state('newRoute'); 
       },
       exit: function() { oldRouteExited = true; },
 
@@ -684,7 +684,7 @@ test('Redirecting from transition.started', function() {
   function addListener() {
     var binding = router.transition.started.add(function() {
       binding.detach();
-      router.redirect('dos');
+      router.state('dos');
     });
   }
   
