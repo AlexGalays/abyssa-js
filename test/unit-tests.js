@@ -1,22 +1,15 @@
-
-
 Router = Abyssa.Router;
 State  = Abyssa.State;
-Async  = Abyssa.Async;
 
 //Router.enableLogs();
 stubHistory();
 
-QUnit.config.testTimeout = 4000;
 
-
-asyncTest('Simple states', function() {
+test('Simple states', function() {
 
   var events = [],
       lastArticleId,
       lastFilter;
-
-  var promiseValue;
 
   var router = Router({
 
@@ -44,15 +37,14 @@ asyncTest('Simple states', function() {
 
   }).init('');
 
-  whenSignal(router.changed)
-    .then(indexWasEntered)
-    .then(goToArticles)
-    .then(articlesWasEntered)
-    .then(resetToIndex)
-    .then(indexWasEntered2)
-    .then(goToArticlesWithFilter)
-    .then(articlesWasEnteredWithFilter)
-    .done(start);
+  indexWasEntered();
+  goToArticles();
+  articlesWasEntered();
+  resetToIndex();
+  indexWasEntered2();
+  goToArticlesWithFilter();
+  articlesWasEnteredWithFilter();
+
 
   function indexWasEntered() {
     deepEqual(events, ['indexEnter']);
@@ -60,19 +52,14 @@ asyncTest('Simple states', function() {
   }
 
   function goToArticles() {
-    router.state('articles', {id: 38, filter: 'dark green'}).then(function(value) {
-      promiseValue = value;
-    });
+    router.state('articles', {id: 38, filter: 'dark green'});
   }
 
   function articlesWasEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['indexExit', 'articlesEnter']);
-      strictEqual(promiseValue.state.name, 'articles');
-      strictEqual(lastArticleId, 38);
-      strictEqual(lastFilter, 'dark green');
-      events = [];
-    });
+    deepEqual(events, ['indexExit', 'articlesEnter']);
+    strictEqual(lastArticleId, 38);
+    strictEqual(lastFilter, 'dark green');
+    events = [];
   }
 
   function resetToIndex() {
@@ -80,10 +67,8 @@ asyncTest('Simple states', function() {
   }
 
   function indexWasEntered2() {
-    return nextTick().then(function() {
-      deepEqual(events, ['articlesExit', 'indexEnter']);
-      events = [];
-    });
+    deepEqual(events, ['articlesExit', 'indexEnter']);
+    events = [];
   }
 
   function goToArticlesWithFilter() {
@@ -91,46 +76,15 @@ asyncTest('Simple states', function() {
   }
 
   function articlesWasEnteredWithFilter() {
-    return nextTick().then(function() {
-      deepEqual(events, ['indexExit', 'articlesEnter']);
-      strictEqual(lastArticleId, 44);
-      strictEqual(lastFilter, 666);
-    });
+    deepEqual(events, ['indexExit', 'articlesEnter']);
+    strictEqual(lastArticleId, 44);
+    strictEqual(lastFilter, 666);
   }
 
 });
 
 
-asyncTest('New states can be added after init', function() {
-  var enteredArticles;
-
-  var router = Router({
-    index: State()
-  }).init('');
-
-  whenSignal(router.changed)
-    .then(addAndMoveToState)
-    .then(articlesWasEntered)
-    .done(start);
-
-  function addAndMoveToState() {
-    router.addState('articles', State('articles', function() {
-      enteredArticles = true;
-    }));
-
-    router.state('articles');
-  }
-
-  function articlesWasEntered() {
-    return nextTick().then(function() {
-      ok(enteredArticles);
-    });
-  }
-
-});
-
-
-asyncTest('Custom initial state', function() {
+test('Custom initial state', function() {
 
   var router = Router({
 
@@ -138,7 +92,6 @@ asyncTest('Custom initial state', function() {
       edit: State('edit', {
         enter: function() { 
           ok(true);
-          start();
         }
       })
     })
@@ -148,7 +101,7 @@ asyncTest('Custom initial state', function() {
 });
 
 
-asyncTest('Multiple dynamic paths', function() {
+test('Multiple dynamic paths', function() {
 
   Router({
     article: State('articles/:slug/:articleId', {
@@ -157,7 +110,6 @@ asyncTest('Multiple dynamic paths', function() {
           equal(params.slug, 'le-roi-est-mort');
           equal(params.articleId, 127);
           equal(params.changeLogId, 5);
-          start();
         }
       })
     })
@@ -166,7 +118,7 @@ asyncTest('Multiple dynamic paths', function() {
 });
 
 
-asyncTest('Nested state with pathless parents', function() {
+test('Nested state with pathless parents', function() {
 
   Router({
 
@@ -176,7 +128,6 @@ asyncTest('Nested state with pathless parents', function() {
         edit: State('articles/nature/:id/edit', {
           enter: function() {
             ok(true);
-            start();
           }
         })
       })
@@ -187,61 +138,7 @@ asyncTest('Nested state with pathless parents', function() {
 });
 
 
-asyncTest('Missing state with a "notFound" state defined', function() {
-
-  var reachedNotFound;
-
-  var router = Router({
-
-    index: State(),
-
-    articles: State({
-      nature: State({
-        edit: State('articles/nature/:id/edit')
-      })
-    })
-
-  })
-  .configure({
-    notFound: State({
-      enter: function() { reachedNotFound = true; }
-    })
-  })
-  .init('articles/naturess/88/edit');
-
-  whenSignal(router.changed)
-    .then(notFoundWasEntered)
-    .then(resetToIndex)
-    .then(goToWrongState)
-    .then(notFoundWasEntered2)
-    .then(start);
-
-  function notFoundWasEntered() {
-    ok(reachedNotFound);
-  }
-
-  function resetToIndex() {
-    router.state('');
-    reachedNotFound = false;
-  }
-
-  // Should also work with the reverse routing notation
-  function goToWrongState() {
-    return nextTick().then(function() {
-      router.state('articles.naturess.edit', {id: 88});
-    });
-  }
-
-  function notFoundWasEntered2() {
-    return nextTick().then(function() {
-      ok(reachedNotFound);
-    });
-  }
-
-});
-
-
-asyncTest('Missing state with a "notFound" state defined by its fullName', function() {
+test('Missing state with a "notFound" state defined by its fullName', function() {
 
   var reachedNotFound;
 
@@ -265,12 +162,12 @@ asyncTest('Missing state with a "notFound" state defined by its fullName', funct
   })
   .init('articles/naturess/88/edit');
 
-  whenSignal(router.changed)
-    .then(notFoundWasEntered)
-    .then(resetToIndex)
-    .then(goToWrongState)
-    .then(notFoundWasEntered2)
-    .then(start);
+
+  notFoundWasEntered();
+  resetToIndex();
+  goToWrongState();
+  notFoundWasEntered2();
+
 
   function notFoundWasEntered() {
     ok(reachedNotFound);
@@ -283,21 +180,17 @@ asyncTest('Missing state with a "notFound" state defined by its fullName', funct
 
   // Should also work with the reverse routing notation
   function goToWrongState() {
-    return nextTick().then(function() {
-      router.state('articles.naturess.edit', {id: 88});
-    });
+    router.state('articles.naturess.edit', {id: 88});
   }
 
   function notFoundWasEntered2() {
-    return nextTick().then(function() {
-      ok(reachedNotFound);
-    });
+    ok(reachedNotFound);
   }
 
 });
 
 
-asyncTest('Missing state without a "notFound" state defined', function() {
+test('Missing state without a "notFound" state defined', function() {
 
   var router = Router({
 
@@ -311,23 +204,19 @@ asyncTest('Missing state without a "notFound" state defined', function() {
 
   }).init('');
 
-  router.changed.addOnce(function() {
-    throws(function() {
-      router.state('articles/naturess/88/edit');
-    });
+  throws(function() {
+    router.state('articles/naturess/88/edit');
+  });
 
-    // Also work with the reverse routing notation
-    throws(function() {
-      router.state('articles.naturess.edit', {id: 88});
-    });
-
-    start();
+  // Also work with the reverse routing notation
+  throws(function() {
+    router.state('articles.naturess.edit', {id: 88});
   });
 
 });
 
 
-asyncTest('The router can be built bit by bit', function() {
+test('The router can be built bit by bit', function() {
 
   var reachedArticlesEdit,
       router = Router(),
@@ -344,11 +233,7 @@ asyncTest('The router can be built bit by bit', function() {
   router.addState('articles', articles);
   router.init('articles.edit');
 
-  router.changed.addOnce(function() {
-    ok(reachedArticlesEdit);
-    start();
-  });
-  
+  ok(reachedArticlesEdit);
 });
 
 
@@ -370,7 +255,7 @@ test('State names must be unique among siblings', function() {
 });
 
 
-asyncTest('Only leaf states are addressable', function() {
+test('Only leaf states are addressable', function() {
 
   var router = Router({
     index: State(),
@@ -380,17 +265,14 @@ asyncTest('Only leaf states are addressable', function() {
     })
   }).init('');
 
-  router.changed.addOnce(function() {
-    throws(function() {
-      router.state('articles');
-    });
-    start();
+  throws(function() {
+    router.state('articles');
   });
 
 });
 
 
-asyncTest('No transition occurs when going to the same state', function() {
+test('No transition occurs when going to the same state', function() {
 
   var events = [];
   var router = Router({
@@ -407,58 +289,15 @@ asyncTest('No transition occurs when going to the same state', function() {
 
   }).init('articles/33/today');
 
-  router.changed.addOnce(function() {
-    events = [];
+  events = [];
 
-    router.state('articles/33/today');
-
-    nextTick().then(function() {
-      deepEqual(events, []);
-      start();
-    });
-  });
+  router.state('articles/33/today');
+  deepEqual(events, []);
 
 });
 
 
-asyncTest('Forcing reload on same state transition is possible', function() {
-
-  var events = [];
-  var router = Router({
-
-    articles: State('articles/:id', {
-      enter: function() { events.push('articlesEnter'); },
-      update: function() { events.push('articlesUpdate'); },
-      exit: function() { events.push('articlesExit'); },
-
-      today: State('today', {
-        enter: function() { events.push('todayEnter'); },
-        exit: function() { events.push('todayExit'); }
-      })
-    })
-
-  })
-  .init('articles/33/today');
-
-  router.transition.prevented.addOnce(function(stateCandidate) {
-    if (stateCandidate.state.fullName == 'articles.today') router.reload();
-  });
-
-  router.changed.addOnce(function() {
-    events = [];
-
-    router.state('articles/33/today');
-
-    nextTick().then(function() {
-      deepEqual(events, ['todayExit', 'articlesExit', 'articlesEnter', 'todayEnter']);
-      start();
-    });
-  });
-
-});
-
-
-asyncTest('Param and query changes should trigger a transition', function() {
+test('Param and query changes should trigger a transition', function() {
 
   var events = [],
       lastArticleId;
@@ -473,7 +312,6 @@ asyncTest('Param and query changes should trigger a transition', function() {
       exit: function() {
         events.push('blogExit');
       },
-
 
       articles: State('articles/:id', {
         enter: function(params) {
@@ -503,27 +341,23 @@ asyncTest('Param and query changes should trigger a transition', function() {
   }).init('blog/articles/33/edit');
 
 
-  whenSignal(router.changed)
-    .then(changeParamOnly)
-    .then(stateWasReEntered)
-    .then(addQueryString)
-    .then(stateWasFullyReEntered)
-    .then(changeQueryStringValue)
-    .then(stateWasFullyReEntered)
-    .then(start);
+  changeParamOnly();
+  stateWasReEntered();
+  addQueryString();
+  stateWasFullyReEntered();
+  changeQueryStringValue();
+  stateWasFullyReEntered();
 
 
   function changeParamOnly() {
-    router.state('blog/articles/44/edit');
     events = [];
+    router.state('blog/articles/44/edit');
   }
 
   // The transition only goes up to the state owning the param
   function stateWasReEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
-      events = [];
-    });
+    deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
+    events = [];
   }
 
   function addQueryString() {
@@ -532,10 +366,8 @@ asyncTest('Param and query changes should trigger a transition', function() {
 
   // By default, a change in the query will result in a complete transition to the root state and back.
   function stateWasFullyReEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
-      events = [];
-    });
+    deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
+    events = [];
   }
 
   function changeQueryStringValue() {
@@ -545,7 +377,7 @@ asyncTest('Param and query changes should trigger a transition', function() {
 });
 
 
-asyncTest('Param changes in a leaf state should not trigger a parent transition', function() {
+test('Param changes in a leaf state should not trigger a parent transition', function() {
 
   var events = [],
       lastArticleId;
@@ -579,27 +411,23 @@ asyncTest('Param changes in a leaf state should not trigger a parent transition'
   }).init('/blog/articles/33');
 
 
-  nextTick()
-    .then(changeParamOnly)
-    .then(stateWasReEntered)
-    .then(addQueryString)
-    .then(stateWasFullyReEntered)
-    .then(changeQueryStringValue)
-    .then(stateWasFullyReEntered)
-    .then(start);
+  changeParamOnly();
+  stateWasReEntered();
+  addQueryString();
+  stateWasFullyReEntered();
+  changeQueryStringValue();
+  stateWasFullyReEntered();
 
 
   function changeParamOnly() {
-    router.state('/blog/articles/44');
     events = [];
+    router.state('/blog/articles/44');
   }
 
   // The transition only goes up to the state owning the param
   function stateWasReEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['articlesExit', 'articlesEnter']);
-      events = [];
-    });
+    deepEqual(events, ['articlesExit', 'articlesEnter']);
+    events = [];
   }
 
   function addQueryString() {
@@ -608,10 +436,8 @@ asyncTest('Param changes in a leaf state should not trigger a parent transition'
 
   // By default, a change in the query will result in a complete transition to the root state and back.
   function stateWasFullyReEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter']);
-      events = [];
-    });
+    deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter']);
+    events = [];
   }
 
   function changeQueryStringValue() {
@@ -621,7 +447,7 @@ asyncTest('Param changes in a leaf state should not trigger a parent transition'
 });
 
 
-asyncTest('Query-only transitions', function() {
+test('Query-only transitions', function() {
 
   var events = [];
 
@@ -660,54 +486,48 @@ asyncTest('Query-only transitions', function() {
   }).init('blog/articles/33/edit');
 
 
-  whenSignal(router.changed)
-    .then(setSomeUnknownQuery)
-    .then(fullTransitionOccurred)
-    .then(setFilterQuery)
-    .then(onlyExitedUpToStateOwningFilter)
-    .then(swapFilterValue)
-    .then(onlyExitedUpToStateOwningFilter)
-    .then(removeFilterQuery)
-    .then(onlyExitedUpToStateOwningFilter)
-    .then(start);
+  setSomeUnknownQuery();
+  fullTransitionOccurred();
+  setFilterQuery();
+  onlyExitedUpToStateOwningFilter();
+  swapFilterValue();
+  onlyExitedUpToStateOwningFilter();
+  removeFilterQuery();
+  onlyExitedUpToStateOwningFilter();
 
 
   function setSomeUnknownQuery() {
-    router.state('blog/articles/33/edit?someQuery=true');
     events = [];
+    router.state('blog/articles/33/edit?someQuery=true');
   }
 
   function fullTransitionOccurred() {
-    return nextTick().then(function() {
-      deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
-    });
+    deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
   }
 
   function setFilterQuery() {
-    router.state('blog/articles/33/edit?filter=33');
     events = [];
+    router.state('blog/articles/33/edit?filter=33');
   }
 
   function onlyExitedUpToStateOwningFilter() {
-    return nextTick().then(function() {
-      deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
-    });
+    deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
   }
   
   function swapFilterValue() {
-    router.state('blog/articles/33/edit?filter=34');
     events = [];
+    router.state('blog/articles/33/edit?filter=34');
   }
 
   function removeFilterQuery() {
-    router.state('blog/articles/33/edit');
     events = [];
+    router.state('blog/articles/33/edit');
   }
 
 });
 
 
-asyncTest('The query string is provided to all states', function() {
+test('The query string is provided to all states', function() {
 
   Router({
     one: State('one/:one', {
@@ -723,7 +543,6 @@ asyncTest('The query string is provided to all states', function() {
         three: State('three/:three', {
           enter: function(param) {
             assertions(param.three, 33, param);
-            start();
           }
         })
       })
@@ -740,172 +559,9 @@ asyncTest('The query string is provided to all states', function() {
 });
 
 
-asyncTest('Each step of a transition can block', function() {
+test('Data can be stored on states and later retrieved', function() {
 
-  var events = [];
-  var lastPromiseValue;
-
-  var indexExitDefer = when.defer();
-  var parentEnterDefer = when.defer();
-  var parentUpdateDefer = when.defer();
-
-  var router = Router({
-    index: State('', {
-      exit: function() {
-        return indexExitDefer.promise;
-      }
-    }),
-
-    parent: State('parent', {
-      enter: function(params, value) {
-        events.push('parentEnter');
-        lastPromiseValue = value;
-        return parentEnterDefer.promise;
-      },
-
-      update: function(params, value) {
-        events.push('parentUpdate');
-        lastPromiseValue = value;
-        return parentUpdateDefer.promise;
-      },
-
-      child: State('child', {
-        enter: function(params, value) {
-          events.push('childEnter');
-          lastPromiseValue = value;
-        },
-
-        update: function(params, value) {
-          events.push('childUpdate');
-          lastPromiseValue = value;
-        }
-      })
-    })
-
-  }).init('');
-
-  whenSignal(router.changed)
-    .then(goToChild)
-    .then(indexDidNotExit)
-    .then(resolveIndexExit)
-    .then(parentWasEntered)
-    .then(resolveParentEnter)
-    .then(childWasEntered)
-    .then(updateChild)
-    .then(childWasNotUpdated)
-    .then(resolveParentUpdate)
-    .then(childWasUpdated)
-    .done(start);
-
-  function goToChild() {
-    router.state('parent.child');
-  }
-
-  function indexDidNotExit() {
-    return nextTick().then(function() {
-      deepEqual(events, []);
-    });
-  }
-
-  function resolveIndexExit() {
-    indexExitDefer.resolve(10);
-  }
-
-  function parentWasEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['parentEnter']);
-      equal(lastPromiseValue, 10);
-    });
-  }
-
-  function resolveParentEnter() {
-    parentEnterDefer.resolve(20);
-  }
-
-  function childWasEntered() {
-    return nextTick().then(function() {
-      deepEqual(events, ['parentEnter', 'childEnter']);
-      equal(lastPromiseValue, 20);
-    });
-  }
-
-  function updateChild() {
-    router.state('parent/child?forceReload=1');
-  }
-
-  function childWasNotUpdated() {
-    return nextTick().then(function() {
-      deepEqual(events, ['parentEnter', 'childEnter', 'parentUpdate']);
-      // First step of the transition
-      strictEqual(lastPromiseValue, undefined);
-    });
-  }
-
-  function resolveParentUpdate() {
-    parentUpdateDefer.resolve(30);
-  }
-
-  function childWasUpdated() {
-    return nextTick().then(function() {
-      deepEqual(events, ['parentEnter', 'childEnter', 'parentUpdate', 'childUpdate']);
-      equal(lastPromiseValue, 30);
-    });
-  }
-
-
-});
-
-
-asyncTest('handling async transition errors', function() {
-
-  var childEntered = false;
-
-  var promiseValue;
-
-  var router = Router({
-    index: State(),
-    broken: State('broken', {
-      enter: function() { return failPromise(50, 'oops') },
-
-      child: State('child', function() {
-        childEntered = true;
-      })
-    })
-  })
-  .init('');
-
-  whenSignal(router.changed)
-    .then(goToBrokenChild)
-    .then(assertions)
-    .done(start);
-
-  function goToBrokenChild() {
-    router.state('broken.child').fail(function(error) {
-      promiseValue = error;
-    });
-  }
-
-  function assertions() {
-    router.transition.failed.addOnce(function(s1, s2, e, preventDefault) {
-      preventDefault();
-    });
-
-    return whenSignal(router.transition.failed).then(function(signalArgs) {
-      var error = signalArgs[2];
-
-      equal(promiseValue, error);
-      equal(error.message, 'oops');
-      equal(childEntered, false);
-      // The transition failed. The router is in an inconsistent state: A non leaf state.
-      // However, it is the correct state to transition from next time.
-      equal(router.currentState().state.fullName, 'broken');
-    });
-  }
-
-});
-
-
-asyncTest('Data can be stored on states and later retrieved', function() {
+  var two = State();
 
   var router = Router({
 
@@ -918,85 +574,17 @@ asyncTest('Data can be stored on states and later retrieved', function() {
         this.data('otherData', 5);
       },
 
-      two: State()
+      two: two
     })
 
   }).init('');
 
-  router.changed.add(function(newState) {
+  // A child state can see the data of its parent
+  equal(two.data('someArbitraryData'), 3);
+  equal(two.data('otherData'), 5);
 
-    // A child state can see the data of its parent
-    equal(newState.state.data('someArbitraryData'), 3);
-    equal(newState.state.data('otherData'), 5);
-
-    // The parent can see its own data
-    equal(newState.state.parent.data('someArbitraryData'), 3);
-
-    start();
-  });
-
-});
-
-
-asyncTest('flash data can only be read during the next transition', function() {
-
-  var flash;
-
-  var router = Router({
-    index: State('', recordFlash),
-    one: State('one/one', function() {
-      router.redirect('two', {}, {flashFromRedirect: 'flash'});
-    }),
-    two: State('two', recordFlash),
-    three: State('three', recordFlash)
-  }).init('');
-
-
-  whenSignal(router.changed)
-    .then(goToOne)
-    .then(flashDataWasPassed)
-    .then(goToIndex)
-    .then(onlyMostRecentFlashDataAvailable)
-    .then(goToThreeWithoutFlashData)
-    .then(noFlashDataAvailable)
-    .done(start);
-
-  function goToOne() {
-    router.state('one/one', {myFlash: 789});
-  }
-
-  function flashDataWasPassed() {
-    return nextTick().then(function() {
-      // The flash data is merged
-      strictEqual(flash.myFlash, 789);
-      strictEqual(flash.flashFromRedirect, 'flash');
-    });
-  }
-
-  function goToIndex() {
-    router.state('index', {}, 'flash');
-  }
-
-  function onlyMostRecentFlashDataAvailable() {
-    return nextTick().then(function() {
-      strictEqual(flash, 'flash');
-    });
-  }
-
-  function goToThreeWithoutFlashData() {
-    router.state('three');
-  }
-
-  function noFlashDataAvailable() {
-    return nextTick().then(function() {
-      equal(flash, null);
-    });
-  }
-
-  function recordFlash() {
-    flash = router.flash;
-  }
-
+  // The parent can see its own data
+  equal(two.parent.data('someArbitraryData'), 3);
 });
 
 
@@ -1020,159 +608,21 @@ test('Reverse routing', function() {
 });
 
 
-asyncTest('registering async promises', function() {
-  var promiseValue = null;
-
-  var cancelledNavPromiseValue;
-
-  var router = Router({
-
-    index: State(),
-
-    one: State('one', {
-      enter: function() {
-        Async(successPromise(150, 'value')).then(function(value) {
-          promiseValue = value;
-
-          beginAssertions();
-        });
-      }
-    })
-
-  }).init('one');
-
-  function beginAssertions() {
-    when(promiseWasResolved())
-      .then(exitThenReEnterStateOne)
-      .then(cancelNavigation)
-      .then(promiseShouldNotHaveBeenResolved)
-      .done(start);
-  }
-
-  function promiseWasResolved() {
-    strictEqual(promiseValue, 'value');
-    promiseValue = null;
-  }
-
-  function exitThenReEnterStateOne() {
-    router.state('index');
-    return nextTick().then(function() {
-      router.state('one').then(function(value) {
-        cancelledNavPromiseValue = value;
-      });
-    });
-  }
-
-  function cancelNavigation() {
-    return nextTick().then(function() {
-      router.state('index');
-    });
-  }
-
-  function promiseShouldNotHaveBeenResolved() {
-    return delay(200).then(function() {
-      strictEqual(promiseValue, null);
-      equal(cancelledNavPromiseValue.state.fullName, 'one');
-    });
-  }
-
-});
-
-asyncTest('Async rejected promises', function() {
-  var promiseValue = null,
-      promiseError = null;
-
-  var router = Router({
-
-    index: State(),
-
-    one: State('one', {
-      enter: function() {
-        Async(failPromise(80)).then(
-          function(value) { promiseValue = value; },
-          function(error) { promiseError = error; }
-        )
-        .fin(beginAssertions);
-      }
-    })
-
-  }).init('one');
-
-  function beginAssertions() {
-    when(promiseWasRejected())
-      .then(exitThenReEnterStateOne)
-      .then(cancelNavigation)
-      .then(promiseShouldNotHaveBeenResolved)
-      .done(start);
-  }
-
-  function promiseWasRejected() {
-    strictEqual(promiseValue, null);
-    strictEqual(promiseError.message, 'error');
-    promiseError = null;
-  }
-
-  function exitThenReEnterStateOne() {
-    router.state('index');
-    return nextTick().then(function() {
-      router.state('one');
-    });
-  }
-
-  function cancelNavigation() {
-    return nextTick().then(function() {
-      router.state('index');
-    });
-  }
-
-  function promiseShouldNotHaveBeenResolved() {
-    return delay(150).then(function() {
-      strictEqual(promiseValue, null);
-      strictEqual(promiseError, null);
-    });
-  }
-
-});
-
-asyncTest('State construction shorthand', function() {
-
-  var passedParams = {};
-  var passedData;
+test('State construction shorthand', function() {
 
   var router = Router({
 
     index: State('index/:id', function(params) {
-      var data = successPromise(50, 'data');
-
-      passedParams = params;
-
-      paramsWerePassed();
-
-      this.async(data).then(function(data) {
-        passedData = data;
-
-        asyncWasCalled();
-        start();
-      });
-
+      strictEqual(params.id, 55);
+      strictEqual(params.filter, true);
     })
 
   }).init('index/55?filter=true');
 
-  function paramsWerePassed() {
-    strictEqual(passedParams.id, 55);
-    strictEqual(passedParams.filter, true);
-    strictEqual(passedData, undefined);
-  }
-
-  function asyncWasCalled() {
-    strictEqual(passedData, 'data');
-  }
-
 });
 
 
-asyncTest('params should be decoded automatically', function() {
+test('params should be decoded automatically', function() {
   var passedParams;
 
   var router = Router({
@@ -1183,18 +633,12 @@ asyncTest('params should be decoded automatically', function() {
 
   }).init('index/The%20midget%20%40/a%20b%20c');
 
-  whenSignal(router.changed).then(paramsWereDecoded);
-
-  function paramsWereDecoded() {
-    equal(passedParams.id, 'The midget @');
-    equal(passedParams.filter, 'a b c');
-    start();
-  }
-
+  equal(passedParams.id, 'The midget @');
+  equal(passedParams.filter, 'a b c');
 });
 
 
-asyncTest('synchronous redirect', function() {
+test('redirect', function() {
   var oldRouteChildEntered;
   var oldRouteExited;
   var newRouteEntered;
@@ -1202,7 +646,9 @@ asyncTest('synchronous redirect', function() {
   var router = Router({
 
     oldRoute: State('oldRoute', {
-      enter: function() { router.redirect('newRoute'); },
+      enter: function() {
+        router.redirect('newRoute'); 
+      },
       exit: function() { oldRouteExited = true; },
 
       oldRouteChild: State('child', function() { oldRouteChildEntered = true; })
@@ -1210,60 +656,17 @@ asyncTest('synchronous redirect', function() {
 
     newRoute: State('newRoute', function() { newRouteEntered = true; })
 
-  }).init('oldRoute.oldRouteChild');
+  });
 
-  whenSignal(router.changed).then(assertions);
+  router.init('oldRoute.oldRouteChild');
 
-  function assertions() {
-    ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.');
-    ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered');
-    ok(newRouteEntered);
-
-    start();
-  }
-
+  ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.');
+  ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered');
+  ok(newRouteEntered);
 });
 
 
-asyncTest('asynchronous redirect', function() {
-  var oldRouteChildEntered;
-  var oldRouteExited;
-  var newRouteEntered;
-
-  var router = Router({
-
-    oldRoute: State('oldRoute', {
-      enter: function() { return delay(200); },
-      exit: function() { oldRouteExited = true; },
-
-      oldRouteChild: State('child', function() { oldRouteChildEntered = true; })
-    }),
-
-    newRoute: State('newRoute', function() { newRouteEntered = true; })
-
-  }).init('oldRoute.oldRouteChild');
-
-  delay(100)
-    .then(redirectNow)
-    .then(assertions)
-    .then(start);
-
-  function redirectNow() {
-    router.redirect('newRoute');
-  }
-
-  function assertions() {
-    return delay(250).then(function() {
-      ok(oldRouteExited, 'The state was properly entered. Therefore, it should exit.');
-      ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered');
-      ok(newRouteEntered);
-    });
-  }
-
-});
-
-
-asyncTest('Redirecting from transition.started', function() {
+test('Redirecting from transition.started', function() {
 
   var completedCount = 0;
 
@@ -1274,15 +677,13 @@ asyncTest('Redirecting from transition.started', function() {
   })
   .init('');
 
-  whenSignal(router.changed)
-    .then(addListener)
-    .then(goToUno)
-    .then(assertions)
-    .done(start);
-
+  addListener();
+  goToUno();
+  assertions();
 
   function addListener() {
     router.transition.started.addOnce(function() {
+      console.log('bla');
       router.redirect('dos');
     });
   }
@@ -1292,10 +693,8 @@ asyncTest('Redirecting from transition.started', function() {
   }
 
   function assertions() {
-    return nextTick().then(function() {
-      equal(completedCount, 1);
-      equal(router.currentState().state.name, 'dos');
-    });
+    equal(completedCount, 1);
+    equal(router.currentState().state.name, 'dos');
   }
 
   function incrementCompletedCount() {
@@ -1305,7 +704,7 @@ asyncTest('Redirecting from transition.started', function() {
 });
 
 
-asyncTest('rest params', function() {
+test('rest params', function() {
 
   var lastParams;
 
@@ -1316,23 +715,20 @@ asyncTest('rest params', function() {
     })
   }).init('');
 
-  whenSignal(router.changed)
-    .then(goToColors)
-    .then(wentToColorsOk)
-    .then(goToColors2)
-    .then(wentToColors2Ok)
-    .then(goToColors3)
-    .then(wentToColors3Ok)
-    .done(start);
+  goToColors();
+  wentToColorsOk();
+  goToColors2();
+  wentToColors2Ok();
+  goToColors3();
+  wentToColors3Ok();
+
 
   function goToColors() {
     router.state('colors');
   }
 
   function wentToColorsOk() {
-    return nextTick().then(function() {
-      strictEqual(lastParams.rest, undefined);
-    });
+    strictEqual(lastParams.rest, undefined);
   }
 
   function goToColors2() {
@@ -1340,9 +736,7 @@ asyncTest('rest params', function() {
   }
 
   function wentToColors2Ok() {
-    return nextTick().then(function() {
-      strictEqual(lastParams.rest, 'red');
-    });
+    strictEqual(lastParams.rest, 'red');
   }
 
   function goToColors3() {
@@ -1350,15 +744,13 @@ asyncTest('rest params', function() {
   }
 
   function wentToColors3Ok() {
-    return nextTick().then(function() {
-      strictEqual(lastParams.rest, 'red/blue');
-    });
+    strictEqual(lastParams.rest, 'red/blue');
   }
 
 });
 
 
-asyncTest('backTo', function() {
+test('backTo', function() {
   var passedParams;
 
   var router = Router({
@@ -1372,13 +764,11 @@ asyncTest('backTo', function() {
   }).init('articles/33?filter=66');
 
 
-  whenSignal(router.changed)
-    .then(goToBooks)
-    .then(goBackToArticles)
-    .then(paramsShouldBeThePreviousOnes)
-    .then(goBackToCart)
-    .then(paramsShouldBeThePassedDefaults)
-    .done(start);
+  goToBooks();
+  goBackToArticles();
+  paramsShouldBeThePreviousOnes();
+  goBackToCart();
+  paramsShouldBeThePassedDefaults();
 
 
   function rememberParams(params) {
@@ -1390,17 +780,13 @@ asyncTest('backTo', function() {
   }
 
   function goBackToArticles() {
-    return nextTick().then(function() {
-      passedParams = null;
-      router.backTo('articles', {id : 1});
-    });
+    passedParams = null;
+    router.backTo('articles', {id : 1});
   }
 
   function paramsShouldBeThePreviousOnes() {
-    return nextTick().then(function() {
-      strictEqual(passedParams.id, 33);
-      strictEqual(passedParams.filter, 66);
-    });
+    strictEqual(passedParams.id, 33);
+    strictEqual(passedParams.filter, 66);
   }
 
   // We've never been to cart before, thus the default params we pass should be used
@@ -1409,15 +795,13 @@ asyncTest('backTo', function() {
   }
 
   function paramsShouldBeThePassedDefaults() {
-    return nextTick().then(function() {
-      strictEqual(passedParams.mode, 'default');
-    });
+    strictEqual(passedParams.mode, 'default');
   }
 
 });
 
 
-asyncTest('update', function() {
+test('update', function() {
   var events = [];
   var updateParams;
 
@@ -1433,11 +817,9 @@ asyncTest('update', function() {
   .init('root.news.archive.detail', { id: 33 });
 
 
-  whenSignal(router.changed)
-    .then(callbacksWereProperlyCalledOnInit)
-    .then(changeIdParam)
-    .then(stateWereEnteredOrUpdated)
-    .done(start);
+  callbacksWereProperlyCalledOnInit();
+  changeIdParam();
+  stateWereEnteredOrUpdated();
 
 
   function callbacksWereProperlyCalledOnInit() {
@@ -1456,15 +838,13 @@ asyncTest('update', function() {
   }
 
   function stateWereEnteredOrUpdated() {
-    return nextTick().then(function() {
-      deepEqual(events, [
-        'archiveExit',
-        'newsUpdate',
-        'archiveEnter',
-        'detailUpdate'
-      ]);
-      strictEqual(updateParams.id, 34);
-    });
+    deepEqual(events, [
+      'archiveExit',
+      'newsUpdate',
+      'archiveEnter',
+      'detailUpdate'
+    ]);
+    strictEqual(updateParams.id, 34);
   }
 
   function RecordingState(name, path, parent, withUpdate) {
@@ -1486,43 +866,6 @@ asyncTest('update', function() {
 });
 
 
-asyncTest('reload', function() {
-  var articleId;
-
-  var router = Router({
-
-    articles: State('articles/:id', {
-
-      enter: function(params) {
-        articleId = params.id;
-      },
-
-      show: State('')
-
-    })
-
-  }).init('articles/99');
-
-  whenSignal(router.changed)
-    .then(reload)
-    .then(allStatesWereReentered)
-    .done(start);
-
-  function reload() {
-    articleId = null;
-    router.reload();
-  }
-
-  function allStatesWereReentered() {
-    return nextTick().then(function() {
-      strictEqual(articleId, 99);
-      strictEqual(router.currentState().state.fullName, 'articles.show');
-    });
-  }
-
-});
-
-
 function stateWithParamsAssertions(stateWithParams) {
   equal(stateWithParams.state.name, 'state1Child');
   equal(stateWithParams.state.fullName, 'state1.state1Child');
@@ -1538,7 +881,7 @@ function stateWithParamsAssertions(stateWithParams) {
   ok(!stateWithParams.isIn('state2'));
 }
 
-asyncTest('signal handlers are passed StateWithParams objects', function() {
+test('signal handlers are passed StateWithParams objects', function() {
 
   var router = Router({
 
@@ -1549,19 +892,15 @@ asyncTest('signal handlers are passed StateWithParams objects', function() {
     }),
 
     state2: State('state2/:country/:city')
-
-  }).init('state1/33/misc?filter=true');
-
-
-  router.changed.addOnce(function(newState) {
-    stateWithParamsAssertions(newState);
-    start();
   });
 
+  router.transition.started.addOnce(stateWithParamsAssertions);
+
+  router.init('state1/33/misc?filter=true');
 });
 
 
-asyncTest('router.currentState and router.previousState', function() {
+test('router.currentState and router.previousState', function() {
 
   var router = Router({
 
@@ -1574,7 +913,9 @@ asyncTest('router.currentState and router.previousState', function() {
 
     state2: State('state2/:country/:city')
 
-  }).init('state1/33/misc?filter=true');
+  });
+
+  router.init('state1/33/misc?filter=true');
 
 
   function assertions() {
@@ -1584,27 +925,23 @@ asyncTest('router.currentState and router.previousState', function() {
     equal(router.previousState(), null);
 
     router.state('state2/england/london');
-    nextTick().done(function() {
-      var previousState = router.previousState();
-      equal(previousState, state);
-      stateWithParamsAssertions(previousState);
 
-      equal(router.currentState().state.fullName, 'state2');
+    var previousState = router.previousState();
+    equal(previousState, state);
+    stateWithParamsAssertions(previousState);
 
-      start();
-    });
+    equal(router.currentState().state.fullName, 'state2');
   }
 
 });
 
 
-asyncTest('urls can contain dots', function() {
+test('urls can contain dots', function() {
 
   Router({
     map: State('map/:lat/:lon', function(params) {
       strictEqual(params.lat, 1.5441);
       strictEqual(params.lon, 0.9986);
-      start();
     })
   }).init('map/1.5441/0.9986');
 
@@ -1614,9 +951,7 @@ asyncTest('urls can contain dots', function() {
 test('util.normalizePathQuery', function() {
 
   function expect(from, to) {
-
     var assertMessage = ('"' + from + '" => "' + to + '"');
-
     equal(Abyssa.util.normalizePathQuery(from), to, assertMessage);
   }
 
@@ -1657,7 +992,7 @@ test('util.normalizePathQuery', function() {
 });
 
 
-asyncTest('can prevent a transition by navigating to self from the exit handler', function() {
+test('can prevent a transition by navigating to self from the exit handler', function() {
 
   var events = [];
 
@@ -1673,28 +1008,15 @@ asyncTest('can prevent a transition by navigating to self from the exit handler'
   })
   .init('uno');
 
-  whenSignal(router.changed)
-    .then(goToDos)
-    .then(unoWontLetGo)
-    .done(start);
-
-  function goToDos() {
-    router.state('dos');
-  }
-
-  function unoWontLetGo() {
-    return nextTick().then(function() {
-      // Only the initial event is here. 
-      // Since the exit was interrupted, there's no reason to re-enter.
-      deepEqual(events, ['unoEnter']);
-      equal(router.currentState().state.name, 'uno');
-    });
-  }
-
+  router.state('dos');
+  // Only the initial event is here. 
+  // Since the exit was interrupted, there's no reason to re-enter.
+  deepEqual(events, ['unoEnter']);
+  equal(router.currentState().state.name, 'uno');
 });
 
 
-asyncTest('router path/query/params utils', function() {
+test('router path/query/params utils', function() {
 
   var queryParams = ['q1', 'q2', 'q3'].join('&');
 
@@ -1706,12 +1028,8 @@ asyncTest('router path/query/params utils', function() {
   .init('books/33/category/sci-fi?q1=11&q2=yes');
 
   bookAssertions();
-
-  whenSignal(router.changed)
-    .then(bookAssertions)
-    .then(updateBook)
-    .then(updatedBookAssertions)
-    .done(start);
+  updateBook();
+  updatedBookAssertions();
 
   function bookAssertions() {
     equal(router.path(), '/books/33/category/sci-fi');
@@ -1735,7 +1053,7 @@ asyncTest('router path/query/params utils', function() {
     params.q3 = 'new';
     delete params.q2;
 
-    return router.state('parent.book', params).then(nextTick);
+    router.state('parent.book', params);
   }
 
   function updatedBookAssertions() {
@@ -1754,38 +1072,6 @@ asyncTest('router path/query/params utils', function() {
   }
 
 });
-
-
-function delay(time, value) {
-  var defer = when.defer();
-  setTimeout(function() { defer.resolve(value); }, time);
-  return defer.promise;
-}
-
-function successPromise(time, value, afterResolveCallback) {
-  var promise = delay(time, value);
-  if (afterResolveCallback) promise.then(function() {
-    // Ensures all 'then' callbacks were called
-    setTimeout(afterResolveCallback, 0);
-  });
-  return promise;
-}
-
-function failPromise(time, message) {
-  return delay(time).then(function() { throw new Error(message || 'error'); });
-}
-
-function nextTick() {
-  return delay(20);
-}
-
-function whenSignal(signal) {
-  var defer = when.defer();
-  signal.addOnce(function() {
-    defer.resolve(arguments);
-  });
-  return defer.promise;
-}
 
 
 function stubHistory() {

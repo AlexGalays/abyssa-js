@@ -30,7 +30,7 @@ function isIn(fullStateName) {
 }
 
 function toString() {
-  return this.state.fullName + ':' + JSON.stringify(this.params)
+  return (this.state ? this.state.fullName : undefined) + ':' + JSON.stringify(this.params)
 }
 
 

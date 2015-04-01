@@ -1,9 +1,7 @@
 
 'use strict';
 
-
 var util  = require('./util');
-var async = require('./Transition').asyncPromises.register;
 
 /*
 * Create a new State instance.
@@ -57,7 +55,6 @@ function State() {
     state.children = getChildren();
     state.fullName = getFullName();
     state.root = state.parents[state.parents.length - 1];
-    state.async = async;
 
     eachChildState(function(name, childState) {
       childState.init(router, name, state);

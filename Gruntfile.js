@@ -2,12 +2,6 @@ module.exports = function(grunt) {
 
   var banner = '/* <%= pkg.name %> <%= pkg.version %> - <%= pkg.description %> */\n\n';
 
-  var dependencies = [
-    'q',
-    'signals',
-    'crossroads'
-  ];
-
   var supportedBrowsers = grunt.file.readJSON('test/supportedBrowsers.json');
 
   grunt.initConfig({
@@ -15,17 +9,7 @@ module.exports = function(grunt) {
 
     browserify: {
       build: {
-        files: {'target/abyssa.js': ['src/main.js']},
-        options: {
-          ignore: dependencies,
-
-          bundleOptions: {
-            standalone: 'Abyssa'
-          }
-        }
-      },
-      buildWithDeps: {
-        files: {'target/abyssa-with-deps.js': ['src/main.js'] },
+        files: {'target/abyssa.js': ['src/main.js'] },
         options: {
           bundleOptions: {
             standalone: 'Abyssa'
@@ -41,10 +25,6 @@ module.exports = function(grunt) {
       build: {
         src: ['target/abyssa.js'],
         dest: 'target/abyssa.js'
-      },
-      buildWithDeps: {
-        src: ['target/abyssa-with-deps.js'],
-        dest: 'target/abyssa-with-deps.js'
       }
     },
 
@@ -55,10 +35,6 @@ module.exports = function(grunt) {
       build: {
         src: 'target/abyssa.js',
         dest: 'target/abyssa.min.js'
-      },
-      buildWithDeps: {
-        src: 'target/abyssa-with-deps.js',
-        dest: 'target/abyssa-with-deps.min.js'
       }
     },
 

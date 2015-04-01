@@ -4,7 +4,6 @@
 
 var Signal           = require('signals').Signal,
     crossroads       = require('crossroads'),
-    Q                = require('q'),
     interceptAnchors = require('./anchors'),
     StateWithParams  = require('./StateWithParams'),
     Transition       = require('./Transition'),
@@ -52,8 +51,7 @@ function Router(declarativeStates) {
   function setState(state, params, reload) {
     var diff = util.objectDiff(currentState && currentState.params, params);
 
-    if (!reload && isSameState(state, diff))
-      return transitionPrevented(currentState);
+    if (!reload && isSameState(state, diff)) return;
 
     var fromState, oldPreviousState;
     var toState = StateWithParams(state, params);
@@ -70,69 +68,23 @@ function Router(declarativeStates) {
     // get the end result state.
     previousState = currentState;
     currentState = toState;
-
     currentParamsDiff = diff;
 
-    var previousTransition = transition;
-
-    var t = transition = Transition(
+    transition = Transition(
       fromState,
       toState,
       diff,
       reload,
-      logger);
+      logger
+    );
 
     startingTransition(fromState, toState);
 
-    // setState() was reentered because of a redirect inside a transition.started handler.
-    // The end of this method is obsolete.
-    if (transition != t) return transitionPromise(transition);
-
-    transition.then(
-      function success() {
-        finalizeTransition(reload);
-        transitionCompleted(fromState, toState);
-      },
-      function fail(error) {
-        currentState = StateWithParams(transition.currentState, transition.toParams);
-        finalizeTransition(reload);
-        transitionFailed(fromState, toState, error);
-      }
-    );
-
-    return transitionPromise(previousTransition || transition);
-  }
-
-  /*
-  * Returns a promise that should be resolved the next time
-  * a transition can complete (so redirects are seen as being part of the same transition)
-  */
-  function transitionPromise(forTransition) {
-    if (forTransition.promise)
-      return forTransition.promise;
-
-    var deferred = Q.defer();
-
-    router.transition.completed.addOnce(completed);
-    router.transition.failed.addOnce(failed);
-
-    function completed(newState) {
-      router.transition.failed.remove(failed);
-      deferred.resolve(newState);
+    // In case of a redirect() called from 'startingTransition', the transition was already ended.
+    if (transition) {
+      transition.start();
+      endingTransition(fromState, toState, reload);
     }
-
-    function failed(newState, oldState, error) {
-      router.transition.completed.remove(completed);
-      deferred.reject(error);
-    }
-
-    forTransition.promise = deferred.promise;
-    return forTransition.promise;
-  }
-
-  function transitionPrevented(toState) {
-    router.transition.prevented.dispatch(toState);
-    return Q.reject(new Error('prevented'));
   }
 
   function cancelTransition() {
@@ -142,8 +94,6 @@ function Router(declarativeStates) {
     transition.cancel();
 
     firstTransition = false;
-
-    router.transition.cancelled.dispatch(transition.to, transition.from);
   }
 
   function startingTransition(fromState, toState) {
@@ -152,29 +102,7 @@ function Router(declarativeStates) {
     router.transition.started.dispatch(toState, fromState);
   }
 
-  function transitionCompleted(fromState, toState) {
-    logger.log('Transition from {0} to {1} completed', fromState, toState);
-
-    toState.state.lastParams = toState.params;
-
-    router.transition.completed.dispatch(toState, fromState);
-  }
-
-  function transitionFailed(fromState, toState, error) {
-    logger.error('Transition from {0} to {1} failed: {2}', fromState, toState, error);
-
-    var defaultPrevented;
-    function preventDefault() { defaultPrevented = true; }
-
-    router.transition.failed.dispatch(toState, fromState, error, preventDefault);
-    if (defaultPrevented) return;
-
-    // Rethrow the error outside
-    // of the promise context to retain the script and line of the error.
-    setTimeout(function() { throw error; }, 0);
-  }
-
-  function finalizeTransition(reload) {
+  function endingTransition(fromState, toState, reload) {
     if (!urlChanged && !firstTransition && !reload) {
       logger.log('Updating URL: {0}', currentPathQuery);
       updateURLFromState(currentPathQuery, document.title, currentPathQuery);
@@ -183,6 +111,12 @@ function Router(declarativeStates) {
     transition = null;
     firstTransition = false;
     router.flash = null;
+
+    logger.log('Transition from {0} to {1} ended', fromState, toState);
+
+    toState.state.lastParams = toState.params;
+
+    router.transition.ended.dispatch(toState, fromState);
   }
 
   function updateURLFromState(state, title, url) {
@@ -364,9 +298,9 @@ function Router(declarativeStates) {
     urlChanged = false;
 
     if (isName)
-      return setStateByName(pathQueryOrName, params || {});
+      setStateByName(pathQueryOrName, params || {});
     else
-      return setStateForPathQuery(pathQueryOrName);
+      setStateForPathQuery(pathQueryOrName);
   }
 
   /*
@@ -374,7 +308,7 @@ function Router(declarativeStates) {
   */
   function redirect() {
     logger.log('Redirecting...');
-    return state.apply(null, arguments);
+    state.apply(null, arguments);
   }
 
   /*
@@ -383,7 +317,7 @@ function Router(declarativeStates) {
   */
   function backTo(stateName, defaultParams, flashData) {
     var params = leafStates[stateName].lastParams || defaultParams;
-    return state(stateName, params, flashData);
+    state(stateName, params, flashData);
   }
 
   /*
@@ -397,7 +331,7 @@ function Router(declarativeStates) {
   }
 
   function setStateForPathQuery(pathQuery) {
-    var promise, routeData;
+    var routeData;
 
     currentPathQuery = util.normalizePathQuery(pathQuery);
 
@@ -409,12 +343,11 @@ function Router(declarativeStates) {
       routeData = data;
     }
 
-    if (routeData)
-      promise = setState(
-        routeData.route.abyssaState,
-        fromCrossroadsParams(routeData.route.abyssaState, routeData.params))
-
-    return promise || notFound(currentPathQuery);
+    if (routeData) setState(
+      routeData.route.abyssaState,
+      fromCrossroadsParams(routeData.route.abyssaState, routeData.params))
+    else
+      notFound(currentPathQuery);
   }
 
   function setStateByName(name, params) {
@@ -423,7 +356,7 @@ function Router(declarativeStates) {
     if (!state) return notFound(name);
 
     var pathQuery = interpolate(state, params);
-    return setStateForPathQuery(pathQuery);
+    setStateForPathQuery(pathQuery);
   }
 
   /*
@@ -674,30 +607,12 @@ function Router(declarativeStates) {
   router.transition = {
     // Dispatched when a transition started.
     started:   new Signal(),
-    // Dispatched when a transition either completed, failed or got cancelled.
-    ended:     new Signal(),
-    // Dispatched when a transition successfuly completed
-    completed: new Signal(),
-    // Dispatched when a transition failed to complete
-    failed:    new Signal(),
-    // Dispatched when a transition got cancelled
-    cancelled: new Signal(),
-    // Dispatched when a transition was prevented by the router
-    prevented: new Signal()
+    // Dispatched when a transition ended.
+    ended:     new Signal()
   };
 
   // Shorter alias for transition.completed: The most commonly used signal
   router.changed = router.transition.completed;
-
-  router.transition.completed.add(transitionEnded('completed'));
-  router.transition.failed.add(transitionEnded('failed'));
-  router.transition.cancelled.add(transitionEnded('cancelled'));
-
-  function transitionEnded(reason) {
-    return function(newState, oldState) {
-      router.transition.ended.dispatch(newState, oldState, reason);
-    }
-  }
 
   return router;
 }

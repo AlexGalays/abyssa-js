@@ -5,8 +5,6 @@
 var Abyssa = {
   Router: require('./Router'),
   State:  require('./State'),
-  Async:  require('./Transition').asyncPromises.register,
-
   util:   require('./util')
 };
 

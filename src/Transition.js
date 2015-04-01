@@ -1,18 +1,14 @@
 
 'use strict';
 
-
-var Q    = require('q'),
-    util = require('./util');
+var util = require('./util');
 
 /*
 * Create a new Transition instance.
 */
 function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, logger) {
   var root,
-      cancelled,
       enters,
-      transitionPromise,
       error,
       exits = [];
 
@@ -26,10 +22,10 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, 
     from: fromState,
     to: toState,
     toParams: params,
-    then: then,
     cancel: cancel,
-    cancelled: cancelled,
-    currentState: fromState
+    cancelled: false,
+    currentState: fromState,
+    start: start
   };
 
   // The first transition has no fromState.
@@ -40,21 +36,13 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, reload, 
 
   enters = transitionStates(toState, root, isUpdate).reverse();
 
-  asyncPromises.newTransitionStarted();
-
-  transitionPromise = isNullTransition(isUpdate, reload, paramsDiff)
-    ? Q('null')
-    : startTransition(enters, exits, params, transition, callUpdates, logger);
-
-  function then(completed, failed) {
-    return transitionPromise.then(
-      function success() { if (!cancelled) completed(); },
-      function fail(error) { if (!cancelled) failed(error); }
-    );
+  function start() {
+    if (!isNullTransition(isUpdate, reload, paramsDiff))
+      startTransition(enters, exits, params, transition, callUpdates, logger);
   }
 
   function cancel() {
-    cancelled = transition.cancelled = true;
+    transition.cancelled = true;
   }
 
   return transition;
@@ -67,48 +55,33 @@ function isNullTransition(isUpdate, reload, paramsDiff) {
   return (isUpdate && !reload && util.objectSize(paramsDiff.all) == 0);
 }
 
-function startTransition(enters, exits, params, transition, callUpdates, logger) {
-  var promise = Q();
-
+function startTransition(enters, exits, params, transition, isUpdate, logger) {
   exits.forEach(function(state) {
-    if (callUpdates && state.update) return;
-    promise = promise.then(call(state, 'exit'));
+    if (isUpdate && state.update) return;
+    runStep(state, 'exit', params, transition, logger);
   });
 
   enters.forEach(function(state) {
-    var fn = (callUpdates && state.update) ? 'update' : 'enter';
-    promise = promise.then(call(state, fn));
+    var fn = (isUpdate && state.update) ? 'update' : 'enter';
+    runStep(state, fn, params, transition, logger);
   });
+}
 
-  function call(state, fn) {
-    return function(value) {
-      checkCancellation();
+function runStep(state, stepFn, params, transition, logger) {
+  if (transition.cancelled) return;
 
-      if (logger.enabled) {
-        var capitalizedStep = fn[0].toUpperCase() + fn.slice(1);
-        logger.log(capitalizedStep + ' ' + state.fullName);
-      }
-
-      var result = state[fn](params, value);
-
-      checkCancellation();
-
-      // If the current function doesn't return anything useful,
-      // use the last known value for propagation purpose.
-      if (result === undefined) result = value;
-
-      transition.currentState = (fn == 'exit') ? state.parent : state;
-
-      return result;
-    };
+  if (logger.enabled) {
+    var capitalizedStep = stepFn[0].toUpperCase() + stepFn.slice(1);
+    logger.log(capitalizedStep + ' ' + state.fullName);
   }
 
-  function checkCancellation() {
-    if (transition.cancelled)
-      throw new Error('transition cancelled');
-  }
+  var result = state[stepFn](params);
 
-  return promise;
+  if (transition.cancelled) return;
+
+  transition.currentState = (stepFn == 'exit') ? state.parent : state;
+
+  return result;
 }
 
 /*
@@ -156,48 +129,6 @@ function transitionStates(state, root, isUpdate) {
   var inclusive = !root || isUpdate;
   return withParents(state, root || state.root, inclusive);
 }
-
-
-var asyncPromises = Transition.asyncPromises = (function () {
-
-  var that;
-  var activeDeferreds = [];
-
-  /*
-   * Returns a promise that will not be fullfilled if the navigation context
-   * changes before the wrapped promise is fullfilled. 
-   */
-  function register(promise) {
-    var defer = Q.defer();
-
-    activeDeferreds.push(defer);
-
-    Q(promise).then(
-      function(value) {
-        if (activeDeferreds.indexOf(defer) > -1)
-          defer.resolve(value);
-      },
-      function(error) {
-        if (activeDeferreds.indexOf(defer) > -1)
-          defer.reject(error);
-      }
-    );
-
-    return defer.promise;
-  }
-
-  function newTransitionStarted() {
-    activeDeferreds.length = 0;
-  }
-
-  that = {
-    register: register,
-    newTransitionStarted: newTransitionStarted,
-  };
-
-  return that;
-
-})();
 
 
 module.exports = Transition;
