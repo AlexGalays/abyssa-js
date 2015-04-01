@@ -524,8 +524,7 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Returns the diff between the current params and the previous ones, e.g:
-  * { id: 'modified', q: 'added', section: 'removed' }
+  * Returns the diff between the current params and the previous ones.
   */
   function getParamsDiff() {
     return currentParamsDiff;
