@@ -24,7 +24,7 @@ asyncTest('Router initialization from initial URL', function() {
   router = Router({
 
     index: State('initialState/:num', function(param) {
-      strictEqual(param.num, 36);
+      strictEqual(param.num, '36');
       startLater();
     })
 
@@ -43,7 +43,7 @@ asyncTest('Default anchor interception', function() {
     index: State(''),
 
     articles: State('articles/:id', function(params) {
-      strictEqual(params.id, 33);
+      strictEqual(params.id, '33');
       startLater();
     })
 
@@ -64,7 +64,7 @@ asyncTest('Mousedown anchor interception', function() {
     index: State(''),
 
     articles: State('articles/:id', function(params) {
-      strictEqual(params.id, 33);
+      strictEqual(params.id, '33');
       startLater();
     })
 
@@ -179,7 +179,7 @@ asyncTest('hash mode switched on', function() {
 
     function stateShouldBeCategoryDetail() {
       strictEqual(router.currentState().state.fullName, 'category1.detail');
-      strictEqual(lastParams.id, 56);
+      strictEqual(lastParams.id, '56');
       strictEqual(window.location.hash, '#/category1/56');
     }
 
@@ -198,7 +198,7 @@ asyncTest('hash mode switched on', function() {
 
     function stateShouldBeCategoryDetail2() {
       strictEqual(router.currentState().state.fullName, 'category1.detail');
-      strictEqual(lastParams.id, 88);
+      strictEqual(lastParams.id, '88');
       strictEqual(window.location.hash, '#/category1/88');
     }
   }
@@ -242,7 +242,7 @@ asyncTest('customize hashbang', function() {
 
     function stateShouldBeCategoryDetail() {
       strictEqual(router.currentState().state.fullName, 'category1.detail');
-      strictEqual(lastParams.id, 56);
+      strictEqual(lastParams.id, '56');
       strictEqual(window.location.hash, '#!/category1/56');
     }
 
@@ -261,7 +261,7 @@ asyncTest('customize hashbang', function() {
 
     function stateShouldBeCategoryDetail2() {
       strictEqual(router.currentState().state.fullName, 'category1.detail');
-      strictEqual(lastParams.id, 88);
+      strictEqual(lastParams.id, '88');
       strictEqual(window.location.hash, '#!/category1/88');
     }
   }

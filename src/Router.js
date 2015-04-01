@@ -24,7 +24,6 @@ function Router(declarativeStates) {
       options = {
         enableLogs: false,
         interceptAnchors: true,
-        shouldTypecast: true,
         notFound: null,
         urlSync: true,
         hashPrefix: ''
@@ -177,9 +176,6 @@ function Router(declarativeStates) {
 
     if (options.interceptAnchors)
       interceptAnchors(router);
-
-    if (options.shouldTypecast)
-      roads.shouldTypecast = true;
 
     hashSlashString = '#' + options.hashPrefix + '/';
 
@@ -585,7 +581,7 @@ function Router(declarativeStates) {
   router.queryParams = getQueryParams;
   router.paramsDiff = getParamsDiff;
 
-  // Used for testing
+  // Used for testing purposes only
   router.urlPathQuery = urlPathQuery;
   router.terminate = terminate;
 
@@ -593,10 +589,8 @@ function Router(declarativeStates) {
   // Signals
 
   router.transition = {
-    // Dispatched when a transition started.
-    started:   new Signal(),
-    // Dispatched when a transition ended.
-    ended:     new Signal()
+    started: new Signal(),
+    ended: new Signal()
   };
 
   // Shorter alias for transition.completed: The most commonly used signal

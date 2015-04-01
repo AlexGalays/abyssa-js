@@ -52,12 +52,12 @@ test('Simple states', function() {
   }
 
   function goToArticles() {
-    router.state('articles', {id: 38, filter: 'dark green'});
+    router.state('articles', { id: 38, filter: 'dark green' });
   }
 
   function articlesWasEntered() {
     deepEqual(events, ['indexExit', 'articlesEnter']);
-    strictEqual(lastArticleId, 38);
+    strictEqual(lastArticleId, '38');
     strictEqual(lastFilter, 'dark green');
     events = [];
   }
@@ -77,8 +77,8 @@ test('Simple states', function() {
 
   function articlesWasEnteredWithFilter() {
     deepEqual(events, ['indexExit', 'articlesEnter']);
-    strictEqual(lastArticleId, 44);
-    strictEqual(lastFilter, 666);
+    strictEqual(lastArticleId, '44');
+    strictEqual(lastFilter, '666');
   }
 
 });
@@ -180,7 +180,7 @@ test('Missing state with a "notFound" state defined by its fullName', function()
 
   // Should also work with the reverse routing notation
   function goToWrongState() {
-    router.state('articles.naturess.edit', {id: 88});
+    router.state('articles.naturess.edit', { id: '88' });
   }
 
   function notFoundWasEntered2() {
@@ -210,7 +210,7 @@ test('Missing state without a "notFound" state defined', function() {
 
   // Also work with the reverse routing notation
   throws(function() {
-    router.state('articles.naturess.edit', {id: 88});
+    router.state('articles.naturess.edit', { id: '88' });
   });
 
 });
@@ -613,8 +613,8 @@ test('State construction shorthand', function() {
   var router = Router({
 
     index: State('index/:id', function(params) {
-      strictEqual(params.id, 55);
-      strictEqual(params.filter, true);
+      strictEqual(params.id, '55');
+      strictEqual(params.filter, 'true');
     })
 
   }).init('index/55?filter=true');
@@ -781,12 +781,12 @@ test('backTo', function() {
 
   function goBackToArticles() {
     passedParams = null;
-    router.backTo('articles', {id : 1});
+    router.backTo('articles', { id: 1 });
   }
 
   function paramsShouldBeThePreviousOnes() {
-    strictEqual(passedParams.id, 33);
-    strictEqual(passedParams.filter, 66);
+    strictEqual(passedParams.id, '33');
+    strictEqual(passedParams.filter, '66');
   }
 
   // We've never been to cart before, thus the default params we pass should be used
@@ -844,7 +844,7 @@ test('update', function() {
       'archiveEnter',
       'detailUpdate'
     ]);
-    strictEqual(updateParams.id, 34);
+    strictEqual(updateParams.id, '34');
   }
 
   function RecordingState(name, path, parent, withUpdate) {
@@ -872,7 +872,7 @@ function stateWithParamsAssertions(stateWithParams) {
 
   ok(stateWithParams.state.data('myData'), 666);
 
-  ok(stateWithParams.params.id, 33);
+  ok(stateWithParams.params.id, '33');
   ok(stateWithParams.params.category, 'misc');
   ok(stateWithParams.params.filter, true);
 
@@ -940,8 +940,8 @@ test('urls can contain dots', function() {
 
   Router({
     map: State('map/:lat/:lon', function(params) {
-      strictEqual(params.lat, 1.5441);
-      strictEqual(params.lon, 0.9986);
+      strictEqual(params.lat, '1.5441');
+      strictEqual(params.lon, '0.9986');
     })
   }).init('map/1.5441/0.9986');
 
@@ -1035,8 +1035,8 @@ test('router path/query/params utils', function() {
     equal(router.path(), '/books/33/category/sci-fi');
     equal(router.query(), 'q1=11&q2=yes');
 
-    deepEqual(router.params(), { id: 33, cat: 'sci-fi', q1: 11, q2: 'yes' });
-    deepEqual(router.queryParams(), { q1: 11, q2: 'yes' });
+    deepEqual(router.params(), { id: '33', cat: 'sci-fi', q1: '11', q2: 'yes' });
+    deepEqual(router.queryParams(), { q1: '11', q2: 'yes' });
 
     deepEqual(router.paramsDiff(), {
       update: {},
@@ -1060,7 +1060,7 @@ test('router path/query/params utils', function() {
     equal(router.path(), '/books/44/category/sci-fi');
     equal(router.query(), 'q1=red&q3=new');
 
-    deepEqual(router.params(), { id: 44, cat: 'sci-fi', q1: 'red', q3: 'new' });
+    deepEqual(router.params(), { id: '44', cat: 'sci-fi', q1: 'red', q3: 'new' });
     deepEqual(router.queryParams(), { q1: 'red', q3: 'new' });
 
     deepEqual(router.paramsDiff(), {
