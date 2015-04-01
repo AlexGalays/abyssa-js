@@ -48,20 +48,20 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params) {
-    var diff = util.objectDiff(currentState && currentState.params, params);
+    var fromState = transition
+      ? StateWithParams(transition.currentState, transition.toParams)
+      : currentState;
 
-    if (isSameState(state, diff)) return;
-
-    var fromState, oldPreviousState;
     var toState = StateWithParams(state, params);
 
-    if (transition) {
-      cancelTransition();
-      fromState = StateWithParams(transition.currentState, transition.toParams);
+    var diff = util.objectDiff(fromState && fromState.params, params);
+
+    if (preventTransition(fromState, toState, diff)) {
+      if (transition && transition.exiting) transition.cancel();
+      return;
     }
-    else {
-      fromState = currentState;
-    }
+
+    if (transition) cancelTransition();
 
     // While the transition is running, any code asking the router about the previous/current state should
     // get the end result state.
@@ -78,11 +78,16 @@ function Router(declarativeStates) {
 
     startingTransition(fromState, toState);
 
-    // In case of a redirect() called from 'startingTransition', the transition was already ended.
+    // In case of a redirect() called from 'startingTransition', the transition already ended.
+    if (transition) transition.run();
+
+    // In case of a redirect() called from the transition itself, the transition already ended
     if (transition) {
-      transition.start();
-      endingTransition(fromState, toState);
+      if (transition.cancelled) currentState = fromState;
+      else endingTransition(fromState, toState);
     }
+
+    transition = null;
   }
 
   function cancelTransition() {
@@ -106,7 +111,6 @@ function Router(declarativeStates) {
       updateURLFromState(currentPathQuery, document.title, currentPathQuery);
     }
 
-    transition = null;
     firstTransition = false;
     router.flash = null;
 
@@ -132,10 +136,10 @@ function Router(declarativeStates) {
   * Return whether the passed state is the same as the current one;
   * in which case the router can ignore the change.
   */
-  function isSameState(newState, diff) {
-    if (!currentState) return false;
+  function preventTransition(current, newState, diff) {
+    if (!current) return false;
 
-    return (newState == currentState.state) && (util.objectSize(diff.all) == 0);
+    return (newState.state == current.state) && (util.objectSize(diff.all) == 0);
   }
 
   /*

@@ -682,8 +682,8 @@ test('Redirecting from transition.started', function() {
   assertions();
 
   function addListener() {
-    router.transition.started.addOnce(function() {
-      console.log('bla');
+    var binding = router.transition.started.add(function() {
+      binding.detach();
       router.redirect('dos');
     });
   }

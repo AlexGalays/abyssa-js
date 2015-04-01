@@ -1,8 +1,6 @@
 
 'use strict';
 
-var util = require('./util');
-
 /*
 * Create a new Transition instance.
 */
@@ -24,7 +22,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, logger) 
     cancel: cancel,
     cancelled: false,
     currentState: fromState,
-    start: start
+    run: run
   };
 
   // The first transition has no fromState.
@@ -35,9 +33,8 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, logger) 
 
   enters = transitionStates(toState, root, isUpdate).reverse();
 
-  function start() {
-    if (!isNullTransition(isUpdate, paramsDiff))
-      startTransition(enters, exits, params, transition, isUpdate, logger);
+  function run() {
+    startTransition(enters, exits, params, transition, isUpdate, logger);
   }
 
   function cancel() {
@@ -47,18 +44,13 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, logger) 
   return transition;
 }
 
-/*
-* Whether there is no need to actually perform a transition.
-*/
-function isNullTransition(isUpdate, paramsDiff) {
-  return (isUpdate && util.objectSize(paramsDiff.all) == 0);
-}
-
 function startTransition(enters, exits, params, transition, isUpdate, logger) {
+  transition.exiting = true;
   exits.forEach(function(state) {
     if (isUpdate && state.update) return;
     runStep(state, 'exit', params, transition, logger);
   });
+  transition.exiting = false;
 
   enters.forEach(function(state) {
     var fn = (isUpdate && state.update) ? 'update' : 'enter';
