@@ -342,18 +342,14 @@ function Router(declarativeStates) {
   */
   function urlPathQuery() {
     var hashSlash = location.href.indexOf(hashSlashString);
-
     var pathQuery;
 
-    if (hashSlash > -1) {
+    if (hashSlash > -1)
       pathQuery = location.href.slice(hashSlash + hashSlashString.length);
-    }
-    else if (isHashMode()) {
+    else if (isHashMode())
       pathQuery = '/';
-    }
-    else {
+    else
       pathQuery = (location.pathname + location.search).slice(1);
-    }
 
     return util.normalizePathQuery(pathQuery);
   }
@@ -566,8 +562,8 @@ function Router(declarativeStates) {
     ended: new Signal()
   };
 
-  // Shorter alias for transition.completed: The most commonly used signal
-  router.changed = router.transition.completed;
+  // Shorter alias for transition.ended: The most commonly used signal
+  router.changed = router.transition.ended;
 
   return router;
 }
