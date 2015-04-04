@@ -682,8 +682,7 @@ test('Redirecting from transition.started', function() {
   assertions();
 
   function addListener() {
-    var binding = router.transition.started.add(function() {
-      binding.detach();
+    router.transition.once('started', function() {
       router.state('dos');
     });
   }
@@ -894,7 +893,7 @@ test('signal handlers are passed StateWithParams objects', function() {
     state2: State('state2/:country/:city')
   });
 
-  router.transition.started.addOnce(stateWithParamsAssertions);
+  router.transition.once('started', stateWithParamsAssertions);
 
   router.init('state1/33/misc?filter=true');
 });

@@ -2,7 +2,7 @@
 'use strict';
 
 
-var Signal           = require('signals').Signal,
+var EventEmitter     = require('events'),
     interceptAnchors = require('./anchors'),
     StateWithParams  = require('./StateWithParams'),
     Transition       = require('./Transition'),
@@ -97,7 +97,7 @@ function Router(declarativeStates) {
   function startingTransition(fromState, toState) {
     logger.log('Starting transition from {0} to {1}', fromState, toState);
 
-    router.transition.started.dispatch(toState, fromState);
+    router.transition.emit('started', toState, fromState);
   }
 
   function endingTransition(fromState, toState) {
@@ -112,7 +112,7 @@ function Router(declarativeStates) {
 
     toState.state.lastParams = toState.params;
 
-    router.transition.ended.dispatch(toState, fromState);
+    router.transition.emit('ended', toState, fromState);
   }
 
   function updateURLFromState(state, title, url) {
@@ -488,16 +488,7 @@ function Router(declarativeStates) {
   router.urlPathQuery = urlPathQuery;
   router.terminate = terminate;
 
-
-  // Signals
-
-  router.transition = {
-    started: new Signal(),
-    ended: new Signal()
-  };
-
-  // Shorter alias for transition.ended: The most commonly used signal
-  router.changed = router.transition.ended;
+  router.transition = new EventEmitter();
 
   return router;
 }
