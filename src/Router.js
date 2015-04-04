@@ -3,7 +3,6 @@
 
 
 var Signal           = require('signals').Signal,
-    crossroads       = require('crossroads'),
     interceptAnchors = require('./anchors'),
     StateWithParams  = require('./StateWithParams'),
     Transition       = require('./Transition'),
@@ -19,7 +18,6 @@ var Signal           = require('signals').Signal,
 function Router(declarativeStates) {
   var router = {},
       states = util.copyObject(declarativeStates),
-      roads  = crossroads.create(),
       firstTransition = true,
       options = {
         enableLogs: false,
@@ -38,9 +36,6 @@ function Router(declarativeStates) {
       urlChanged,
       initialized,
       hashSlashString;
-
-  // Nil transitions are prevented from our side.
-  roads.ignoreState = true;
 
   /*
   * Setting a new state will start a transition from the current state to the target state.
@@ -228,36 +223,29 @@ function Router(declarativeStates) {
       state.init(router, name);
     });
 
-    leafStates = {};
-
     // Only leaf states can be transitioned to.
-    addRouteForEachLeafState(states);
+    leafStates = {};
+    registerLeafStates(states);
   }
 
   function eachRootState(callback) {
     for (var name in states) callback(name, states[name]);
   }
 
-  function addRouteForEachLeafState(states) {
+  function registerLeafStates(states) {
 
-    function addRoutes(states) {
+    function register(states) {
       states.forEach(function(state) {
         if (state.children.length)
-          addRoutes(state.children);
-        else
-          addRouteForLeafState(state);
+          register(state.children);
+        else {
+          leafStates[state.fullName] = state;
+          state.paths = util.parsePaths(state.fullPath());
+        }
       });
     }
 
-    function addRouteForLeafState(state) {
-      leafStates[state.fullName] = state;
-
-      var route = roads.addRoute(state.fullPath() + ":?query:");
-      state.route = route;
-      route.abyssaState = state;
-    }
-
-    addRoutes(util.objectToArray(states));
+    register(util.objectToArray(states));
   }
 
   /*
@@ -291,23 +279,29 @@ function Router(declarativeStates) {
   }
 
   function setStateForPathQuery(pathQuery) {
-    var routeData;
+    var state, params, _state, _params;
 
     currentPathQuery = util.normalizePathQuery(pathQuery);
 
-    roads.routed.add(routed);
-    roads.parse(currentPathQuery);
-    roads.routed.remove(routed);
+    var pq = currentPathQuery.split('?');
+    var path = pq[0];
+    var query = pq[1];
+    var paths = util.parsePaths(path);
+    var queryParams = util.parseQueryParams(query);
 
-    function routed(_, data) {
-      routeData = data;
+    for (var name in leafStates) {
+      _state = leafStates[name];
+      _params = _state.matches(paths);
+
+      if (_params) {
+        state = _state;
+        params = util.mergeObjects(_params, queryParams);
+        break;
+      }
     }
 
-    if (routeData) setState(
-      routeData.route.abyssaState,
-      fromCrossroadsParams(routeData.route.abyssaState, routeData.params))
-    else
-      notFound(currentPathQuery);
+    if (state) setState(state, params);
+    else notFound(currentPathQuery);
   }
 
   function setStateByName(name, params) {
@@ -331,7 +325,7 @@ function Router(declarativeStates) {
 
     if (initialized) {
       state.init(router, name);
-      addRouteForEachLeafState({name: state});
+      registerLeafStates({ _: state });
     }
 
     return router;
@@ -359,59 +353,6 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Translate the crossroads argument format to what we want to use.
-  * We want to keep the path and query names and merge them all in one object for convenience.
-  */
-  var crossroadsParam = /\{\w*\}/g;
-  var crossroadsRestParam = /:\w*\*:/;
-  function fromCrossroadsParams(state, crossroadsArgs) {
-    var args   = Array.prototype.slice.apply(crossroadsArgs),
-        query  = args.pop(),
-        params = {},
-        pathName;
-
-    state.fullPath().replace(crossroadsParam, function(match) {
-      pathName = match.slice(1, -1);
-      params[pathName] = args.shift();
-      return '';
-    });
-
-    state.fullPath().replace(crossroadsRestParam, function(match) {
-      pathName = match.slice(1, -2);
-      params[pathName] = args.shift();
-    });
-
-    if (query) util.mergeObjects(params, query);
-
-    // Decode all params
-    for (var i in params) {
-      if (util.isString(params[i])) params[i] = decodeURIComponent(params[i]);
-    }
-
-    return params;
-  }
-
-  /*
-  * Translate an abyssa-style params object to a crossroads one.
-  */
-  function toCrossroadsParams(state, abyssaParams) {
-    var params = {},
-        allQueryParams = state.allQueryParams();
-
-    for (var key in abyssaParams) {
-      if (allQueryParams[key]) {
-        params.query = params.query || {};
-        params.query[key] = abyssaParams[key];
-      }
-      else {
-        params[key] = abyssaParams[key];
-      }
-    }
-
-    return params;
-  }
-
-  /*
   * Compute a link that can be used in anchors' href attributes
   * from a state name and a list of params, a.k.a reverse routing.
   */
@@ -426,19 +367,12 @@ function Router(declarativeStates) {
 
   function interpolate(state, params) {
     var encodedParams = {};
+
     for (var key in params) {
       encodedParams[key] = encodeURIComponent(params[key]);
     }
 
-    var crossroadsParams = toCrossroadsParams(state, encodedParams);
-    var interpolated = state.route.interpolate(crossroadsParams);
-
-    // Fixes https://github.com/millermedeiros/crossroads.js/issues/101
-    var pathQuery = interpolated.split('?');
-    var path = pathQuery[0], query = pathQuery[1];
-    interpolated = path + (query ? ('?' + decodeURI(query)) : '');
-
-    return interpolated;
+    return state.interpolate(encodedParams);
   }
 
   /*

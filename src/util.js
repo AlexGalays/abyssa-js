@@ -78,6 +78,20 @@ function makeMessage() {
   return message;
 }
 
+function parsePaths(path) {
+  return path.split('/')
+    .filter(function(str) { return str.length })
+    .map(function(str) { return decodeURIComponent(str) });
+}
+
+function parseQueryParams(query) {
+  return query ? query.split('&').reduce(function(res, paramValue) {
+    var pv = paramValue.split('=');
+    res[pv[0]] = decodeURIComponent(pv[1]);
+    return res;
+  }, {}) : {};
+}
+
 
 var LEADING_SLASHES = /^\/+/;
 var TRAILING_SLASHES = /^([^?]*?)\/+$/;
@@ -100,5 +114,7 @@ module.exports = {
   objectSize: objectSize,
   makeMessage: makeMessage,
   normalizePathQuery: normalizePathQuery,
-  objectDiff: objectDiff
+  objectDiff: objectDiff,
+  parsePaths: parsePaths,
+  parseQueryParams: parseQueryParams
 };

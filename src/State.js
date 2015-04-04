@@ -3,6 +3,8 @@
 
 var util  = require('./util');
 
+var PARAMS = /:[^\\?\/]*/g;
+
 /*
 * Create a new State instance.
 *
@@ -176,7 +178,67 @@ function State() {
     states[name] = childState;
 
     return state;
-  };
+  }
+
+  /*
+  * Returns whether this state matches the passed path Array.
+  * In case of a match, the actual param values are returned.
+  */
+  function matches(paths) {
+    var params = {};
+    var nonRestStatePaths = state.paths.filter(function(p) {
+      return p[p.length - 1] != '*';
+    });
+
+    /* This state has more paths than the passed paths, it cannot be a match */
+    if (nonRestStatePaths.length > paths.length) return false;
+
+    /* Checks if the paths match one by one */
+    for (var i = 0; i < paths.length; i++) {
+      var path = paths[i];
+      var thatPath = state.paths[i];
+
+      /* This state has less paths than the passed paths, it cannot be a match */
+      if (!thatPath) return false;
+
+      var isRest = thatPath[thatPath.length - 1] == '*';
+      if (isRest) {
+        var name = paramName(thatPath);
+        params[name] = paths.slice(i).join('/');
+        return params;
+      }
+
+      var isDynamic = thatPath[0] == ':';
+      if (isDynamic) {
+        var name = paramName(thatPath);
+        params[name] = path;
+      }
+      else if (thatPath != path) return false;
+    }
+
+    return params;
+  }
+
+  /*
+  * Returns a URL built from this state and the passed params.
+  */
+  function interpolate(params) {
+    var path = state.fullPath().replace(PARAMS, function(p) {
+      return params[paramName(p)] || '';
+    });
+
+    var queryParams = allQueryParams();
+    var passedQueryParams = Object.keys(params).filter(function(p) {
+      return queryParams[p];
+    });
+
+    var query = passedQueryParams.map(function(p) {
+      return p + '=' + params[p];
+    }).join('&');
+
+    return path + (query.length ? ('?' + query) : '');
+  }
+
 
   function toString() {
     return state.fullName;
@@ -186,20 +248,28 @@ function State() {
   state.init = init;
   state.fullPath = fullPath;
   state.allQueryParams = allQueryParams;
+  state.addState = addState;
+  state.matches = matches;
+  state.interpolate = interpolate;
 
   // Public methods
 
   state.data = data;
-  state.addState = addState;
   state.toString = toString;
 
   return state;
 }
 
+function paramName(param) {
+  return param[param.length - 1] == '*'
+    ? param.substr(1).slice(0, -1)
+    : param.substr(1);
+}
+
 
 // Extract the arguments of the overloaded State "constructor" function.
 function getArgs(args) {
-  var result  = { path: '', options: {}, params: {}, queryParams: {} },
+  var result  = { path: '', params: {}, queryParams: {}, options: {} },
       arg1    = args[0],
       arg2    = args[1],
       queryIndex,
@@ -214,32 +284,17 @@ function getArgs(args) {
     result.options = (typeof arg2 == 'object') ? arg2 : {enter: arg2};
   }
 
-  // Extract the query string
+  var paramMatches = PARAMS.exec(result.path);
+  result.params = paramMatches
+    ? util.arrayToObject(paramMatches.map(paramName))
+    : {};
+
   queryIndex = result.path.indexOf('?');
   if (queryIndex != -1) {
     result.queryParams = result.path.slice(queryIndex + 1);
-    result.path = result.path.slice(0, queryIndex);
     result.queryParams = util.arrayToObject(result.queryParams.split('&'));
+    result.path = util.normalizePathQuery(result.path.slice(0, queryIndex));
   }
-
-  // Replace dynamic params like :id with {id} or :rest* with :rest*:, which is what crossroads uses,
-  // and store them for later lookup.
-  result.path = result.path.replace(/:[^\\?\/]*/g, function(match) {
-    var isRestParam;
-
-    param = match.substring(1);
-
-    if (param[param.length - 1] == '*') {
-      param = param.slice(0, -1);
-      isRestParam = true;
-    }
-
-    result.params[param] = 1;
-
-    return isRestParam
-      ? (':' + param + '*:')
-      : ('{' + param + '}');
-  });
 
   return result;
 }
