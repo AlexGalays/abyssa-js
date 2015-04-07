@@ -1,11 +1,12 @@
 
 'use strict';
 
+var util = require('./util');
 
 var Abyssa = {
   Router: require('./Router'),
-  State:  require('./State'),
-  util:   require('./util')
+  State:  util.stateShorthand,
+  util:   util
 };
 
 module.exports = Abyssa;

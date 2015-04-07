@@ -38,6 +38,14 @@ function objectSize(obj) {
   return size;
 }
 
+function mapValues(obj, fn) {
+  var result = {};
+  for (var key in obj) {
+    result[key] = fn(obj[key]);
+  }
+  return result;
+}
+
 /*
 * Return the set of all the keys that changed (either added, removed or modified).
 */
@@ -103,6 +111,10 @@ function normalizePathQuery(pathQuery) {
     .replace(TRAILING_SLASHES_BEFORE_QUERY, '?'));
 }
 
+function stateShorthand(url, options, children) {
+  return mergeObjects({ url: url, children: children || {} }, options);
+}
+
 
 module.exports = {
   isString: isString,
@@ -116,5 +128,7 @@ module.exports = {
   normalizePathQuery: normalizePathQuery,
   objectDiff: objectDiff,
   parsePaths: parsePaths,
-  parseQueryParams: parseQueryParams
+  parseQueryParams: parseQueryParams,
+  stateShorthand: stateShorthand,
+  mapValues: mapValues
 };

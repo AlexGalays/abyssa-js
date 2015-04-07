@@ -23,10 +23,10 @@ asyncTest('Router initialization from initial URL', function() {
 
   router = Router({
 
-    index: State('initialState/:num', function(param) {
+    index: State('initialState/:num', { enter: function(param) {
       strictEqual(param.num, '36');
       startLater();
-    })
+    }})
 
   }).init();
 
@@ -42,10 +42,10 @@ asyncTest('Default anchor interception', function() {
 
     index: State(''),
 
-    articles: State('articles/:id', function(params) {
+    articles: State('articles/:id', { enter: function(params) {
       strictEqual(params.id, '33');
       startLater();
-    })
+    }})
 
   }).init('');
 
@@ -63,10 +63,10 @@ asyncTest('Mousedown anchor interception', function() {
 
     index: State(''),
 
-    articles: State('articles/:id', function(params) {
+    articles: State('articles/:id', { enter: function(params) {
       strictEqual(params.id, '33');
       startLater();
-    })
+    }})
 
   }).init('');
 
@@ -78,9 +78,9 @@ asyncTest('Redirect', function() {
 
   router = Router({
 
-    index: State('index', function() {
+    index: State('index', { enter: function() {
       router.state('articles');
-    }),
+    }}),
 
     articles: State('articles')
 
@@ -158,10 +158,10 @@ asyncTest('hash mode switched on', function() {
 
       index: State(''),
 
-      category1: State('category1', {
-        detail: State(':id', function(params) {
+      category1: State('category1', {}, {
+        detail: State(':id', { enter: function(params) {
           lastParams = params;
-        })
+        }})
       })
 
     })
@@ -220,10 +220,10 @@ asyncTest('customize hashbang', function() {
 
       index: State(''),
 
-      category1: State('category1', {
-        detail: State(':id', function(params) {
+      category1: State('category1', {}, {
+        detail: State(':id', { enter: function(params) {
           lastParams = params;
-        })
+        }})
       })
 
     })

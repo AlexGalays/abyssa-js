@@ -6,37 +6,17 @@ var util  = require('./util');
 var PARAMS = /:[^\\?\/]*/g;
 
 /*
-* Create a new State instance.
-*
-* State() // A state without options and an empty path.
-* State('path', {options}) // A state with a static named path and options
-* State(':path', {options}) // A state with a dynamic named path and options
-* State('path?query', {options}) // Same as above with an optional query string param named 'query'
-* State({options}) // Its path is the empty string.
-*
-* options is an object with the following optional properties:
-* enter, update, exit.
-*
-* Child states can also be specified in the options:
-* State({ myChildStateName: State() })
-* This is the declarative equivalent to the addState method.
-*
-* Finally, options can contain any arbitrary data value
-* that will get stored in the state and made available via the data() method:
-* State({data: { myData: 55 } })
-* This is the declarative equivalent to the data(key, value) method.
+* Creates a new State instance from a {url, enter, exit, update, data, children} object.
+* This is the internal representation of a state used by the router.
 */
-function State() {
-  var state    = { _isState: true },
-      args     = getArgs(arguments),
-      options  = args.options,
-      states   = getStates(args.options),
+function State(options) {
+  var state    = {},
+      states   = options.children,
       initialized;
 
-
-  state.path = args.path;
-  state.params = args.params;
-  state.queryParams = args.queryParams;
+  state.path = pathFromURL(options.url);
+  state.params = paramsFromURL(options.url);
+  state.queryParams = queryParamsFromURL(options.url);
   state.states = states;
 
   state.enter = options.enter || util.noop;
@@ -56,7 +36,6 @@ function State() {
     state.root = state.parent ? state.parents[state.parents.length - 1] : state;
     state.children = getChildren();
     state.fullName = getFullName();
-    state.root = state.parents[state.parents.length - 1];
 
     eachChildState(function(name, childState) {
       childState.init(router, name, state);
@@ -109,19 +88,6 @@ function State() {
   }
 
   /*
-  * The map of initial child states by name.
-  */
-  function getStates(options) {
-    var states = {};
-
-    for (var key in options) {
-      if (options[key]._isState) states[key] = options[key];
-    }
-
-    return states;
-  }
-
-  /*
   * The fully qualified name of this state.
   * e.g granparentName.parentName.name
   */
@@ -160,24 +126,6 @@ function State() {
 
   function eachChildState(callback) {
     for (var name in states) callback(name, states[name]);
-  }
-
-  /*
-  * Add a child state.
-  */
-  function addState(name, childState) {
-    if (initialized)
-      throw new Error('States can only be added before the Router is initialized');
-
-    if (states[name])
-      throw new Error('The state {0} already has a child state named {1}'
-        .replace('{0}', state.name)
-        .replace('{1}', name)
-      );
-
-    states[name] = childState;
-
-    return state;
   }
 
   /*
@@ -248,7 +196,6 @@ function State() {
   state.init = init;
   state.fullPath = fullPath;
   state.allQueryParams = allQueryParams;
-  state.addState = addState;
   state.matches = matches;
   state.interpolate = interpolate;
 
@@ -266,37 +213,18 @@ function paramName(param) {
     : param.substr(1);
 }
 
+function pathFromURL(url) {
+  return (url || '').split('?')[0];
+}
 
-// Extract the arguments of the overloaded State "constructor" function.
-function getArgs(args) {
-  var result  = { path: '', params: {}, queryParams: {}, options: {} },
-      arg1    = args[0],
-      arg2    = args[1],
-      queryIndex,
-      param;
+function paramsFromURL(url) {
+  var matches = PARAMS.exec(url);
+  return matches ? util.arrayToObject(matches.map(paramName)) : {};
+}
 
-  if (args.length == 1) {
-    if (util.isString(arg1)) result.path = arg1;
-    else result.options = arg1;
-  }
-  else if (args.length == 2) {
-    result.path = arg1;
-    result.options = (typeof arg2 == 'object') ? arg2 : {enter: arg2};
-  }
-
-  var paramMatches = PARAMS.exec(result.path);
-  result.params = paramMatches
-    ? util.arrayToObject(paramMatches.map(paramName))
-    : {};
-
-  queryIndex = result.path.indexOf('?');
-  if (queryIndex != -1) {
-    result.queryParams = result.path.slice(queryIndex + 1);
-    result.queryParams = util.arrayToObject(result.queryParams.split('&'));
-    result.path = util.normalizePathQuery(result.path.slice(0, queryIndex));
-  }
-
-  return result;
+function queryParamsFromURL(url) {
+  var query = (url || '').split('?')[1];
+  return query ? util.arrayToObject(query.split('&')): {};
 }
 
 

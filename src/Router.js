@@ -6,7 +6,8 @@ var EventEmitter     = require('events'),
     interceptAnchors = require('./anchors'),
     StateWithParams  = require('./StateWithParams'),
     Transition       = require('./Transition'),
-    util             = require('./util');
+    util             = require('./util'),
+    State            = require('./State');
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
@@ -17,7 +18,7 @@ var EventEmitter     = require('events'),
 */
 function Router(declarativeStates) {
   var router = {},
-      states = util.copyObject(declarativeStates),
+      states = stateTrees(declarativeStates),
       firstTransition = true,
       options = {
         enableLogs: false,
@@ -321,6 +322,8 @@ function Router(declarativeStates) {
     if (states[name])
       throw new Error('A state already exist in the router with the name ' + name);
 
+    state = stateTree(state);
+
     states[name] = state;
 
     if (initialized) {
@@ -440,6 +443,18 @@ function Router(declarativeStates) {
   */
   function isFirstTransition() {
     return previousState == null;
+  }
+
+  function stateTrees(states) {
+    return util.mapValues(states, stateTree);
+  }
+
+  /*
+  * Creates an internal State object from a specification POJO.
+  */
+  function stateTree(state) {
+    if (state.children) state.children = stateTrees(state.children);
+    return State(state);
   }
 
   function logStateTree() {
