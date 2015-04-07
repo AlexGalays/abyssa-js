@@ -1,55 +1,53 @@
 
 'use strict';
 
+var util = {};
 
-function isString(instance) {
-   return Object.prototype.toString.call(instance) == '[object String]';
-}
 
-function noop() {}
+util.noop = function() {};
 
-function arrayToObject(array) {
+util.arrayToObject = function(array) {
   return array.reduce(function(obj, item) {
     obj[item] = 1;
     return obj;
   }, {});
-}
+};
 
-function objectToArray(obj) {
+util.objectToArray = function(obj) {
   var array = [];
   for (var key in obj) array.push(obj[key]);
   return array;
-}
+};
 
-function copyObject(obj) {
+util.copyObject = function(obj) {
   var copy = {};
   for (var key in obj) copy[key] = obj[key];
   return copy;
-}
+};
 
-function mergeObjects(to, from) {
+util.mergeObjects = function(to, from) {
   for (var key in from) to[key] = from[key];
   return to;
-}
+};
 
-function objectSize(obj) {
+util.objectSize = function(obj) {
   var size = 0;
   for (var key in obj) size++;
   return size;
-}
+};
 
-function mapValues(obj, fn) {
+util.mapValues = function(obj, fn) {
   var result = {};
   for (var key in obj) {
     result[key] = fn(obj[key]);
   }
   return result;
-}
+};
 
 /*
 * Return the set of all the keys that changed (either added, removed or modified).
 */
-function objectDiff(obj1, obj2) {
+util.objectDiff = function(obj1, obj2) {
   var diff, update = {}, enter = {}, exit = {}, all = {},
       name,
       obj1 = obj1 || {};
@@ -74,9 +72,9 @@ function objectDiff(obj1, obj2) {
   };
 
   return diff;
-}
+};
 
-function makeMessage() {
+util.makeMessage = function() {
   var message = arguments[0],
       tokens = Array.prototype.slice.call(arguments, 1);
 
@@ -84,51 +82,36 @@ function makeMessage() {
     message = message.replace('{' + i + '}', tokens[i]);
 
   return message;
-}
+};
 
-function parsePaths(path) {
+util.parsePaths = function(path) {
   return path.split('/')
     .filter(function(str) { return str.length })
     .map(function(str) { return decodeURIComponent(str) });
-}
+};
 
-function parseQueryParams(query) {
+util.parseQueryParams = function(query) {
   return query ? query.split('&').reduce(function(res, paramValue) {
     var pv = paramValue.split('=');
     res[pv[0]] = decodeURIComponent(pv[1]);
     return res;
   }, {}) : {};
-}
+};
 
 
 var LEADING_SLASHES = /^\/+/;
 var TRAILING_SLASHES = /^([^?]*?)\/+$/;
 var TRAILING_SLASHES_BEFORE_QUERY = /\/+\?/;
-function normalizePathQuery(pathQuery) {
+util.normalizePathQuery = function(pathQuery) {
   return ('/' + pathQuery
     .replace(LEADING_SLASHES, '')
     .replace(TRAILING_SLASHES, '$1')
     .replace(TRAILING_SLASHES_BEFORE_QUERY, '?'));
-}
-
-function stateShorthand(url, options, children) {
-  return mergeObjects({ url: url, children: children || {} }, options);
-}
-
-
-module.exports = {
-  isString: isString,
-  noop: noop,
-  arrayToObject: arrayToObject,
-  objectToArray: objectToArray,
-  copyObject: copyObject,
-  mergeObjects: mergeObjects,
-  objectSize: objectSize,
-  makeMessage: makeMessage,
-  normalizePathQuery: normalizePathQuery,
-  objectDiff: objectDiff,
-  parsePaths: parsePaths,
-  parseQueryParams: parseQueryParams,
-  stateShorthand: stateShorthand,
-  mapValues: mapValues
 };
+
+util.stateShorthand = function(url, options, children) {
+  return util.mergeObjects({ url: url, children: children || {} }, options);
+};
+
+
+module.exports = util;

@@ -865,7 +865,7 @@ test('util.normalizePathQuery', function() {
 
   function expect(from, to) {
     var assertMessage = ('"' + from + '" => "' + to + '"');
-    equal(Abyssa.util.normalizePathQuery(from), to, assertMessage);
+    equal(Abyssa._util.normalizePathQuery(from), to, assertMessage);
   }
 
   // No slash changes required
