@@ -7,7 +7,8 @@ var EventEmitter     = require('events'),
     StateWithParams  = require('./StateWithParams'),
     Transition       = require('./Transition'),
     util             = require('./util'),
-    State            = require('./State');
+    State            = require('./State'),
+    api              = require('./api');
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
@@ -498,12 +499,13 @@ function Router(declarativeStates) {
   router.params = getParams;
   router.queryParams = getQueryParams;
   router.paramsDiff = getParamsDiff;
+  router.transition = new EventEmitter();
 
   // Used for testing purposes only
   router.urlPathQuery = urlPathQuery;
   router.terminate = terminate;
 
-  router.transition = new EventEmitter();
+  util.mergeObjects(api, router);
 
   return router;
 }

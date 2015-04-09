@@ -986,6 +986,44 @@ test('router path/query/params utils', function() {
 });
 
 
+test('To break circular dependencies, the api object can be used instead of the router', function() {
+
+  var router = Abyssa.api;
+  var events = [];
+
+  Router({
+
+    index: {
+      enter: function() {
+        events.push('indexEnter');
+      },
+
+      exit: function() {
+        events.push('indexExit');
+      }
+    },
+
+    articles: {
+      url: 'articles/:id?filter',
+
+      enter: function(params) {
+        events.push('articlesEnter');
+      },
+
+      exit: function() {
+        events.push('articlesExit');
+      }
+    }
+
+  }).init('');
+
+  events = [];
+  router.state('articles/33');
+
+  deepEqual(events, ['indexExit', 'articlesEnter']);
+});
+
+
 function stubHistory() {
   window.history.pushState = function() {};
 }

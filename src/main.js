@@ -3,10 +3,13 @@
 
 var util = require('./util');
 
+
 var Abyssa = {
   Router: require('./Router'),
-  State:  util.stateShorthand,
-  _util:  util
+  api: require('./api'),
+  State: util.stateShorthand,
+
+  _util: util
 };
 
 module.exports = Abyssa;
