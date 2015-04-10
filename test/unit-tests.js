@@ -26,7 +26,8 @@ test('Simple states', function() {
     articles: {
       url: 'articles/:id?filter',
 
-      enter: function(params) {
+      enter: function(params, props) {
+        console.log(props);
         events.push('articlesEnter');
         lastArticleId = params.id;
         lastFilter = params.filter;
@@ -656,7 +657,7 @@ test('Redirecting from transition.started', function() {
   router.state('uno');
 
   equal(completedCount, 1);
-  equal(router.currentState().state.name, 'dos');
+  equal(router.current().state.name, 'dos');
 
   function incrementCompletedCount() {
     completedCount++;
@@ -813,7 +814,7 @@ test('event handlers are passed StateWithParams objects', function() {
 });
 
 
-test('router.currentState and router.previousState', function() {
+test('router.current and router.previous', function() {
 
   var router = Router({
 
@@ -832,18 +833,18 @@ test('router.currentState and router.previousState', function() {
 
 
   function assertions() {
-    var state = router.currentState();
+    var state = router.current();
     stateWithParamsAssertions(state);
 
-    equal(router.previousState(), null);
+    equal(router.previous(), null);
 
     router.state('state2/england/london');
 
-    var previousState = router.previousState();
-    equal(previousState, state);
-    stateWithParamsAssertions(previousState);
+    var previous = router.previous();
+    equal(previous, state);
+    stateWithParamsAssertions(previous);
 
-    equal(router.currentState().state.fullName, 'state2');
+    equal(router.current().state.fullName, 'state2');
   }
 
 });
@@ -924,7 +925,7 @@ test('can prevent a transition by navigating to self from the exit handler', fun
   // Only the initial event is here. 
   // Since the exit was interrupted, there's no reason to re-enter.
   deepEqual(events, ['unoEnter']);
-  equal(router.currentState().state.name, 'uno');
+  equal(router.current().state.name, 'uno');
 });
 
 

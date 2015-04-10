@@ -382,7 +382,7 @@ function Router(declarativeStates) {
   /*
   * Returns a StateWithParams object representing the current state of the router.
   */
-  function getCurrentState() {
+  function getCurrent() {
     return currentState;
   }
 
@@ -390,7 +390,7 @@ function Router(declarativeStates) {
   * Returns a StateWithParams object representing the previous state of the router
   * or null if the router is still in its initial state.
   */
-  function getPreviousState() {
+  function getPrevious() {
     return previousState;
   }
 
@@ -491,8 +491,8 @@ function Router(declarativeStates) {
   router.backTo = backTo;
   router.addState = addState;
   router.link = link;
-  router.currentState = getCurrentState;
-  router.previousState = getPreviousState;
+  router.current = getCurrent;
+  router.previous = getPrevious;
   router.isFirstTransition = isFirstTransition;
   router.path = getPath;
   router.query = getQuery;

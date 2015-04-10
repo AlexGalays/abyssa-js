@@ -130,14 +130,14 @@ asyncTest('history.back() on the notFound state', function() {
 
 
   router.state('/wat');
-  equal(router.currentState().state.name, 'notFound');
+  equal(router.current().state.name, 'notFound');
   router.state('index');
   history.back();
 
   delay(60).then(function() {
     // TODO: This assertion should pass ideally; uncomment after the biggest refactorings
     //equal(router.urlPathQuery(), '/notFound');
-    equal(router.currentState().state.name, 'notFound');
+    equal(router.current().state.name, 'notFound');
   })
   .then(startLater);
 
@@ -178,7 +178,7 @@ asyncTest('hash mode switched on', function() {
     startLater();
 
     function stateShouldBeCategoryDetail() {
-      strictEqual(router.currentState().state.fullName, 'category1.detail');
+      strictEqual(router.current().state.fullName, 'category1.detail');
       strictEqual(lastParams.id, '56');
       strictEqual(window.location.hash, '#/category1/56');
     }
@@ -188,7 +188,7 @@ asyncTest('hash mode switched on', function() {
     }
 
     function stateShouldBeIndex() {
-      strictEqual(router.currentState().state.fullName, 'index');
+      strictEqual(router.current().state.fullName, 'index');
       strictEqual(window.location.hash, '#/');
     }
 
@@ -197,7 +197,7 @@ asyncTest('hash mode switched on', function() {
     }
 
     function stateShouldBeCategoryDetail2() {
-      strictEqual(router.currentState().state.fullName, 'category1.detail');
+      strictEqual(router.current().state.fullName, 'category1.detail');
       strictEqual(lastParams.id, '88');
       strictEqual(window.location.hash, '#/category1/88');
     }
@@ -241,7 +241,7 @@ asyncTest('customize hashbang', function() {
     startLater();
 
     function stateShouldBeCategoryDetail() {
-      strictEqual(router.currentState().state.fullName, 'category1.detail');
+      strictEqual(router.current().state.fullName, 'category1.detail');
       strictEqual(lastParams.id, '56');
       strictEqual(window.location.hash, '#!/category1/56');
     }
@@ -251,7 +251,7 @@ asyncTest('customize hashbang', function() {
     }
 
     function stateShouldBeIndex() {
-      strictEqual(router.currentState().state.fullName, 'index');
+      strictEqual(router.current().state.fullName, 'index');
       strictEqual(window.location.hash, '#!/');
     }
 
@@ -260,7 +260,7 @@ asyncTest('customize hashbang', function() {
     }
 
     function stateShouldBeCategoryDetail2() {
-      strictEqual(router.currentState().state.fullName, 'category1.detail');
+      strictEqual(router.current().state.fullName, 'category1.detail');
       strictEqual(lastParams.id, '88');
       strictEqual(window.location.hash, '#!/category1/88');
     }
