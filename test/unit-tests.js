@@ -929,64 +929,6 @@ test('can prevent a transition by navigating to self from the exit handler', fun
 });
 
 
-test('router path/query/params utils', function() {
-
-  var queryParams = ['q1', 'q2', 'q3'].join('&');
-
-  var router = Router({
-    parent: State('?parentQuery', {}, {
-      book: State('books/:id/category/:cat?' + queryParams)
-    })
-  })
-  .init('books/33/category/sci-fi?q1=11&q2=yes');
-
-  bookAssertions();
-  updateBook();
-  updatedBookAssertions();
-
-  function bookAssertions() {
-    equal(router.path(), '/books/33/category/sci-fi');
-    equal(router.query(), 'q1=11&q2=yes');
-
-    deepEqual(router.params(), { id: '33', cat: 'sci-fi', q1: '11', q2: 'yes' });
-    deepEqual(router.queryParams(), { q1: '11', q2: 'yes' });
-
-    deepEqual(router.paramsDiff(), {
-      update: {},
-      enter:  { id: true, cat: true, q1: true, q2: true },
-      exit:   {},
-      all:    { id: true, cat: true, q1: true, q2: true }
-    });
-  }
-
-  function updateBook() {
-    var params = router.params();
-    params.id = 44;
-    params.q1 = 'red';
-    params.q3 = 'new';
-    delete params.q2;
-
-    router.state('parent.book', params);
-  }
-
-  function updatedBookAssertions() {
-    equal(router.path(), '/books/44/category/sci-fi');
-    equal(router.query(), 'q1=red&q3=new');
-
-    deepEqual(router.params(), { id: '44', cat: 'sci-fi', q1: 'red', q3: 'new' });
-    deepEqual(router.queryParams(), { q1: 'red', q3: 'new' });
-
-    deepEqual(router.paramsDiff(), {
-      update: { id: true, q1: true },
-      enter:  { q3: true },
-      exit:   { q2: true },
-      all:    { id: true, q1: true, q2: true, q3: true }
-    });
-  }
-
-});
-
-
 test('To break circular dependencies, the api object can be used instead of the router', function() {
 
   var router = Abyssa.api;

@@ -395,27 +395,6 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Returns the path portion of the current url
-  */
-  function getPath() {
-    return currentPathQuery.split('?')[0];
-  }
-
-  /*
-  * Returns the query portion of the current url
-  */
-  function getQuery() {
-    return currentPathQuery.split('?')[1];
-  }
-
-  /*
-  * Returns all params (path and query) associated to the current state
-  */
-  function getParams() {
-    return util.copyObject(currentState.params);
-  }
-
-  /*
   * Returns the query params associated to the current state
   */
   function getQueryParams() {
@@ -494,9 +473,6 @@ function Router(declarativeStates) {
   router.current = getCurrent;
   router.previous = getPrevious;
   router.isFirstTransition = isFirstTransition;
-  router.path = getPath;
-  router.query = getQuery;
-  router.params = getParams;
   router.queryParams = getQueryParams;
   router.paramsDiff = getParamsDiff;
   router.transition = new EventEmitter();
