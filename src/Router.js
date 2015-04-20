@@ -190,7 +190,7 @@ function Router(declarativeStates) {
     initState = (initState !== undefined) ? initState : urlPathQuery();
 
     logger.log('Initializing to state {0}', initState || '""');
-    state(initState, initParams);
+    transitionTo(initState, initParams);
 
     listenToURLChanges();
 
@@ -259,10 +259,10 @@ function Router(declarativeStates) {
   * Request a programmatic state change.
   *
   * Two notations are supported:
-  * state('my.target.state', {id: 33, filter: 'desc'})
-  * state('target/33?filter=desc')
+  * transitionTo('my.target.state', {id: 33, filter: 'desc'})
+  * transitionTo('target/33?filter=desc')
   */
-  function state(pathQueryOrName) {
+  function transitionTo(pathQueryOrName) {
     var isName = leafStates[pathQueryOrName] !== undefined;
     var params = isName ? arguments[1] : null;
 
@@ -282,7 +282,7 @@ function Router(declarativeStates) {
   */
   function backTo(stateName, defaultParams) {
     var params = leafStates[stateName].lastParams || defaultParams;
-    state(stateName, params);
+    transitionTo(stateName, params);
   }
 
   function setStateForPathQuery(pathQuery) {
@@ -454,7 +454,7 @@ function Router(declarativeStates) {
 
   router.configure = configure;
   router.init = init;
-  router.state = state;
+  router.transitionTo = transitionTo;
   router.backTo = backTo;
   router.addState = addState;
   router.link = link;

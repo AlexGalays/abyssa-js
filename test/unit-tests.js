@@ -43,19 +43,19 @@ test('Simple states', function() {
   deepEqual(events, ['indexEnter']);
   events = [];
 
-  router.state('articles', { id: 38, filter: 'dark green' });
+  router.transitionTo('articles', { id: 38, filter: 'dark green' });
 
   deepEqual(events, ['indexExit', 'articlesEnter']);
   strictEqual(lastArticleId, '38');
   strictEqual(lastFilter, 'dark green');
   events = [];
 
-  router.state('index');
+  router.transitionTo('index');
 
   deepEqual(events, ['articlesExit', 'indexEnter']);
   events = [];
 
-  router.state('articles/44?filter=666');
+  router.transitionTo('articles/44?filter=666');
 
   deepEqual(events, ['indexExit', 'articlesEnter']);
   strictEqual(lastArticleId, '44');
@@ -97,19 +97,19 @@ test('Simple states with shorthand function', function() {
   deepEqual(events, ['indexEnter']);
   events = [];
 
-  router.state('articles', { id: 38, filter: 'dark green' });
+  router.transitionTo('articles', { id: 38, filter: 'dark green' });
 
   deepEqual(events, ['indexExit', 'articlesEnter']);
   strictEqual(lastArticleId, '38');
   strictEqual(lastFilter, 'dark green');
   events = [];  
 
-  router.state('index');
+  router.transitionTo('index');
 
   deepEqual(events, ['articlesExit', 'indexEnter']);
   events = [];
 
-  router.state('articles/44?filter=666');
+  router.transitionTo('articles/44?filter=666');
 
   deepEqual(events, ['indexExit', 'articlesEnter']);
   strictEqual(lastArticleId, '44');
@@ -198,11 +198,11 @@ test('Missing state with a "notFound" state defined by its fullName', function()
 
   ok(reachedNotFound);
 
-  router.state('');
+  router.transitionTo('');
   reachedNotFound = false;
 
   // Should also work with the reverse routing notation
-  router.state('articles.naturess.edit', { id: '88' });
+  router.transitionTo('articles.naturess.edit', { id: '88' });
 
   ok(reachedNotFound);
 });
@@ -223,12 +223,12 @@ test('Missing state without a "notFound" state defined', function() {
   }).init('');
 
   throws(function() {
-    router.state('articles/naturess/88/edit');
+    router.transitionTo('articles/naturess/88/edit');
   });
 
   // Also work with the reverse routing notation
   throws(function() {
-    router.state('articles.naturess.edit', { id: '88' });
+    router.transitionTo('articles.naturess.edit', { id: '88' });
   });
 
 });
@@ -285,7 +285,7 @@ test('Only leaf states are addressable', function() {
   }).init('');
 
   throws(function() {
-    router.state('articles');
+    router.transitionTo('articles');
   });
 
 });
@@ -310,7 +310,7 @@ test('No transition occurs when going to the same state', function() {
 
   events = [];
 
-  router.state('articles/33/today');
+  router.transitionTo('articles/33/today');
   deepEqual(events, []);
 
 });
@@ -360,19 +360,19 @@ test('Param and query changes should trigger a transition', function() {
 
 
   events = [];
-  router.state('blog/articles/44/edit');
+  router.transitionTo('blog/articles/44/edit');
 
   // The transition only goes up to the state owning the param
   deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
   events = [];
 
-  router.state('blog/articles/44/edit?filter=1');
+  router.transitionTo('blog/articles/44/edit?filter=1');
 
   // By default, a change in the query will result in a complete transition to the root state and back.
   deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
   events = [];
 
-  router.state('blog/articles/44/edit?filter=2');
+  router.transitionTo('blog/articles/44/edit?filter=2');
 
   deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
 });
@@ -411,19 +411,19 @@ test('Param changes in a leaf state should not trigger a parent transition', fun
 
 
   events = [];
-  router.state('/blog/articles/44');
+  router.transitionTo('/blog/articles/44');
 
   // The transition only goes up to the state owning the param
   deepEqual(events, ['articlesExit', 'articlesEnter']);
   events = [];
 
-  router.state('/blog/articles/44?filter=1');
+  router.transitionTo('/blog/articles/44?filter=1');
 
   // By default, a change in the query will result in a complete transition to the root state and back.
   deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter']);
   events = [];
 
-  router.state('/blog/articles/44?filter=2');
+  router.transitionTo('/blog/articles/44?filter=2');
 
   deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter']);
 });
@@ -482,7 +482,7 @@ test('Query-only transitions', function() {
 
   function setSomeUnknownQuery() {
     events = [];
-    router.state('blog/articles/33/edit?someQuery=true');
+    router.transitionTo('blog/articles/33/edit?someQuery=true');
   }
 
   function fullTransitionOccurred() {
@@ -491,7 +491,7 @@ test('Query-only transitions', function() {
 
   function setFilterQuery() {
     events = [];
-    router.state('blog/articles/33/edit?filter=33');
+    router.transitionTo('blog/articles/33/edit?filter=33');
   }
 
   function onlyExitedUpToStateOwningFilter() {
@@ -500,12 +500,12 @@ test('Query-only transitions', function() {
   
   function swapFilterValue() {
     events = [];
-    router.state('blog/articles/33/edit?filter=34');
+    router.transitionTo('blog/articles/33/edit?filter=34');
   }
 
   function removeFilterQuery() {
     events = [];
-    router.state('blog/articles/33/edit');
+    router.transitionTo('blog/articles/33/edit');
   }
 
 });
@@ -620,7 +620,7 @@ test('redirect', function() {
 
     oldRoute: State('oldRoute', {
       enter: function() {
-        router.state('newRoute'); 
+        router.transitionTo('newRoute'); 
       },
       exit: function() { oldRouteExited = true; }
     }, {
@@ -651,10 +651,10 @@ test('Redirecting from transition.started', function() {
   .init('');
 
   router.transition.once('started', function() {
-    router.state('dos');
+    router.transitionTo('dos');
   });
 
-  router.state('uno');
+  router.transitionTo('uno');
 
   equal(completedCount, 1);
   equal(router.current().name, 'dos');
@@ -677,15 +677,15 @@ test('rest params', function() {
   }).init('');
 
 
-  router.state('colors');
+  router.transitionTo('colors');
 
   strictEqual(lastParams.rest, undefined);
 
-  router.state('colors/red');
+  router.transitionTo('colors/red');
 
   strictEqual(lastParams.rest, 'red');
 
-  router.state('colors/red/blue');
+  router.transitionTo('colors/red/blue');
 
   strictEqual(lastParams.rest, 'red/blue');
 });
@@ -705,7 +705,7 @@ test('backTo', function() {
   }).init('articles/33?filter=66');
 
 
-  router.state('books');
+  router.transitionTo('books');
 
   passedParams = null;
   router.backTo('articles', { id: 1 });
@@ -750,7 +750,7 @@ test('update', function() {
 
   events = [];
   updateParams = null;
-  router.state('root.news.archive.detail', { id: 34 });
+  router.transitionTo('root.news.archive.detail', { id: 34 });
 
   deepEqual(events, [
     'archiveExit',
@@ -838,7 +838,7 @@ test('router.current and router.previous', function() {
 
     equal(router.previous(), null);
 
-    router.state('state2/england/london');
+    router.transitionTo('state2/england/london');
 
     var previous = router.previous();
     equal(previous, state);
@@ -912,7 +912,7 @@ test('can prevent a transition by navigating to self from the exit handler', fun
   var router = Router({
     uno: State('uno', {
       enter: function() { events.push('unoEnter'); },
-      exit: function() { router.state('uno'); }
+      exit: function() { router.transitionTo('uno'); }
     }),
     dos: State('dos', {
       enter: function() { events.push('dosEnter'); },
@@ -921,7 +921,7 @@ test('can prevent a transition by navigating to self from the exit handler', fun
   })
   .init('uno');
 
-  router.state('dos');
+  router.transitionTo('dos');
   // Only the initial event is here. 
   // Since the exit was interrupted, there's no reason to re-enter.
   deepEqual(events, ['unoEnter']);
@@ -961,7 +961,7 @@ test('To break circular dependencies, the api object can be used instead of the 
   }).init('');
 
   events = [];
-  router.state('articles/33');
+  router.transitionTo('articles/33');
 
   deepEqual(events, ['indexExit', 'articlesEnter']);
 });

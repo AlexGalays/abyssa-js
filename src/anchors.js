@@ -8,7 +8,7 @@ function onMouseDown(evt) {
   var href = hrefForEvent(evt);
 
   if (href !== undefined)
-    router.state(href);
+    router.transitionTo(href);
 }
 
 function onMouseClick(evt) {
@@ -17,7 +17,7 @@ function onMouseClick(evt) {
   if (href !== undefined) {
     evt.preventDefault();
 
-    router.state(href);
+    router.transitionTo(href);
   }
 }
 

@@ -79,7 +79,7 @@ asyncTest('Redirect', function() {
   router = Router({
 
     index: State('index', { enter: function() {
-      router.state('articles');
+      router.transitionTo('articles');
     }}),
 
     articles: State('articles')
@@ -104,8 +104,8 @@ asyncTest('history.back()', function() {
   }).init('index');
 
 
-  router.state('articles');
-  router.state('books');
+  router.transitionTo('articles');
+  router.transitionTo('books');
   equal(router.urlPathQuery(), '/books');
   history.back();
 
@@ -129,9 +129,9 @@ asyncTest('history.back() on the notFound state', function() {
   .init('index');
 
 
-  router.state('/wat');
+  router.transitionTo('/wat');
   equal(router.current().name, 'notFound');
-  router.state('index');
+  router.transitionTo('index');
   history.back();
 
   delay(60).then(function() {
@@ -184,7 +184,7 @@ asyncTest('hash mode switched on', function() {
     }
 
     function goToIndex() {
-      router.state('/');
+      router.transitionTo('/');
     }
 
     function stateShouldBeIndex() {
@@ -193,7 +193,7 @@ asyncTest('hash mode switched on', function() {
     }
 
     function goToCategoryDetail() {
-      router.state('category1.detail', { id: 88 });
+      router.transitionTo('category1.detail', { id: 88 });
     }
 
     function stateShouldBeCategoryDetail2() {
@@ -247,7 +247,7 @@ asyncTest('customize hashbang', function() {
     }
 
     function goToIndex() {
-      router.state('/');
+      router.transitionTo('/');
     }
 
     function stateShouldBeIndex() {
@@ -256,7 +256,7 @@ asyncTest('customize hashbang', function() {
     }
 
     function goToCategoryDetail() {
-      router.state('category1.detail', { id: 88 });
+      router.transitionTo('category1.detail', { id: 88 });
     }
 
     function stateShouldBeCategoryDetail2() {
