@@ -4,7 +4,7 @@
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramsDiff, logger) {
+function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, logger) {
   var root,
       enters,
       error,
@@ -34,7 +34,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, logger) 
   enters = transitionStates(toState, root, isUpdate).reverse();
 
   function run() {
-    startTransition(enters, exits, params, transition, isUpdate, logger);
+    startTransition(enters, exits, params, transition, isUpdate, acc, logger);
   }
 
   function cancel() {
@@ -44,21 +44,23 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, logger) 
   return transition;
 }
 
-function startTransition(enters, exits, params, transition, isUpdate, logger) {
+function startTransition(enters, exits, params, transition, isUpdate, acc, logger) {
+  acc = acc || {};
+
   transition.exiting = true;
   exits.forEach(function(state) {
     if (isUpdate && state.update) return;
-    runStep(state, 'exit', params, transition, logger);
+    runStep(state, 'exit', params, transition, acc, logger);
   });
   transition.exiting = false;
 
   enters.forEach(function(state) {
     var fn = (isUpdate && state.update) ? 'update' : 'enter';
-    runStep(state, fn, params, transition, logger);
+    runStep(state, fn, params, transition, acc, logger);
   });
 }
 
-function runStep(state, stepFn, params, transition, logger) {
+function runStep(state, stepFn, params, transition, acc, logger) {
   if (transition.cancelled) return;
 
   if (logger.enabled) {
@@ -66,7 +68,7 @@ function runStep(state, stepFn, params, transition, logger) {
     logger.log(capitalizedStep + ' ' + state.fullName);
   }
 
-  var result = state[stepFn](params);
+  var result = state[stepFn](params, acc);
 
   if (transition.cancelled) return;
 

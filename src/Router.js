@@ -44,7 +44,7 @@ function Router(declarativeStates) {
   * A successful transition will result in the URL being changed.
   * A failed transition will leave the router in its current state.
   */
-  function setState(state, params) {
+  function setState(state, params, acc) {
     var fromState = transition
       ? StateWithParams(transition.currentState, transition.toParams)
       : currentState;
@@ -70,6 +70,7 @@ function Router(declarativeStates) {
       fromState,
       toState,
       diff,
+      acc,
       logger
     );
 
@@ -264,28 +265,29 @@ function Router(declarativeStates) {
   */
   function transitionTo(pathQueryOrName) {
     var isName = leafStates[pathQueryOrName] !== undefined;
-    var params = isName ? arguments[1] : null;
+    var params = (isName ? arguments[1] : null) || {};
+    var acc = isName ? arguments[2] : arguments[1];
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
 
     urlChanged = false;
 
     if (isName)
-      setStateByName(pathQueryOrName, params || {});
+      setStateByName(pathQueryOrName, params, acc);
     else
-      setStateForPathQuery(pathQueryOrName);
+      setStateForPathQuery(pathQueryOrName, acc);
   }
 
   /*
   * Attempt to navigate to 'stateName' with its previous params or
   * fallback to the defaultParams parameter if the state was never entered.
   */
-  function backTo(stateName, defaultParams) {
+  function backTo(stateName, defaultParams, acc) {
     var params = leafStates[stateName].lastParams || defaultParams;
-    transitionTo(stateName, params);
+    transitionTo(stateName, params, acc);
   }
 
-  function setStateForPathQuery(pathQuery) {
+  function setStateForPathQuery(pathQuery, acc) {
     var state, params, _state, _params;
 
     currentPathQuery = util.normalizePathQuery(pathQuery);
@@ -307,17 +309,17 @@ function Router(declarativeStates) {
       }
     }
 
-    if (state) setState(state, params);
+    if (state) setState(state, params, acc);
     else notFound(currentPathQuery);
   }
 
-  function setStateByName(name, params) {
+  function setStateByName(name, params, acc) {
     var state = leafStates[name];
 
     if (!state) return notFound(name);
 
     var pathQuery = interpolate(state, params);
-    setStateForPathQuery(pathQuery);
+    setStateForPathQuery(pathQuery, acc);
   }
 
   /*

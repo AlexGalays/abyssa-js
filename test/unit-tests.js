@@ -929,7 +929,7 @@ test('can prevent a transition by navigating to self from the exit handler', fun
 });
 
 
-test('To break circular dependencies, the api object can be used instead of the router', function() {
+test('to break circular dependencies, the api object can be used instead of the router', function() {
 
   var router = Abyssa.api;
   var events = [];
@@ -965,6 +965,68 @@ test('To break circular dependencies, the api object can be used instead of the 
 
   deepEqual(events, ['indexExit', 'articlesEnter']);
 });
+
+
+test('an accumulator object is passed to all states', function() {
+
+  var router = Abyssa.api;
+
+  Router({
+
+    articles: {
+      url: 'articles',
+      enter: function(params, acc) {
+        deepEqual(acc, {});
+        acc.fromParent = 123;
+      },
+
+      children: {
+        detail: {
+          url: ':id',
+          enter: function(params, acc) {
+            deepEqual(acc, { fromParent: 123 });
+          }
+        }
+      }
+    }
+
+  }).init('articles/33');
+});
+
+
+test('a custom accumulator object can be passed to all states', function() {
+
+  var myAcc = {};
+
+  var router = Abyssa.api;
+
+  Router({
+
+    index: State('', {}),
+
+    articles: {
+      url: 'articles',
+      enter: function(params, acc) {
+        equal(myAcc, acc);
+        acc.fromParent = 123;
+      },
+
+      children: {
+        detail: {
+          url: ':id',
+          enter: function(params, acc) {
+            equal(myAcc, acc);
+            deepEqual(acc, { fromParent: 123 });
+          }
+        }
+      }
+    }
+
+  }).init('');
+
+  router.transitionTo('articles/33', myAcc);
+});
+
 
 
 function stubHistory() {
