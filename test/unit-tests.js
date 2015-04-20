@@ -657,7 +657,7 @@ test('Redirecting from transition.started', function() {
   router.state('uno');
 
   equal(completedCount, 1);
-  equal(router.current().state.name, 'dos');
+  equal(router.current().name, 'dos');
 
   function incrementCompletedCount() {
     completedCount++;
@@ -781,10 +781,10 @@ test('update', function() {
 
 
 function stateWithParamsAssertions(stateWithParams) {
-  equal(stateWithParams.state.name, 'state1Child');
-  equal(stateWithParams.state.fullName, 'state1.state1Child');
+  equal(stateWithParams.name, 'state1Child');
+  equal(stateWithParams.fullName, 'state1.state1Child');
 
-  ok(stateWithParams.state.data('myData'), 666);
+  ok(stateWithParams.data('myData'), 666);
 
   ok(stateWithParams.params.id, '33');
   ok(stateWithParams.params.category, 'misc');
@@ -844,7 +844,7 @@ test('router.current and router.previous', function() {
     equal(previous, state);
     stateWithParamsAssertions(previous);
 
-    equal(router.current().state.fullName, 'state2');
+    equal(router.current().fullName, 'state2');
   }
 
 });
@@ -925,7 +925,7 @@ test('can prevent a transition by navigating to self from the exit handler', fun
   // Only the initial event is here. 
   // Since the exit was interrupted, there's no reason to re-enter.
   deepEqual(events, ['unoEnter']);
-  equal(router.current().state.name, 'uno');
+  equal(router.current().name, 'uno');
 });
 
 

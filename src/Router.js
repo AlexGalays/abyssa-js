@@ -99,7 +99,10 @@ function Router(declarativeStates) {
   function startingTransition(fromState, toState) {
     logger.log('Starting transition from {0} to {1}', fromState, toState);
 
-    router.transition.emit('started', toState, fromState);
+    var from = fromState ? fromState.asPublic : null;
+    var to = toState.asPublic;
+
+    router.transition.emit('started', to, from);
   }
 
   function endingTransition(fromState, toState) {
@@ -114,7 +117,9 @@ function Router(declarativeStates) {
 
     toState.state.lastParams = toState.params;
 
-    router.transition.emit('ended', toState, fromState);
+    var from = fromState ? fromState.asPublic : null;
+    var to = toState.asPublic;
+    router.transition.emit('ended', to, from);
   }
 
   function updateURLFromState(state, title, url) {
@@ -380,35 +385,18 @@ function Router(declarativeStates) {
   }
 
   /*
-  * Returns a StateWithParams object representing the current state of the router.
+  * Returns an object representing the current state of the router.
   */
   function getCurrent() {
-    return currentState;
+    return currentState ? currentState.asPublic : null;
   }
 
   /*
-  * Returns a StateWithParams object representing the previous state of the router
+  * Returns an object representing the previous state of the router
   * or null if the router is still in its initial state.
   */
   function getPrevious() {
-    return previousState;
-  }
-
-  /*
-  * Returns the query params associated to the current state
-  */
-  function getQueryParams() {
-    var queryParams = currentState.state.allQueryParams();
-    var allParams = currentState.params;
-
-    var params = {};
-
-    for (var param in allParams) {
-      if (param in queryParams)
-        params[param] = allParams[param];
-    }
-
-    return params;
+    return previousState ? previousState.asPublic : null;
   }
 
   /*
@@ -473,8 +461,8 @@ function Router(declarativeStates) {
   router.current = getCurrent;
   router.previous = getPrevious;
   router.isFirstTransition = isFirstTransition;
-  router.queryParams = getQueryParams;
   router.paramsDiff = getParamsDiff;
+
   router.transition = new EventEmitter();
 
   // Used for testing purposes only
