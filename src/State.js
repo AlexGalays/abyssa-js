@@ -11,8 +11,7 @@ var PARAMS = /:[^\\?\/]*/g;
 */
 function State(options) {
   var state    = {},
-      states   = options.children,
-      initialized;
+      states   = options.children;
 
   state.path = pathFromURL(options.url);
   state.params = paramsFromURL(options.url);
@@ -40,8 +39,6 @@ function State(options) {
     eachChildState(function(name, childState) {
       childState.init(router, name, state);
     });
-
-    initialized = true;
   }
 
   /*
