@@ -28,7 +28,7 @@ With IE8/IE9, The router won't throw any errors at script evaluation time, so it
 ## What is Abyssa?
 
 Abyssa is a stateful, hierarchical client side router.  
-What does stateful mean? it means all states are not equal and abyssa knows how to go from one state to another efficiently.  
+What does stateful mean? It means all states are not equal and abyssa knows how to go from one state to another efficiently.  
 Abyssa does only one thing: Routing.  
 Upon entering a state, it can be rendered using any technique: Direct DOM manipulation, client or server side templating, with the help of a binding library, etc.
 A state can even be abstract and not render anything.
@@ -38,9 +38,13 @@ A state can even be abstract and not render anything.
 Abyssa can be used like a traditional stateless url -> callback router:  
 
 ```javascript
+
+var show = { enter: articleEnter };
+var edit = { enter: articleEditEnter };
+
 Router({
-  article: State('articles/:id', articleEnter),
-  articleEdit: State('articles/:id/edit', articleEditEnter)
+  article: State('articles/:id', show),
+  articleEdit: State('articles/:id/edit', edit)
 })
 .init();
 ```
@@ -48,12 +52,15 @@ Router({
 Or we can leverage abyssa's state machine nature:  
 
 ```javascript
-Router({
-  article: State('articles/:id', {
-    enter: loadArticle,
 
-    show: State('', articleEnter),
-    edit: State('edit', articleEditEnter)
+var article = { enter: loadArticle };
+var show = { enter: articleEnter };
+var edit = { enter: articleEditEnter };
+
+Router({
+  article: State('articles/:id', article, {
+    show: State('', show),
+    edit: State('edit', edit)
   })
 })
 .init();
@@ -83,23 +90,12 @@ var Router = require('abyssa').Router;
 
 ```
 
-**Using abyssa as a global or as an AMD module**  
+**Using abyssa as a global**  
 Use one of the provided prebuilt files in the target folder.
 
 
 <a name="transitions"></a>
 # Transitions
-
-## Error handling
-
-Since transitions are asynchronous and backed by promises, errors are caught centrally.  
-By default, any error occuring during the transition will simply be rethrown. This behavior might be unsuitable in production and can be disabled with the following code:  
-```javascript
-  router.transition.failed.add(function(newState, oldState, error, preventDefault) {
-    preventDefault(); // Do not let the router rethrow the error
-    // do something with the passed Error instance.
-  });
-```
 
 ## Example
 
@@ -107,13 +103,11 @@ By default, any error occuring during the transition will simply be rethrown. Th
 
 A few notes:  
 - Only leaf-states can be transitionned to.  
-- Each transition step can return a promise to temporarily halt the transition. The resolved promise value will be passed
-as the second argument of the next step's callback.  
 - There can be several root states. The router doesn't enforce the use of a single, top level state like some state machine implementations do.  
 
 The transition from the state `A1` to the state `B` would consist of the following steps:  
 
-**A1 exit -> (Resolve A1 exit promise if applicable) -> PA exit -> (Resolve PA exit promise if applicable) -> B enter**
+**A1 exit -> PA exit -> B enter**
 
 
 <a name="api"></a>
@@ -128,10 +122,9 @@ Configure the router before its initialization.
 The available options are:  
 - enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.  
 - interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.  
-- notFound: The State to enter when no state matching the current path query or name could be found. Either a State instance or a string representing the fullName of an existing state can be passed. Defaults to null.  
+- notFound: The State to enter when no state matching the current path query or name could be found. This is a string representing the fullName of an existing state. Defaults to null.  
 - urlSync: How the router state and the URL should be kept in sync. Defaults to true. Possible values are:  
   - true: The router uses the history pushState API.
-  - false: The url is never read or updated. The starting state is the path-less, default state.
   - 'hash': The router uses the hash part of the URL for all browsers.
 - hashPrefix: Customize the hash separator. Set to '!' in order to have a hashbang like '/#!/'. Defaults to empty string.
 
@@ -141,67 +134,50 @@ The router will immediately initiate a transition to, in order of priority:
 1) The init state passed as an argument (useful for testing and debugging)  
 2) The state captured by the current URL  
 
-### addState (name: String, state: State): Router
+### addState (name: String, state: Object): Router
 Add a new root state to the router.  
-Returns the router to allow chaining.
+Returns the router to allow chaining.  
+The state Object is a simple POJO. See [State](#api-state)
 
-### state (stateName: String, params: Object, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
-### state (pathQuery: String, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
-Request a programmatic state change.  
+The `State` function can be used to create state Object more easily and build whole state trees declaratively:  
+```javascript
+var State = require('abyssa').State;
+
+var state = State('my/uri?myQuery', { enter: ...,  exit: ... }, { ...children });
+```
+
+### transitionTo (stateName: String, params: Object, acc: Object): void
+### transitionTo (pathQuery: String, acc: Object): void
+Request a programmatic, synchronous state change.  
 Only leaf states can be transitionned to.  
 While you can change state programmatically, the more idiomatic way to do it is sometimes using anchor tags with the proper href.  
 
 Two notations are supported:  
 ```javascript
 // Fully qualified state name
-state('my.target.state', {id: 33, filter: 'desc'})  
+transitionTo('my.target.state', { id: 33, filter: 'desc' })  
 // Path and (optionally) query
-state('target/33?filter=desc')  
+transitionTo('target/33?filter=desc')  
 ```
-The flashData argument can be used to expose custom data for the next transition. This data will no longer be available
-after that transition.
-```javascript
-state('my.target.state', {}, 123);
-// Then, in any state participating in the transition: this.router.flash === 123
-```
+The `acc` parameter can be used to specify an object that will be passed up then down every state involved in the transition.  
+It can be used to share information from a state with the subsequent states.
 
-### redirect (stateName: String, params: Object, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
-### redirect (pathQuery: String, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
-An alias of `state`. You can use `redirect` when it makes more sense semantically.
-
-### backTo (stateName: String, defaultParams: Object, flashData: Any): Promise[[StateWithParams](#api-stateWithParams)]
+### backTo (stateName: String, defaultParams: Object, acc: Object): void
 Attempt to navigate to 'stateName' with its previous params or  
 fallback to the defaultParams parameter if the state was never entered.
-
-### reload(): Promise[[StateWithParams](#api-stateWithParams)]
-Reload the current state with its current params.  
-All states up to the root are exited then reentered.  
-This can be useful when some internal state not captured in the url changed and the current state should update because of it.
 
 ### link (stateName: String, params: Object): String
 Compute a link that can be used in anchors' href attributes  
 from a state name and a list of params, a.k.a reverse routing.
 
-### previousState(): [StateWithParams](#api-stateWithParams)
+### previous(): [StateWithParams](#api-stateWithParams)
 Returns the previous state of the router or null if the router is still in its initial state.
 
-### currentState(): [StateWithParams](#api-stateWithParams)
+### current(): [StateWithParams](#api-stateWithParams)
 Returns the current state of the router.
 
 ### isFirstTransition(): Boolean
 Returns whether the router is executing its first transition.
-
-### path(): String
-Returns the path portion of the current url
-
-### query(): String
-Returns the query portion of the current url
-
-### params(): Object
-Returns all params (path and query) associated to the current state
-
-### queryParams(): Object
-Returns the query params associated to the current state
 
 ### paramsDiff(): Object
 Returns the diff between the current params and the previous ones
@@ -209,16 +185,16 @@ Returns the diff between the current params and the previous ones
 var diff = router.paramsDiff();
 
 {
-  update: {
+  update: { // params staying but being updated
     id: true
   },
-  enter: {
+  enter: { // params making an appearance
     q: true
   },
-  exit: {
+  exit: { // params now gone
     section: true
   },
-  all: {
+  all: { // all param changes
     id: true,
     q: true,
     section: true
@@ -226,69 +202,40 @@ var diff = router.paramsDiff();
 }
 ```
 
-### Signals
+### Events
 
-The router dispatches some signals. The signals' API is: `add`, `addOnce` and `remove`.  
-Unless specified otherwise, all signal handlers receive the current state and the old state as arguments (of type [StateWithParams](#api-stateWithParams)).
+All event handlers receive the current state and the old state as arguments (of type [StateWithParams](#api-stateWithParams)).
 
-#### router.transition.started
-Dispatched when a transition started.
-
-#### router.transition.ended
-Dispatched when a transition either completed, failed or got cancelled.  
-The exact signal type is passed as a third argument: 'completed', 'failed' or 'cancelled'.
-
-#### router.transition.completed
-Dispatched when a transition successfuly completed.
-
-#### router.transition.failed
-Dispatched when a transition failed to complete.
-
-#### router.transition.cancelled
-Dispatched when a transition got cancelled.
-
-#### router.transition.prevented
-Dispatched when a transition was prevented by the router.  
-The router prevents the transition when the next state and params are identical to the current ones.  
-Handlers will only receive one argument: The current state.
-
-#### router.changed
-Shorter alias for transition.completed: The most commonly used signal.
-
-
-### Usage example
-
-#### Declarative construction
-
-```javascript
-// Create a router with one state named 'index'.
-var router = Router({
-  index: State()
-});
-```
-
-#### Programmatic construction
-
-```javascript
-var router = Router();
-router.addState('index', State());
-```
+#### router.transition.on('started', handler)
+#### router.transition.on('ended', handler)
 
 
 <a name="api-stateWithParams"></a>
 ## StateWithParams
-StateWithParams is the merge between a State object (created and added to the router)
+StateWithParams is the mix between information regarding a particular state  
 and params (both path and query params, extracted from the URL when transitions occur).  
-Instances of StateWithParams are returned from `router.previousState()`, `router.currentState()` and passed in signal handlers.  
+Instances of StateWithParams are returned from `router.previous()`, `router.current()` and passed in event handlers.  
 
-### state: State
-The state reference
+### uri: String
+The current uri associated with this state
 
 ### params: Object
 The path and query params set for this state
 
-### isIn(fullName: String):Boolean
+### name: String
+The (local) name of the state
+
+### firstname: String
+The fully qualified, unique name of the state
+
+### isIn(fullName: String): Boolean
 Returns whether this state or any of its parents has the given fullName.
+
+### data (key: String, value: Any): Any
+Get or Set some data by key on this state.  
+child states have access to their parents' data.  
+This can be useful when using external models/services as a mean to communicate between states is not desired.  
+Returns the state to allow chaining.
 
 Example:  
 ```javascript
@@ -296,21 +243,24 @@ Example:
 var router = Router({
 
   books: State('books', {
-    data: { myData: 33 },
-
+    data: { myData: 33 }
+  }, {
     listing: State(':kind')
   })
 
 }).init('books/scifi?limit=10');
 
-var state = router.currentState();
+var state = router.current();
 
 // state looks as follow:
 
 {
-  state: State(),
-  params: {kind: 'scifi', limit: 10},
-  isIn // state.isIn('books') == true
+  uri: 'books/scifi?limit=10'
+  name: 'listing'
+  fullName: 'books.listing'
+  params: {kind: 'scifi', limit: 10}
+  data // state.data('myData') == 33
+  isIn // state.isIn('books') === true
 }
 ```
 
@@ -328,9 +278,9 @@ State('some/path/:slug/:id')
 ```
 Or four different states to represent that path:
 ```javascript
-State('some', {
-  child: State('path', {
-    grandchild: State(':slug', {
+State('some', {}, {
+  child: State('path', {}, {
+    grandchild: State(':slug', {}, {
       grandgrandchild: State(':id')
     })
   })
@@ -345,58 +295,15 @@ State('path/:rest*')
 
 // All these state changes will result in that state being entered:  
 
-// router.state('path'); // params.rest === undefined
-// router.state('path/other'); // params.rest === 'other'
-// router.state('path/other/yetAnother'); // params.rest === 'other/yetAnother'
+// router.transitionTo('path'); // params.rest === undefined
+// router.transitionTo('path/other'); // params.rest === 'other'
+// router.transitionTo('path/other/yetAnother'); // params.rest === 'other/yetAnother'
 ```
-
-### addState (name: String, state: State): State
-Add a child state.  
-Returns the current state to allow chaining.
-
-### data (key: String, value: Any): Any | State
-Get or Set some data by key on this state.  
-child states have access to their parents' data.  
-This can be useful when using external models/services as a mean to communicate between states is not desired.  
-Returns the state to allow chaining.
-
-### router: Router
-A back reference to the router.  
-This property is available after router init (e.g inside an state.enter()).
-
-### name: String
-The name of this state.  
-This property is available after router init (e.g inside an state.enter()).
-
-### fullName: String
-The fully qualified name of this state.  
-This property is available after router init (e.g inside an state.enter()).
-
-### parent: State
-The parent of this state, or null if this state is a root.  
-This property is available after router init (e.g inside an state.enter()).
-
-### parents: Array[State]
-The list of parent states, starting with the nearest ones.  
-This property is available after router init (e.g inside an state.enter()).
-
-### root: State
-The root state in this state tree.  
-This property is available after router init (e.g inside an state.enter()).
-
-### children: Array[State]
-The children of this state.  
-This property is available after router init (e.g inside an state.enter()).
-
-### async (promiseOrValue: Object): Promise
-Shortcut for [Async](#api-async).  
-This property is available after router init (e.g inside an state.enter()).
 
 ### Declarative properties
 
-When creating a State instance with an option object, the following properties have a special meaning and are reserved for abyssa:  
-`data`, `enter`, `exit`, `update`  
-All other properties should be child states.
+A state is simply an object with an uri property. Optionally, the following properties can be specified:  
+`enter`, `exit`, `update`, `data`, `children`.
 
 #### enter (params: Object, value: Any): void
 Specify a function that should be called when the state is entered.  
@@ -426,50 +333,54 @@ During init, `enter` will be called.
 Later, if the router transitions from 'people/33' to 'people/44', only `update` will be called. If an `update` callback wasn't specified,
 `exit` then `enter` would have been called in succession.
 
-
 #### data: Object
 Custom data properties can be specified declaratively when building the state.
-If more data properties are set later using `state.data(key, value)`, they will all be merged together.
+
+### children: Object
+A map of child names to states.
 
 
 ### Usage examples
 
 #### Construction
 
-A state represented by the path "articles", with a child state named "item" represented by the dynamic path "id".  
-When the router is in the state "articles.item" with the id param equal to 33, the browser url is http://yourdomain/articles/33  
+Given a state represented by the path "articles", with a child state named "item" represented by the dynamic path "id".  
+When the router is in the state "articles.item" with the id param equal to 33, the browser url is http://yourdomain/articles/33.  
+There are at least 3 ways to build such a router; It is advised to build the router centrally, even if the state definitions are 
+located in their own modules.
+
+Using pojos
 ```javascript
 var router = Router({
-  articles: State('articles', {
-  item: State(':id', {
-    // state definition
-  })
+  articles: {
+    uri: 'articles', 
+    children: {
+      item: {
+        uri: ':id'
+      }
+    }
+  }
 }).init();
 ```
+Or using the `State` factory shorthand:  
+```javascript
+var router = Router({
+  articles: State('articles', {}, {
+    item: State(':id', {})
+}).init();
+```
+
 
 Or using the imperative form:  
 ```javascript
 var router = Router();
 var articles = State('articles');  
 
-articles.addState('item', State(':id'));
+articles.children.item = State(':id');
 router.addState(articles);
 router.init();
 ```
 
-#### Construction shorthand
-
-It is common to only have an enter callback for a state so a short way to express it is provided:  
-
-```javascript
-var state = State('articles', function enter(params) {
-  // Do things synchronously here
-
-  this.async(myPromise).then(function(data) {
-    // Do things asynchronously here
-  });
-});
-```
 
 #### Pathless states
 
@@ -477,8 +388,8 @@ A state represented by the path "articles" with a path-less child state named "s
 When the router is in the state "articles.show", the browser url is http://yourdomain/articles
 
 ```javascript
-var state = State('articles': {
-  show: State() // Equivalent to: show: State('', {})
+var state = State('articles', {}, {
+  show: State('')
 });
 
 router.addState('articles', state);
@@ -489,8 +400,8 @@ router.addState('articles', state);
 Now the articles state also tells us it owns the query param named 'filter' in its state hierarchy.  
 This means that any isolated change to the filter query param (meaning the filter was added, removed or changed but the path remained the same) is going to make that state exit and re-enter so that it can process the new filter value. If you do not specify which state owns the query param, all states above the currently selected state are exited and reentered, which can be less efficient.  Also, Enumerating the possible query strings is mandatory if you want these to appear when using reverse routing or name-based state changes.
 ```javascript
-var state = State('articles?filter': {
-  show: State()
+var state = State('articles?filter', {}, {
+  show: State('')
 });
 
 ```
@@ -498,51 +409,21 @@ var state = State('articles?filter': {
 #### Setting state data
 
 You can set arbitrary data declaratively by just specifying a custom property in the State options.  
-This data can be read by all descendant states (Using `this.data('myArbitraryData')`) and from signal handlers.  
+This data can be read by all descendant states (Using `stateWithParams.data('myArbitraryData')`) and from event handlers.  
 For more elaborated use cases, you can store the data in a custom external service or model.
 ```javascript
-var state = State('articles?filter': {
-  data: { myArbitraryData: 66 },
-  show: State()
+var state = State('articles?filter', {
+  data: { myArbitraryData: 66 }
 });
 
-// The data can also be read inside signal handlers
-router.transition.ended.add(function(oldState, newState) {
+// The data can also be read inside event handlers
+router.transition.on('ended', function(oldState, newState) {
   // Do something based on newState.data('myArbitraryData')
 });
 ```
 
-#### Creating a state hierarchy declaratively
-
-```javascript
-var state = State('articles', {
-  enter: function(params, ajaxData) { console.log('articles entered'); },
-  exit: function() { console.log('articles exit'); },
-
-  // A child state is simply a property of type 'State'
-  item: State(':id', {
-    enter: function(params) { console.log('item entered with id ' + params.id); }
-  })
-});
-
-```
-
-#### Creating a state hierarchy programmatically
-
-```javascript
-var state = State('articles');
-state.enter = function(params, ajaxData) { console.log('articles entered'); };
-state.exit = function() { console.log('articles exit'); };
-
-var item = State(':id');
-item.enter = function(params) { console.log('item entered with id ' + params.id); };
-
-state.addState('item', item);
-```
-
-
 <a name="api-async"></a>
-## Async
+## async
 
 Async is a convenient mean to let the router know some async operations tied to the current state are ongoing.  
 The router will ignore (The fulfill/reject handlers will never be called) these promises if the router state changes in the meantime.  
@@ -550,37 +431,9 @@ This behavior is useful to prevent states from affecting each other (with side e
 You can have as many Async blocks as required.
 
 
-### Example 1:
+### Example
 ```javascript
-var Async = Abyssa.Async;
-
-var state = State('articles/:id': {
-  
-  enter: function(params) {
-    var data = $.ajax('api/articles/' + params.id);
-
-    // Do things that should be done synchronously here, like setting up the basic layout.
-
-    // Then load the data and act on it asynchronously.
-
-    Async(data).then(function(article) {
-      // Render article safely; the router is still in the right state.
-    });
-
-    // Or, equivalently:
-
-    this.async(data).then(function(article) {
-
-    });
-  }
-}
-
-});
-```
-
-### Example 2:
-```javascript
-var Async = Abyssa.Async;
+var async = Abyssa.async;
 
 var state = State('articles/:id': {
 
@@ -589,12 +442,19 @@ var state = State('articles/:id': {
       // The user clicked on a button: Load some data before performing the action.
       // Loading the data is asynchronous, and the response should be ignored if the user
       // navigated away to another state in the meantime.
-      Async(loadData()).then(function(data) {
+      async(loadData()).then(function(data) {
         // Perform the action safely; the router is still in the right state.
       });
     });
   }
 }
+
+### Note
+In order to use the `async` function, you either need to have a modern browser supporting promises natively (or shimmed globally) or give the `async` function a suitable shim for it:  
+
+```javascript
+require('abyssa').async.Promise = Q.Promise;  // Or when, bluebird, etc.
+```
 ```
 
 <a name="anchor-interception"></a>
@@ -602,7 +462,7 @@ var state = State('articles/:id': {
 
 By default, the router will intercept anchor clicks and automatically navigate to a state if some conditions are met (left button pressed, href on the same domain, etc).  
 This behavior can be turned off by using the corresponding router [configuration setting](#api-router)  
-You may want to turn off anchor interception on mobile optimised apps and make manual router.state() calls on touch events.  
+You may want to turn off anchor interception on mobile optimised apps and perform manual router.transitionTo() calls on touch/pointer events.  
 
 You can also intercept mousedown events instead of the usual click events by using a data-attribute as follow:  
 ```
@@ -615,17 +475,8 @@ If a same-domain link should not be intercepted by Abyssa, you can use:
 ```
 
 
-<a name="dependencies"></a>
-# Dependencies
-
-Abyssa uses the following libraries:
-
-[**crossroads.js**](https://github.com/millermedeiros/crossroads.js): A stateless, solid traditional low level router. Abyssa builds on top of it.  
-[**signals.js**](https://github.com/millermedeiros/js-signals): A dependency of crossroads.js; Provide an alternative to string based events. Abyssa uses signals instead of events.  
-[**q.js**](https://github.com/kriskowal/q): The reference implementation of Promise/A+. This is used internally to orchestrate asynchronous behaviors.  
-
-
-<a name="code-examples"></a>
+ <a name="code-examples"></a>
+NOTE: THIS APPLICATION'S CODE IS OUT OF DATE FOR THE TIME BEING
 # Code examples
 
 ## Demo app
@@ -659,46 +510,49 @@ We can either:
 
 var router = Router({
 
-  section1: State('section1', {
+  section1: State('section1', {}, {
     data: { navItem: 'section1' } // custom data property; seen by any substate.
   }),
 
-  section2: State('section2', {
+  section2: State('section2', {}, {
     data: { navItem: 'section2' }
   })
 
 }).init('section1');
 
 
-router.changed.add(function(state) {
+router.transition.on('started', function(state) {
   highlight(state.data('navItem'));
-  // or
-  highlight(state.name);
 });
 
 ```
 
 Or  
 
-**2) Create a specialized State factory to deal with that common concern**  
+**2) Create a State factory to deal with that common concern**  
 
 ```javascript
 
-function NavState(path, options) {
-  var enter = options.enter;
+function NavState(state) {
+  var enter = state.enter;
 
-  options.enter = function(params) {
-    highlight(this.name);
-    enter(params);
+  state.enter = function(params, acc) {
+    highlight(state.data.navItem);
+    enter(params, acc);
   };
-}
-  return State(path, options);
+
+  return state;
 }
 
 var router = Router({
 
-  section1: NavState('section1'),
-  section2: NavState('section2')
+  section1: NavState(State('section1', {}, {
+    data: { navItem: 'section1' }
+  })),
+
+  section2: NavState(State('section2', {}, {
+    data: { navItem: 'section2' }
+  }))
 
 }).init('section1');
 
