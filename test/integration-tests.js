@@ -109,7 +109,7 @@ asyncTest('history.back()', function() {
   equal(router.urlPathQuery(), '/books');
   history.back();
 
-  delay(60).then(function() {
+  Q.delay(60).then(function() {
     equal(router.urlPathQuery(), '/articles');
   })
   .then(startLater);
@@ -134,7 +134,7 @@ asyncTest('history.back() on the notFound state', function() {
   router.transitionTo('index');
   history.back();
 
-  delay(60).then(function() {
+  Q.delay(60).then(function() {
     // TODO: This assertion should pass ideally; uncomment after the biggest refactorings
     //equal(router.urlPathQuery(), '/notFound');
     equal(router.current().name, 'notFound');
@@ -285,15 +285,9 @@ function simulateMousedown(element) {
   element.dispatchEvent(event);
 }
 
-function delay(time, value) {
-  var defer = when.defer();
-  setTimeout(function() { defer.resolve(value); }, time);
-  return defer.promise;
-}
-
 // The hashchange event is dispatched asynchronously.
 // At the end of a test changing the hash, give the event enough time to be dispatched
 // so that the following test's router doesn't try to react to it.
 function startLater() {
-  delay(80).then(start);
+  Q.delay(80).then(start);
 }

@@ -3,6 +3,7 @@ State  = Abyssa.State;
 
 //Router.enableLogs();
 stubHistory();
+Abyssa.async.Promise = Q.Promise;
 
 
 test('Simple states', function() {
@@ -26,8 +27,7 @@ test('Simple states', function() {
     articles: {
       url: 'articles/:id?filter',
 
-      enter: function(params, props) {
-        console.log(props);
+      enter: function(params) {
         events.push('articlesEnter');
         lastArticleId = params.id;
         lastFilter = params.filter;
@@ -1027,6 +1027,31 @@ test('a custom accumulator object can be passed to all states', function() {
   router.transitionTo('articles/33', myAcc);
 });
 
+
+asyncTest('registering promises with the router', function() {
+
+  var async = Abyssa.async;
+
+  var router = Router({
+
+    index: State('', {}),
+    articles: State('articles', {})
+
+  }).init('');
+
+  async(Q.delay(20)).then(function() {
+    // Should never get there as we changed state before the resolution of the promise
+    ok(false)
+  });
+
+  router.transitionTo('articles');
+
+  async(Q.delay(123, 40)).then(function(val) {
+    equal(val, 123);
+    start();
+  });
+
+});
 
 
 function stubHistory() {
