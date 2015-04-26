@@ -109,8 +109,8 @@ util.normalizePathQuery = function(pathQuery) {
     .replace(TRAILING_SLASHES_BEFORE_QUERY, '?'));
 };
 
-util.stateShorthand = function(url, options, children) {
-  return util.mergeObjects({ url: url, children: children || {} }, options);
+util.stateShorthand = function(uri, options, children) {
+  return util.mergeObjects({ uri: uri, children: children || {} }, options);
 };
 
 

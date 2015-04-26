@@ -6,16 +6,16 @@ var util  = require('./util');
 var PARAMS = /:[^\\?\/]*/g;
 
 /*
-* Creates a new State instance from a {url, enter, exit, update, data, children} object.
+* Creates a new State instance from a {uri, enter, exit, update, data, children} object.
 * This is the internal representation of a state used by the router.
 */
 function State(options) {
   var state    = {},
       states   = options.children;
 
-  state.path = pathFromURL(options.url);
-  state.params = paramsFromURL(options.url);
-  state.queryParams = queryParamsFromURL(options.url);
+  state.path = pathFromURI(options.uri);
+  state.params = paramsFromURI(options.uri);
+  state.queryParams = queryParamsFromURI(options.uri);
   state.states = states;
 
   state.enter = options.enter || util.noop;
@@ -165,7 +165,7 @@ function State(options) {
   }
 
   /*
-  * Returns a URL built from this state and the passed params.
+  * Returns a URI built from this state and the passed params.
   */
   function interpolate(params) {
     var path = state.fullPath().replace(PARAMS, function(p) {
@@ -210,17 +210,17 @@ function paramName(param) {
     : param.substr(1);
 }
 
-function pathFromURL(url) {
-  return (url || '').split('?')[0];
+function pathFromURI(uri) {
+  return (uri || '').split('?')[0];
 }
 
-function paramsFromURL(url) {
-  var matches = PARAMS.exec(url);
+function paramsFromURI(uri) {
+  var matches = PARAMS.exec(uri);
   return matches ? util.arrayToObject(matches.map(paramName)) : {};
 }
 
-function queryParamsFromURL(url) {
-  var query = (url || '').split('?')[1];
+function queryParamsFromURI(uri) {
+  var query = (uri || '').split('?')[1];
   return query ? util.arrayToObject(query.split('&')): {};
 }
 

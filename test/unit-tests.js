@@ -25,7 +25,7 @@ test('Simple states', function() {
     },
 
     articles: {
-      url: 'articles/:id?filter',
+      uri: 'articles/:id?filter',
 
       enter: function(params) {
         events.push('articlesEnter');
@@ -947,7 +947,7 @@ test('to break circular dependencies, the api object can be used instead of the 
     },
 
     articles: {
-      url: 'articles/:id?filter',
+      uri: 'articles/:id?filter',
 
       enter: function(params) {
         events.push('articlesEnter');
@@ -974,7 +974,7 @@ test('an accumulator object is passed to all states', function() {
   Router({
 
     articles: {
-      url: 'articles',
+      uri: 'articles',
       enter: function(params, acc) {
         deepEqual(acc, {});
         acc.fromParent = 123;
@@ -982,7 +982,7 @@ test('an accumulator object is passed to all states', function() {
 
       children: {
         detail: {
-          url: ':id',
+          uri: ':id',
           enter: function(params, acc) {
             deepEqual(acc, { fromParent: 123 });
           }
@@ -1005,7 +1005,7 @@ test('a custom accumulator object can be passed to all states', function() {
     index: State('', {}),
 
     articles: {
-      url: 'articles',
+      uri: 'articles',
       enter: function(params, acc) {
         equal(myAcc, acc);
         acc.fromParent = 123;
@@ -1013,7 +1013,7 @@ test('a custom accumulator object can be passed to all states', function() {
 
       children: {
         detail: {
-          url: ':id',
+          uri: ':id',
           enter: function(params, acc) {
             equal(myAcc, acc);
             deepEqual(acc, { fromParent: 123 });
