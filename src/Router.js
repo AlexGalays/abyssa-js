@@ -216,7 +216,7 @@ function Router(declarativeStates) {
         return;
       }
 
-      var newState = isHashMode() ? urlPathQuery() : evt.state;
+      var newState = evt.state || urlPathQuery();
 
       logger.log('URL changed: {0}', newState);
       urlChanged = true;
