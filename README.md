@@ -9,10 +9,17 @@ Hierarchical router library for single page applications.
 * [Installation](#installation)
 * [Transitions](#transitions)
 * [API](#api)
+  * [Router](#api-router)
+  * [State](#api-state)
+  * [StateWithParams](#api-stateWithParams)
+  * [async](#api-async)
 * [Anchor interception](#anchor-interception)
-* [Dependencies](#dependencies)
 * [Code examples](#code-examples)
 * [Cookbook](#cookbook)
+  * [Removing router <-> state circular dependencies](#removingCircularDeps)
+  * [Central router, modular states](#centralRouter)
+  * [Highlight the selected primary navigation item](#navHighlight)
+  * [Handling the change of some params differently in `update`](#updateParamChanges)
 
 
 <a name="browser-support"></a>
@@ -49,13 +56,13 @@ Router({
 .init();
 ```
 
-Or we can leverage abyssa's state machine nature:  
+Or we can leverage abyssa's state machine nature and nest states when it serves us:  
 
 ```javascript
 
 var article = { enter: loadArticle };
-var show = { enter: articleEnter };
-var edit = { enter: articleEditEnter };
+var show = { enter: articleEnter, exit: articleExit };
+var edit = { enter: articleEditEnter, exit: articleEditExit };
 
 Router({
   article: State('articles/:id', article, {
@@ -139,13 +146,6 @@ Add a new root state to the router.
 Returns the router to allow chaining.  
 The state Object is a simple POJO. See [State](#api-state)
 
-The `State` function can be used to create state Object more easily and build whole state trees declaratively:  
-```javascript
-var State = require('abyssa').State;
-
-var state = State('my/uri?myQuery', { enter: ...,  exit: ... }, { ...children });
-```
-
 ### transitionTo (stateName: String, params: Object, acc: Object): void
 ### transitionTo (pathQuery: String, acc: Object): void
 Request a programmatic, synchronous state change.  
@@ -210,100 +210,23 @@ All event handlers receive the current state and the old state as arguments (of 
 #### router.transition.on('ended', handler)
 
 
-<a name="api-stateWithParams"></a>
-## StateWithParams
-StateWithParams is the mix between information regarding a particular state  
-and params (both path and query params, extracted from the URL when transitions occur).  
-Instances of StateWithParams are returned from `router.previous()`, `router.current()` and passed in event handlers.  
-
-### uri: String
-The current uri associated with this state
-
-### params: Object
-The path and query params set for this state
-
-### name: String
-The (local) name of the state
-
-### firstname: String
-The fully qualified, unique name of the state
-
-### isIn(fullName: String): Boolean
-Returns whether this state or any of its parents has the given fullName.
-
-### data (key: String, value: Any): Any
-Get or Set some data by key on this state.  
-child states have access to their parents' data.  
-This can be useful when using external models/services as a mean to communicate between states is not desired.  
-Returns the state to allow chaining.
-
-Example:  
-```javascript
-
-var router = Router({
-
-  books: State('books', {
-    data: { myData: 33 }
-  }, {
-    listing: State(':kind')
-  })
-
-}).init('books/scifi?limit=10');
-
-var state = router.current();
-
-// state looks as follow:
-
-{
-  uri: 'books/scifi?limit=10'
-  name: 'listing'
-  fullName: 'books.listing'
-  params: {kind: 'scifi', limit: 10}
-  data // state.data('myData') == 33
-  isIn // state.isIn('books') === true
-}
-```
-
 <a name="api-state"></a>
 ## State
 
 ### Basics
-States represent path segments of an url.  
-A state can own a list of query params: While all states will be able to read these params, isolated changes to these
+States are simple POJOs used to build the router and represent path segments of an url (indeed, the router only matches routes against states' paths).  
+
+A state can also own a list of query params: While all states will be able to read these params, isolated changes to these
 will only trigger a transition up to the state owning them (it will be exited and re-entered). The same applies to dynamic query params.   
-How much you decompose your applications into states is completely up to you;  
-For instance you could have just one state:
-```javascript
-State('some/path/:slug/:id')
-```
-Or four different states to represent that path:
-```javascript
-State('some', {}, {
-  child: State('path', {}, {
-    grandchild: State(':slug', {}, {
-      grandgrandchild: State(':id')
-    })
-  })
-})
-```
+How much you decompose your applications into states is completely up to you.
 
-### Rest segments
-Additionaly, the last path segment can end with a `*` to match any number of extra path segments:
+### Properties
 
-```javascript
-State('path/:rest*')
-
-// All these state changes will result in that state being entered:  
-
-// router.transitionTo('path'); // params.rest === undefined
-// router.transitionTo('path/other'); // params.rest === 'other'
-// router.transitionTo('path/other/yetAnother'); // params.rest === 'other/yetAnother'
-```
-
-### Declarative properties
-
-A state is simply an object with an uri property. Optionally, the following properties can be specified:  
+A state is really just an object with an `uri` property. Optionally, the following properties can be specified:  
 `enter`, `exit`, `update`, `data`, `children`.
+
+#### uri: String
+The path segment this state owns. Can also contain a query string. Ex: `uri: 'articles/:id?filter'`
 
 #### enter (params: Object, value: Any): void
 Specify a function that should be called when the state is entered.  
@@ -406,6 +329,19 @@ var state = State('articles?filter', {}, {
 
 ```
 
+#### Rest segments
+Additionaly, the last path segment of a state can end with a `*` to match any number of extra path segments:
+
+```javascript
+State('path/:rest*')
+
+// All these state changes will result in that state being entered:  
+
+// router.transitionTo('path'); // params.rest === undefined
+// router.transitionTo('path/other'); // params.rest === 'other'
+// router.transitionTo('path/other/yetAnother'); // params.rest === 'other/yetAnother'
+```
+
 #### Setting state data
 
 You can set arbitrary data declaratively by just specifying a custom property in the State options.  
@@ -420,6 +356,58 @@ var state = State('articles?filter', {
 router.transition.on('ended', function(oldState, newState) {
   // Do something based on newState.data('myArbitraryData')
 });
+```
+
+<a name="api-stateWithParams"></a>
+## StateWithParams
+`StateWithParams` objects are returned from `router.previous()`, `router.current()` and passed in event handlers.  
+
+### uri: String
+The current uri associated with this state
+
+### params: Object
+The path and query params set for this state
+
+### name: String
+The (local) name of the state
+
+### firstname: String
+The fully qualified, unique name of the state
+
+### isIn(fullName: String): Boolean
+Returns whether this state or any of its parents has the given fullName.
+
+### data (key: String, value: Any): Any
+Get or Set some data by key on this state.  
+child states have access to their parents' data.  
+This can be useful when using external models/services as a mean to communicate between states is not desired.  
+Returns the state to allow chaining.
+
+Example:  
+```javascript
+
+var router = Router({
+
+  books: State('books', {
+    data: { myData: 33 }
+  }, {
+    listing: State(':kind')
+  })
+
+}).init('books/scifi?limit=10');
+
+var state = router.current();
+
+// state looks as follow:
+
+{
+  uri: 'books/scifi?limit=10'
+  name: 'listing'
+  fullName: 'books.listing'
+  params: {kind: 'scifi', limit: 10}
+  data // state.data('myData') == 33
+  isIn // state.isIn('books') === true
+}
 ```
 
 <a name="api-async"></a>
@@ -448,13 +436,13 @@ var state = State('articles/:id': {
     });
   }
 }
+```
 
 ### Note
 In order to use the `async` function, you either need to have a modern browser supporting promises natively (or shimmed globally) or give the `async` function a suitable shim for it:  
 
 ```javascript
 require('abyssa').async.Promise = Q.Promise;  // Or when, bluebird, etc.
-```
 ```
 
 <a name="anchor-interception"></a>
@@ -475,12 +463,11 @@ If a same-domain link should not be intercepted by Abyssa, you can use:
 ```
 
 
- <a name="code-examples"></a>
-NOTE: THIS APPLICATION'S CODE IS OUT OF DATE FOR THE TIME BEING
+<a name="code-examples"></a>
 # Code examples
 
 ## Demo app
-
+NOTE: THIS APPLICATION'S CODE IS OUT OF DATE FOR THE TIME BEING
 Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)  
 Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/client)  
 
@@ -490,6 +477,63 @@ Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tre
 <a name="cookbook"></a>
 # Cookbook
 
+<a name="removingCircularDeps"></a>
+## Removing router <-> state circular dependencies
+
+States must be added to the router but states also often need to call methods on the router, for instance to create href links.
+This creates circular dependencies which are annoying when using primitive module systems such as CommonJS'.  
+To break that circular dependency, simply require the api object instead of the router in your states:  
+
+```javascript
+var api = require('abyssa').api;
+
+// then api.link('state', { id: 123 })
+
+```
+
+<a name="centralRouter"></a>
+## Central router, modular states
+It is much easier to reason about an application and its routes if the various uris can be all be read in one place instead of being spread all over the code base. However, states should be modularized for the sake of easier maintenance and separation of concerns. Here's how it might be achieved with CommonJS modules:  
+
+```javascript
+
+// router.js
+
+var Router = require('abyssa').Router;
+var State = require('abyssa').State;
+
+var index = require('./index'),
+    articles = require('./articles'),
+    articlesDetail = require('./articles/detail'),
+    articlesDetailEdit = require('./articles/detailEdit');
+
+Router({
+  
+  index: State('', index),
+
+  articles: State('articles', articles, {
+    articlesDetail: State(':id/show', articlesDetail),
+    articlesDetailEdit: State(':id/edit', articlesDetailEdit),
+  })
+
+}).init();
+
+
+// index.js
+
+module.exports = {
+  enter: function() {
+    console.log('index entered');
+  },
+  exit: function() {
+    console.log('index exited');
+  }
+};
+
+
+```
+
+<a name="navHighlight"></a>
 ## Highlight the selected primary navigation item
 
 Assuming the following highlight function is in scope:  
@@ -558,15 +602,18 @@ var router = Router({
 
 ```
 
+<a name="updateParamChanges"></a>
 ## Handling the change of some params differently in `update`
 
 `update` is an optional hook that will be called whenever the router moves to the same state but with updated path/query params.
 
-Not all params are equal, a change in the path param representing the resource id may induce more work than the change of some secondary query param.
+However, not all params are equal: A change in the path param representing the resource id may induce more work than the change of some secondary query param.
 
 Example of a conditional update:  
 
 ```javascript
+
+var api = require('abyssa').api;
 
 var state = State({
   enter: function(params) {
@@ -574,7 +621,7 @@ var state = State({
   },
 
   update: function(params) {
-    var diff = state.router.paramsDiff();
+    var diff = api.paramsDiff();
 
     // The id was changed
     if (diff.update.id) {
