@@ -235,9 +235,7 @@ function Router(declarativeStates) {
 
     assertPathUniqueness(stateArray);
 
-    // Only leaf states can be transitioned to.
-    leafStates = {};
-    registerLeafStates(stateArray);
+    leafStates = registerLeafStates(stateArray, {});
   }
 
   function assertPathUniqueness(states) {
@@ -258,15 +256,16 @@ function Router(declarativeStates) {
     for (var name in states) callback(name, states[name]);
   }
 
-  function registerLeafStates(states) {
-    states.forEach(function(state) {
+  function registerLeafStates(states, leafStates) {
+    return states.reduce(function(leafStates, state) {
       if (state.children.length)
-        registerLeafStates(state.children);
+        return registerLeafStates(state.children, leafStates);
       else {
         leafStates[state.fullName] = state;
         state.paths = util.parsePaths(state.fullPath());
+        return leafStates;
       }
-    });
+    }, leafStates);
   }
 
   /*
