@@ -1,7 +1,7 @@
 Router = Abyssa.Router;
 State  = Abyssa.State;
 
-//Router.enableLogs();
+Router.enableLogs();
 stubHistory();
 Abyssa.async.Promise = Q.Promise;
 
@@ -179,9 +179,9 @@ test('Missing state with a "notFound" state defined by its fullName', function()
 
     index: State(),
 
-    articles: State('', {}, {
+    articles: State('articles', {}, {
       nature: State('', {}, {
-        edit: State('articles/nature/:id/edit')
+        edit: State('nature/:id/edit')
       })
     }),
 
@@ -214,9 +214,9 @@ test('Missing state without a "notFound" state defined', function() {
 
     index: State(),
 
-    articles: State('', {}, {
+    articles: State('articles', {}, {
       nature: State('', {}, {
-        edit: State('articles/nature/:id/edit')
+        edit: State('nature/:id/edit')
       })
     }),
 
@@ -256,6 +256,25 @@ test('The router can be built bit by bit', function() {
 });
 
 
+test('Sibling states can not have the same path', function() {
+  var router = Router({
+    index: State('index'),
+    index2: State('index')
+  });
+
+  throws(function() { router.init('/index'); });
+
+  var nestedRouter = Router({
+    top: State('top', {}, {
+      index: State('index'),
+      index2: State('index')
+    })
+  });
+
+  throws(function() { nestedRouter.init('top/index'); });
+});
+
+
 test('State names must be unique among siblings', function() {
   var router, root;
 
@@ -277,12 +296,12 @@ test('State names must be unique among siblings', function() {
 test('Only leaf states are addressable', function() {
 
   var router = Router({
-    index: State(),
+    index: State('index'),
 
     articles: State('', {}, {
       item: State('articles/:id', {})
     })
-  }).init('');
+  }).init('index');
 
   throws(function() {
     router.transitionTo('articles');
@@ -296,11 +315,11 @@ test('No transition occurs when going to the same state', function() {
   var events = [];
   var router = Router({
 
-    articles: State('articles/:id', {}, {
+    articles: State('articles/:id', {
       enter: function() { events.push('articlesEnter'); },
       exit: function() { events.push('articlesExit'); },
-
-      today: State('today', {}, {
+    }, {
+      today: State('today', {
         enter: function() { events.push('todayEnter'); },
         exit: function() { events.push('todayExit'); }
       })

@@ -227,13 +227,31 @@ function Router(declarativeStates) {
   }
 
   function initStates() {
+    var stateArray = util.objectToArray(states);
+
     eachRootState(function(name, state) {
       state.init(router, name);
     });
 
+    assertPathUniqueness(stateArray);
+
     // Only leaf states can be transitioned to.
     leafStates = {};
-    registerLeafStates(states);
+    registerLeafStates(stateArray);
+  }
+
+  function assertPathUniqueness(states) {
+    var paths = {};
+
+    states.forEach(function(state) {
+      if (paths[state.path]) {
+        var fullPaths = states.map(function(s) { return s.fullPath() || 'empty' });
+        throw new Error('Two sibling states have the same path (' + fullPaths + ')');
+      }
+
+      paths[state.path] = 1;
+      assertPathUniqueness(state.children);
+    });
   }
 
   function eachRootState(callback) {
@@ -241,19 +259,14 @@ function Router(declarativeStates) {
   }
 
   function registerLeafStates(states) {
-
-    function register(states) {
-      states.forEach(function(state) {
-        if (state.children.length)
-          register(state.children);
-        else {
-          leafStates[state.fullName] = state;
-          state.paths = util.parsePaths(state.fullPath());
-        }
-      });
-    }
-
-    register(util.objectToArray(states));
+    states.forEach(function(state) {
+      if (state.children.length)
+        registerLeafStates(state.children);
+      else {
+        leafStates[state.fullName] = state;
+        state.paths = util.parsePaths(state.fullPath());
+      }
+    });
   }
 
   /*
