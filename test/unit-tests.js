@@ -293,6 +293,21 @@ test('State names must be unique among siblings', function() {
 });
 
 
+test('Ambiguous paths in different states are forbidden', function() {
+  var router = Router({
+    books: State('', {}, {
+      default: State('books', {}, {})
+    }),
+
+    oldBooks: State('books', {}, {
+      default: State('', {}, {})
+    })
+  });
+
+  throws(function() { router.init('books') });
+});
+
+
 test('Only leaf states are addressable', function() {
 
   var router = Router({

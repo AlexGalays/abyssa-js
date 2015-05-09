@@ -236,6 +236,8 @@ function Router(declarativeStates) {
     assertPathUniqueness(stateArray);
 
     leafStates = registerLeafStates(stateArray, {});
+
+    assertNoAmbiguousPaths();
   }
 
   function assertPathUniqueness(states) {
@@ -250,6 +252,16 @@ function Router(declarativeStates) {
       paths[state.path] = 1;
       assertPathUniqueness(state.children);
     });
+  }
+
+  function assertNoAmbiguousPaths() {
+    var paths = {};
+
+    for (var name in leafStates) {
+      var path = util.normalizePathQuery(leafStates[name].fullPath());
+      if (paths[path]) throw new Error('Ambiguous state paths: ' + path);
+      paths[path] = 1;
+    }
   }
 
   function eachRootState(callback) {
