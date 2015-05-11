@@ -1,4 +1,4 @@
-/* abyssa 7.0.0 - A stateful router library for single page applications */
+/* abyssa 7.0.1 - Hierarchical router for single page applications */
 
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Abyssa=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
@@ -535,33 +535,79 @@ function Router(declarativeStates) {
   }
 
   function initStates() {
+    var stateArray = util.objectToArray(states);
+
+    addDefaultStates(stateArray);
+
     eachRootState(function(name, state) {
       state.init(router, name);
     });
 
-    // Only leaf states can be transitioned to.
-    leafStates = {};
-    registerLeafStates(states);
+    assertPathUniqueness(stateArray);
+
+    leafStates = registerLeafStates(stateArray, {});
+
+    assertNoAmbiguousPaths();
+  }
+
+  function assertPathUniqueness(states) {
+    var paths = {};
+
+    states.forEach(function(state) {
+      if (paths[state.path]) {
+        var fullPaths = states.map(function(s) { return s.fullPath() || 'empty' });
+        throw new Error('Two sibling states have the same path (' + fullPaths + ')');
+      }
+
+      paths[state.path] = 1;
+      assertPathUniqueness(state.children);
+    });
+  }
+
+  function assertNoAmbiguousPaths() {
+    var paths = {};
+
+    for (var name in leafStates) {
+      var path = util.normalizePathQuery(leafStates[name].fullPath());
+      if (paths[path]) throw new Error('Ambiguous state paths: ' + path);
+      paths[path] = 1;
+    }
+  }
+
+  function addDefaultStates(states) {
+    states.forEach(function(state) {
+      var children = util.objectToArray(state.states);
+
+      // This is a parent state: Add a default state to it if there isn't already one
+      if (children.length) {
+        addDefaultStates(children);
+
+        var hasDefaultState = children.reduce(function(result, state) {
+          return state.path == '' || result;
+        }, false);
+
+        if (hasDefaultState) return;
+
+        var defaultState = State({ uri: '' });
+        state.states._default_ = defaultState;
+      }
+    });
   }
 
   function eachRootState(callback) {
     for (var name in states) callback(name, states[name]);
   }
 
-  function registerLeafStates(states) {
-
-    function register(states) {
-      states.forEach(function(state) {
-        if (state.children.length)
-          register(state.children);
-        else {
-          leafStates[state.fullName] = state;
-          state.paths = util.parsePaths(state.fullPath());
-        }
-      });
-    }
-
-    register(util.objectToArray(states));
+  function registerLeafStates(states, leafStates) {
+    return states.reduce(function(leafStates, state) {
+      if (state.children.length)
+        return registerLeafStates(state.children, leafStates);
+      else {
+        leafStates[state.fullName] = state;
+        state.paths = util.parsePaths(state.fullPath());
+        return leafStates;
+      }
+    }, leafStates);
   }
 
   /*
@@ -572,16 +618,16 @@ function Router(declarativeStates) {
   * transitionTo('target/33?filter=desc')
   */
   function transitionTo(pathQueryOrName) {
-    var isName = leafStates[pathQueryOrName] !== undefined;
-    var params = (isName ? arguments[1] : null) || {};
-    var acc = isName ? arguments[2] : arguments[1];
+    var name = leafStates[pathQueryOrName] || leafStates[pathQueryOrName + '._default_'];
+    var params = (name ? arguments[1] : null) || {};
+    var acc = name ? arguments[2] : arguments[1];
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
 
     urlChanged = false;
 
-    if (isName)
-      setStateByName(pathQueryOrName, params, acc);
+    if (name)
+      setStateByName(name, params, acc);
     else
       setStateForPathQuery(pathQueryOrName, acc);
   }
