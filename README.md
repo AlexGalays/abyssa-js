@@ -108,8 +108,6 @@ Use one of the provided prebuilt files in the target folder.
 
 ![transition-example](http://i171.photobucket.com/albums/u320/boubiyeah/states1_zps7eb66af6.png)
 
-A few notes:  
-- Only leaf-states can be transitionned to.  
 - There can be several root states. The router doesn't enforce the use of a single, top level state like some state machine implementations do.  
 
 The transition from the state `A1` to the state `B` would consist of the following steps:  
@@ -149,7 +147,6 @@ The state Object is a simple POJO. See [State](#api-state)
 ### transitionTo (stateName: String, params: Object, acc: Object): void
 ### transitionTo (pathQuery: String, acc: Object): void
 Request a programmatic, synchronous state change.  
-Only leaf states can be transitionned to.  
 While you can change state programmatically, the more idiomatic way to do it is sometimes using anchor tags with the proper href.  
 
 Two notations are supported:  

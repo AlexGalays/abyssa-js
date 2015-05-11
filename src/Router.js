@@ -229,6 +229,8 @@ function Router(declarativeStates) {
   function initStates() {
     var stateArray = util.objectToArray(states);
 
+    addDefaultStates(stateArray);
+
     eachRootState(function(name, state) {
       state.init(router, name);
     });
@@ -264,6 +266,26 @@ function Router(declarativeStates) {
     }
   }
 
+  function addDefaultStates(states) {
+    states.forEach(function(state) {
+      var children = util.objectToArray(state.states);
+
+      // This is a parent state: Add a default state to it if there isn't already one
+      if (children.length) {
+        addDefaultStates(children);
+
+        var hasDefaultState = children.reduce(function(result, state) {
+          return state.path == '' || result;
+        }, false);
+
+        if (hasDefaultState) return;
+
+        var defaultState = State({ uri: '' });
+        state.states._default_ = defaultState;
+      }
+    });
+  }
+
   function eachRootState(callback) {
     for (var name in states) callback(name, states[name]);
   }
@@ -288,16 +310,16 @@ function Router(declarativeStates) {
   * transitionTo('target/33?filter=desc')
   */
   function transitionTo(pathQueryOrName) {
-    var isName = leafStates[pathQueryOrName] !== undefined;
-    var params = (isName ? arguments[1] : null) || {};
-    var acc = isName ? arguments[2] : arguments[1];
+    var name = leafStates[pathQueryOrName] || leafStates[pathQueryOrName + '._default_'];
+    var params = (name ? arguments[1] : null) || {};
+    var acc = name ? arguments[2] : arguments[1];
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
 
     urlChanged = false;
 
-    if (isName)
-      setStateByName(pathQueryOrName, params, acc);
+    if (name)
+      setStateByName(name, params, acc);
     else
       setStateForPathQuery(pathQueryOrName, acc);
   }

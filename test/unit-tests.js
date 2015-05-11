@@ -1,7 +1,7 @@
 Router = Abyssa.Router;
 State  = Abyssa.State;
 
-Router.enableLogs();
+//Router.enableLogs();
 stubHistory();
 Abyssa.async.Promise = Q.Promise;
 
@@ -308,20 +308,33 @@ test('Ambiguous paths in different states are forbidden', function() {
 });
 
 
-test('Only leaf states are addressable', function() {
+test('Transitioning to a non leaf state is possible', function() {
+  var events = [];
+
+  function recordEvents(name) {
+    return {
+      enter: function() { events.push(name + 'Enter'); },
+      exit: function() { events.push(name + 'Exit'); }
+    };
+  }
 
   var router = Router({
-    index: State('index'),
+    index: State('index', recordEvents('index')),
 
-    articles: State('', {}, {
-      item: State('articles/:id', {})
+    articles: State('', recordEvents('articles'), {
+      item: State('articles/:id', recordEvents('item'))
     })
   }).init('index');
 
-  throws(function() {
-    router.transitionTo('articles');
-  });
+  events = [];
+  router.transitionTo('articles');
 
+  deepEqual(events, ['indexExit', 'articlesEnter']);
+  events = [];
+
+  router.transitionTo('articles/33');
+
+  deepEqual(events, ['itemEnter']);
 });
 
 
