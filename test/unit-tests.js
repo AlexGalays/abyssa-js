@@ -1075,6 +1075,31 @@ test('a custom accumulator object can be passed to all states', function() {
 });
 
 
+test('The fullName of the current state is passed at each transition step', function() {
+  var router = Abyssa.api;
+
+  Router({
+
+    articles: {
+      uri: 'articles',
+      enter: function(params, acc, fullName) {
+        equal(fullName, 'articles');
+      },
+
+      children: {
+        detail: {
+          uri: ':id',
+          enter: function(params, acc, fullName) {
+            equal(fullName, 'articles.detail');
+          }
+        }
+      }
+    }
+
+  }).init('articles/33');
+});
+
+
 asyncTest('registering promises with the router', function() {
 
   var async = Abyssa.async;
