@@ -2,7 +2,7 @@ module.exports = function(grunt) {
 
   var banner = '/* <%= pkg.name %> <%= pkg.version %> - <%= pkg.description %> */\n\n';
 
-  var supportedBrowsers = grunt.file.readJSON('test/supportedBrowsers.json');
+  var testedBrowsers = grunt.file.readJSON('test/browsers.json');
 
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
@@ -48,7 +48,7 @@ module.exports = function(grunt) {
     connect: {
       server: {
         options: {
-          base: '.',
+          base: '',
           port: 9999
         }
       }
@@ -67,15 +67,15 @@ module.exports = function(grunt) {
 
     'saucelabs-qunit': {
       all: {
-        username: 'bagonzago',
-        key: process.env.SAUCE_KEY || '',
-        testname: 'Abyssa',
-        tags: ['master'],
-        build: +new Date(),
-        concurrency: 2,
-        testTimeout: 15 * 1000,
-        urls: ['http://127.0.0.1:9999/test/unitTests.html', 'http://127.0.0.1:9999/test/integrationTests.html'],
-        browsers: supportedBrowsers
+        options: {
+          username: 'bagonzago',
+          testname: 'Abyssa',
+          throttled: 2,
+          build: +new Date(),
+          testTimeout: 15 * 1000,
+          urls: ['http://127.0.0.1:9999/test/unitTests.html', 'http://127.0.0.1:9999/test/integrationTests.html'],
+          browsers: testedBrowsers
+        }
       }
     }
 

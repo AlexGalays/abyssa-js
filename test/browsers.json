@@ -1,0 +1,19 @@
+[
+    [ "Windows 8", "internet explorer", "10" ],
+    [ "Windows 8.1", "internet explorer", "11" ],
+
+    [ "OS X 10.9", "chrome", "40.0" ],
+    [ "Windows 7", "chrome", "41.0" ],
+    [ "Windows 8", "chrome", "38" ],
+
+    [ "Windows 8", "firefox", "38.0" ],
+    [ "Windows 8", "firefox", "30.0" ],
+
+    [ "OS X 10.10", "safari", "8.0" ],
+
+    [ "OS X 10.10", "iphone", "6.0" ],
+    [ "OS X 10.10", "iphone", "8.0" ],
+
+    [ "Linux", "android", "5.1" ],
+    [ "Linux", "android", "4.4" ]
+]
