@@ -5,10 +5,7 @@
 * Create a new Transition instance.
 */
 function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, logger) {
-  var root,
-      enters,
-      error,
-      exits = [];
+  var root, enters, exits;
 
   var fromState = fromStateWithParams && fromStateWithParams.state;
   var toState = toStateWithParams.state;
@@ -25,13 +22,14 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, log
     run: run
   };
 
-  // The first transition has no fromState.
-  if (fromState) {
-    root = transitionRoot(fromState, toState, isUpdate, paramsDiff);
-    exits = transitionStates(fromState, root, isUpdate);
-  }
 
-  enters = transitionStates(toState, root, isUpdate).reverse();
+  // The first transition has no fromState.
+  if (fromState)
+    root = transitionRoot(fromState, toState, isUpdate, paramsDiff);
+
+  var inclusive = !root || isUpdate;
+  exits = fromState ? transitionStates(fromState, root, inclusive) : [];
+  enters = transitionStates(toState, root, inclusive).reverse();
 
   function run() {
     startTransition(enters, exits, params, transition, isUpdate, acc, logger);
@@ -48,13 +46,13 @@ function startTransition(enters, exits, params, transition, isUpdate, acc, logge
   acc = acc || {};
 
   transition.exiting = true;
-  exits.forEach(function(state) {
+  exits.forEach(state => {
     if (isUpdate && state.update) return;
     runStep(state, 'exit', params, transition, acc, logger);
   });
   transition.exiting = false;
 
-  enters.forEach(function(state) {
+  enters.forEach(state => {
     var fn = (isUpdate && state.update) ? 'update' : 'enter';
     runStep(state, fn, params, transition, acc, logger);
   });
@@ -87,7 +85,7 @@ function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
 
   // For a param-only change, the root is the top-most state owning the param(s),
   if (isUpdate) {
-    [fromState].concat(fromState.parents).reverse().forEach(function(parent) {
+    [fromState].concat(fromState.parents).reverse().forEach(parent => {
       if (root) return;
 
       for (param in paramsDiff.all) {
@@ -112,15 +110,13 @@ function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
   return root;
 }
 
-function withParents(state, upTo, inclusive) {
-  var p   = state.parents,
-      end = Math.min(p.length, p.indexOf(upTo) + (inclusive ? 1 : 0));
-  return [state].concat(p.slice(0, end));
-}
+function transitionStates(state, root, inclusive) {
+  root = root || state.root;
 
-function transitionStates(state, root, isUpdate) {
-  var inclusive = !root || isUpdate;
-  return withParents(state, root || state.root, inclusive);
+  var p   = state.parents,
+      end = Math.min(p.length, p.indexOf(root) + (inclusive ? 1 : 0));
+
+  return [state].concat(p.slice(0, end));
 }
 
 

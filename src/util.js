@@ -30,12 +30,6 @@ util.mergeObjects = function(to, from) {
   return to;
 };
 
-util.objectSize = function(obj) {
-  var size = 0;
-  for (var key in obj) size++;
-  return size;
-};
-
 util.mapValues = function(obj, fn) {
   var result = {};
   for (var key in obj) {
@@ -48,7 +42,7 @@ util.mapValues = function(obj, fn) {
 * Return the set of all the keys that changed (either added, removed or modified).
 */
 util.objectDiff = function(obj1, obj2) {
-  var diff, update = {}, enter = {}, exit = {}, all = {},
+  var update = {}, enter = {}, exit = {}, all = {},
       name,
       obj1 = obj1 || {};
 
@@ -64,14 +58,7 @@ util.objectDiff = function(obj1, obj2) {
       enter[name] = all[name] = true;
   }
 
-  diff = {
-    all: all,
-    update: update,
-    enter: enter,
-    exit: exit
-  };
-
-  return diff;
+  return { all, update, enter, exit };
 };
 
 util.makeMessage = function() {
@@ -86,12 +73,12 @@ util.makeMessage = function() {
 
 util.parsePaths = function(path) {
   return path.split('/')
-    .filter(function(str) { return str.length })
-    .map(function(str) { return decodeURIComponent(str) });
+    .filter(str => str.length)
+    .map(str => decodeURIComponent(str));
 };
 
 util.parseQueryParams = function(query) {
-  return query ? query.split('&').reduce(function(res, paramValue) {
+  return query ? query.split('&').reduce((res, paramValue) => {
     var pv = paramValue.split('=');
     res[pv[0]] = decodeURIComponent(pv[1]);
     return res;

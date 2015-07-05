@@ -1133,6 +1133,34 @@ test('The fullName of the current state is passed at each transition step', func
 });
 
 
+test('The public fullName of a _default_ state is the same as its parent', function() {
+  var router = Abyssa.api;
+
+  Router({
+
+    articles: {
+      uri: 'articles',
+
+      children: {
+        detail: {
+          uri: ':id',
+
+          children: {
+            moreDetails: {
+              uri: 'moreDetails'
+            }
+          }
+        }
+      }
+    }
+
+  }).init('articles/33');
+
+  // The router is actually at articles.detail._default_ but that should be an implementation detail.
+  equal(router.current().fullName, 'articles.detail');
+});
+
+
 asyncTest('registering promises with the router', function() {
 
   var async = Abyssa.async;

@@ -7,14 +7,14 @@ function async(wrapped) {
   var PromiseImpl = async.Promise || Promise;
   var fire = true;
 
-  api.transition.once('started', function() {
+  api.transition.once('started', () => {
     fire = false;
   });
 
-  var promise = new PromiseImpl(function(resolve, reject) {
+  var promise = new PromiseImpl((resolve, reject) => {
     wrapped.then(
-      function(value) { if (fire) resolve(value); },
-      function(err) { if (fire) reject(err); }
+      value => { if (fire) resolve(value); },
+      err => { if (fire) reject(err); }
     );
   });
 

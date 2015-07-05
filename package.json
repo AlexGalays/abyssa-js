@@ -16,24 +16,28 @@
     "bugs": {
         "url": "https://github.com/AlexGalays/abyssa-js/issues"
     },
-    "licenses": [
-        {
-            "type": "MIT",
-            "url": "http://www.opensource.org/licenses/mit-license.php"
-        }
-    ],
+    "licenses": [{
+        "type": "MIT",
+        "url": "http://www.opensource.org/licenses/mit-license.php"
+    }],
     "dependencies": {
-        "events":               "1.0.2"
+        "events":                "1.0.2"
     },
     "devDependencies": {
+        "browserify":            "10.2.4",
+        "uglify-js":             "2.4.23",
+        "babelify":              "6.1.2",
+
         "grunt":                 "0.4.5",
         "grunt-cli":             "0.1.11",
-        "grunt-contrib-uglify":  "0.2",
-        "grunt-contrib-concat":  "0.3.0",
-        "grunt-contrib-watch":   "0.5.0",
-        "grunt-browserify":      "2.1.3",
         "grunt-contrib-connect": "0.8.0",
         "grunt-saucelabs":       "*",
         "grunt-contrib-qunit":   "0.7.0"
+    },
+    "scripts": {
+        "build": "npm run build-js & npm run build-minified-js",
+        "build-js": "browserify src/main.js -s Abyssa -o target/abyssa.js -t babelify",
+        "build-minified-js": "browserify src/main.js -s Abyssa -t babelify | node_modules/uglify-js/bin/uglifyjs -c -m > target/abyssa.min.js",
+        "test": "npm run build && grunt test"
     }
 }

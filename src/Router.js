@@ -50,7 +50,6 @@ function Router(declarativeStates) {
       : currentState;
 
     var toState = StateWithParams(state, params);
-
     var diff = util.objectDiff(fromState && fromState.params, params);
 
     if (preventTransition(fromState, toState, diff)) {
@@ -139,7 +138,7 @@ function Router(declarativeStates) {
   function preventTransition(current, newState, diff) {
     if (!current) return false;
 
-    return (newState.state == current.state) && (util.objectSize(diff.all) == 0);
+    return (newState.state == current.state) && (Object.keys(diff.all).length == 0);
   }
 
   /*
@@ -231,7 +230,7 @@ function Router(declarativeStates) {
 
     addDefaultStates(stateArray);
 
-    eachRootState(function(name, state) {
+    eachRootState((name, state) => {
       state.init(router, name);
     });
 
@@ -245,7 +244,7 @@ function Router(declarativeStates) {
   function assertPathUniqueness(states) {
     var paths = {};
 
-    states.forEach(function(state) {
+    states.forEach(state => {
       if (paths[state.path]) {
         var fullPaths = states.map(function(s) { return s.fullPath() || 'empty' });
         throw new Error('Two sibling states have the same path (' + fullPaths + ')');
@@ -267,14 +266,14 @@ function Router(declarativeStates) {
   }
 
   function addDefaultStates(states) {
-    states.forEach(function(state) {
+    states.forEach(state => {
       var children = util.objectToArray(state.states);
 
       // This is a parent state: Add a default state to it if there isn't already one
       if (children.length) {
         addDefaultStates(children);
 
-        var hasDefaultState = children.reduce(function(result, state) {
+        var hasDefaultState = children.reduce((result, state) => {
           return state.path == '' || result;
         }, false);
 
@@ -291,7 +290,7 @@ function Router(declarativeStates) {
   }
 
   function registerLeafStates(states, leafStates) {
-    return states.reduce(function(leafStates, state) {
+    return states.reduce((leafStates, state) => {
       if (state.children.length)
         return registerLeafStates(state.children, leafStates);
       else {
@@ -310,7 +309,7 @@ function Router(declarativeStates) {
   * transitionTo('target/33?filter=desc')
   */
   function transitionTo(pathQueryOrName) {
-    var name = leafStates[pathQueryOrName] || leafStates[pathQueryOrName + '._default_'];
+    var name = leafStates[pathQueryOrName];
     var params = (name ? arguments[1] : null) || {};
     var acc = name ? arguments[2] : arguments[1];
 
@@ -406,7 +405,7 @@ function Router(declarativeStates) {
   }
 
   function isHashMode() {
-    return (options.urlSync == 'hash');
+    return options.urlSync == 'hash';
   }
 
   /*
@@ -436,7 +435,7 @@ function Router(declarativeStates) {
   * Returns an object representing the current state of the router.
   */
   function getCurrent() {
-    return currentState ? currentState.asPublic : null;
+    return currentState && currentState.asPublic;
   }
 
   /*
@@ -444,7 +443,7 @@ function Router(declarativeStates) {
   * or null if the router is still in its initial state.
   */
   function getPrevious() {
-    return previousState ? previousState.asPublic : null;
+    return previousState && previousState.asPublic;
   }
 
   /*
@@ -534,13 +533,13 @@ var logger = {
 Router.enableLogs = function() {
   logger.enabled = true;
 
-  logger.log = function() {
-    var message = util.makeMessage.apply(null, arguments);
+  logger.log = function(...args) {
+    var message = util.makeMessage.apply(null, args);
     console.log(message);
   };
 
-  logger.error = function() {
-    var message = util.makeMessage.apply(null, arguments);
+  logger.error = function(...args) {
+    var message = util.makeMessage.apply(null, args);
     console.error(message);
   };
 

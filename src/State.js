@@ -30,13 +30,14 @@ function State(options) {
   function init(router, name, parent) {
     state.router = router;
     state.name = name;
+    state.isDefault = name == '_default_';
     state.parent = parent;
     state.parents = getParents();
     state.root = state.parent ? state.parents[state.parents.length - 1] : state;
-    state.children = getChildren();
+    state.children = util.objectToArray(states);
     state.fullName = getFullName();
 
-    eachChildState(function(name, childState) {
+    eachChildState((name, childState) => {
       childState.init(router, name, state);
     });
   }
@@ -72,30 +73,21 @@ function State(options) {
   }
 
   /*
-  * The list of child states as an Array.
-  */
-  function getChildren() {
-    var children = [];
-
-    for (var name in states) {
-      children.push(states[name]);
-    }
-
-    return children;
-  }
-
-  /*
   * The fully qualified name of this state.
   * e.g granparentName.parentName.name
   */
   function getFullName() {
-    return state.parents.reduceRight(function(acc, parent) {
+    var result = state.parents.reduceRight((acc, parent) => {
       return acc + parent.name + '.';
     }, '') + state.name;
+
+    return state.isDefault
+      ? result.replace('._default_', '')
+      : result;
   }
 
   function allQueryParams() {
-    return state.parents.reduce(function(acc, parent) {
+    return state.parents.reduce((acc, parent) => {
       return util.mergeObjects(acc, parent.queryParams);
     }, util.copyObject(state.queryParams));
   }
@@ -131,9 +123,7 @@ function State(options) {
   */
   function matches(paths) {
     var params = {};
-    var nonRestStatePaths = state.paths.filter(function(p) {
-      return p[p.length - 1] != '*';
-    });
+    var nonRestStatePaths = state.paths.filter(p => p[p.length - 1] != '*');
 
     /* This state has more paths than the passed paths, it cannot be a match */
     if (nonRestStatePaths.length > paths.length) return false;
@@ -168,18 +158,12 @@ function State(options) {
   * Returns a URI built from this state and the passed params.
   */
   function interpolate(params) {
-    var path = state.fullPath().replace(PARAMS, function(p) {
-      return params[paramName(p)] || '';
-    });
+    var path = state.fullPath().replace(PARAMS, p => params[paramName(p)] || '');
 
     var queryParams = allQueryParams();
-    var passedQueryParams = Object.keys(params).filter(function(p) {
-      return queryParams[p];
-    });
+    var passedQueryParams = Object.keys(params).filter(p => queryParams[p]);
 
-    var query = passedQueryParams.map(function(p) {
-      return p + '=' + params[p];
-    }).join('&');
+    var query = passedQueryParams.map(p => p + '=' + params[p]).join('&');
 
     return path + (query.length ? ('?' + query) : '');
   }
