@@ -1,6 +1,4 @@
-/* abyssa 7.0.1 - Hierarchical router for single page applications */
-
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Abyssa=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Abyssa = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,10 +58,8 @@ EventEmitter.prototype.emit = function(type) {
       er = arguments[1];
       if (er instanceof Error) {
         throw er; // Unhandled 'error' event
-      } else {
-        throw TypeError('Uncaught, unspecified "error" event.');
       }
-      return false;
+      throw TypeError('Uncaught, unspecified "error" event.');
     }
   }
 
@@ -305,18 +301,17 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],2:[function(_dereq_,module,exports){
+},{}],2:[function(require,module,exports){
 
 'use strict';
 
-
-var EventEmitter     = _dereq_('events'),
-    interceptAnchors = _dereq_('./anchors'),
-    StateWithParams  = _dereq_('./StateWithParams'),
-    Transition       = _dereq_('./Transition'),
-    util             = _dereq_('./util'),
-    State            = _dereq_('./State'),
-    api              = _dereq_('./api');
+var EventEmitter = require('events'),
+    interceptAnchors = require('./anchors'),
+    StateWithParams = require('./StateWithParams'),
+    Transition = require('./Transition'),
+    util = require('./util'),
+    State = require('./State'),
+    api = require('./api');
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
@@ -330,12 +325,12 @@ function Router(declarativeStates) {
       states = stateTrees(declarativeStates),
       firstTransition = true,
       options = {
-        enableLogs: false,
-        interceptAnchors: true,
-        notFound: null,
-        urlSync: true,
-        hashPrefix: ''
-      },
+    enableLogs: false,
+    interceptAnchors: true,
+    notFound: null,
+    urlSync: true,
+    hashPrefix: ''
+  },
       ignoreNextURLChange = false,
       currentPathQuery,
       currentParamsDiff = {},
@@ -353,12 +348,9 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params, acc) {
-    var fromState = transition
-      ? StateWithParams(transition.currentState, transition.toParams)
-      : currentState;
+    var fromState = transition ? StateWithParams(transition.currentState, transition.toParams) : currentState;
 
     var toState = StateWithParams(state, params);
-
     var diff = util.objectDiff(fromState && fromState.params, params);
 
     if (preventTransition(fromState, toState, diff)) {
@@ -374,13 +366,7 @@ function Router(declarativeStates) {
     currentState = toState;
     currentParamsDiff = diff;
 
-    transition = Transition(
-      fromState,
-      toState,
-      diff,
-      acc,
-      logger
-    );
+    transition = Transition(fromState, toState, diff, acc, logger);
 
     startingTransition(fromState, toState);
 
@@ -389,16 +375,14 @@ function Router(declarativeStates) {
 
     // In case of a redirect() called from the transition itself, the transition already ended
     if (transition) {
-      if (transition.cancelled) currentState = fromState;
-      else endingTransition(fromState, toState);
+      if (transition.cancelled) currentState = fromState;else endingTransition(fromState, toState);
     }
 
     transition = null;
   }
 
   function cancelTransition() {
-    logger.log('Cancelling existing transition from {0} to {1}',
-      transition.from, transition.to);
+    logger.log('Cancelling existing transition from {0} to {1}', transition.from, transition.to);
 
     transition.cancel();
 
@@ -435,9 +419,7 @@ function Router(declarativeStates) {
     if (isHashMode()) {
       ignoreNextURLChange = true;
       location.hash = options.hashPrefix + url;
-    }
-    else
-      history.pushState(state, title, url);
+    } else history.pushState(state, title, url);
   }
 
   /*
@@ -447,7 +429,7 @@ function Router(declarativeStates) {
   function preventTransition(current, newState, diff) {
     if (!current) return false;
 
-    return (newState.state == current.state) && (util.objectSize(diff.all) == 0);
+    return newState.state == current.state && Object.keys(diff.all).length == 0;
   }
 
   /*
@@ -457,9 +439,7 @@ function Router(declarativeStates) {
   function notFound(state) {
     logger.log('State not found: {0}', state);
 
-    if (options.notFound)
-      return setState(leafStates[options.notFound], {});
-    else throw new Error ('State "' + state + '" could not be found');
+    if (options.notFound) return setState(leafStates[options.notFound], {});else throw new Error('State "' + state + '" could not be found');
   }
 
   /*
@@ -483,11 +463,9 @@ function Router(declarativeStates) {
   * 2) The state captured by the current URL
   */
   function init(initState, initParams) {
-    if (options.enableLogs)
-      Router.enableLogs();
+    if (options.enableLogs) Router.enableLogs();
 
-    if (options.interceptAnchors)
-      interceptAnchors(router);
+    if (options.interceptAnchors) interceptAnchors(router);
 
     hashSlashString = '#' + options.hashPrefix + '/';
 
@@ -496,7 +474,7 @@ function Router(declarativeStates) {
     initStates();
     logStateTree();
 
-    initState = (initState !== undefined) ? initState : urlPathQuery();
+    initState = initState !== undefined ? initState : urlPathQuery();
 
     logger.log('Initializing to state {0}', initState || '""');
     transitionTo(initState, initParams);
@@ -539,7 +517,7 @@ function Router(declarativeStates) {
 
     addDefaultStates(stateArray);
 
-    eachRootState(function(name, state) {
+    eachRootState(function (name, state) {
       state.init(router, name);
     });
 
@@ -553,9 +531,11 @@ function Router(declarativeStates) {
   function assertPathUniqueness(states) {
     var paths = {};
 
-    states.forEach(function(state) {
+    states.forEach(function (state) {
       if (paths[state.path]) {
-        var fullPaths = states.map(function(s) { return s.fullPath() || 'empty' });
+        var fullPaths = states.map(function (s) {
+          return s.fullPath() || 'empty';
+        });
         throw new Error('Two sibling states have the same path (' + fullPaths + ')');
       }
 
@@ -575,14 +555,14 @@ function Router(declarativeStates) {
   }
 
   function addDefaultStates(states) {
-    states.forEach(function(state) {
+    states.forEach(function (state) {
       var children = util.objectToArray(state.states);
 
       // This is a parent state: Add a default state to it if there isn't already one
       if (children.length) {
         addDefaultStates(children);
 
-        var hasDefaultState = children.reduce(function(result, state) {
+        var hasDefaultState = children.reduce(function (result, state) {
           return state.path == '' || result;
         }, false);
 
@@ -599,10 +579,8 @@ function Router(declarativeStates) {
   }
 
   function registerLeafStates(states, leafStates) {
-    return states.reduce(function(leafStates, state) {
-      if (state.children.length)
-        return registerLeafStates(state.children, leafStates);
-      else {
+    return states.reduce(function (leafStates, state) {
+      if (state.children.length) return registerLeafStates(state.children, leafStates);else {
         leafStates[state.fullName] = state;
         state.paths = util.parsePaths(state.fullPath());
         return leafStates;
@@ -618,7 +596,7 @@ function Router(declarativeStates) {
   * transitionTo('target/33?filter=desc')
   */
   function transitionTo(pathQueryOrName) {
-    var name = leafStates[pathQueryOrName] || leafStates[pathQueryOrName + '._default_'];
+    var name = leafStates[pathQueryOrName];
     var params = (name ? arguments[1] : null) || {};
     var acc = name ? arguments[2] : arguments[1];
 
@@ -626,10 +604,7 @@ function Router(declarativeStates) {
 
     urlChanged = false;
 
-    if (name)
-      setStateByName(name, params, acc);
-    else
-      setStateForPathQuery(pathQueryOrName, acc);
+    if (name) setStateByName(name, params, acc);else setStateForPathQuery(pathQueryOrName, acc);
   }
 
   /*
@@ -663,8 +638,7 @@ function Router(declarativeStates) {
       }
     }
 
-    if (state) setState(state, params, acc);
-    else notFound(currentPathQuery);
+    if (state) setState(state, params, acc);else notFound(currentPathQuery);
   }
 
   function setStateByName(name, params, acc) {
@@ -681,8 +655,7 @@ function Router(declarativeStates) {
   * The name must be unique among root states.
   */
   function addState(name, state) {
-    if (states[name])
-      throw new Error('A state already exist in the router with the name ' + name);
+    if (states[name]) throw new Error('A state already exist in the router with the name ' + name);
 
     state = stateTree(state);
 
@@ -703,18 +676,13 @@ function Router(declarativeStates) {
     var hashSlash = location.href.indexOf(hashSlashString);
     var pathQuery;
 
-    if (hashSlash > -1)
-      pathQuery = location.href.slice(hashSlash + hashSlashString.length);
-    else if (isHashMode())
-      pathQuery = '/';
-    else
-      pathQuery = (location.pathname + location.search).slice(1);
+    if (hashSlash > -1) pathQuery = location.href.slice(hashSlash + hashSlashString.length);else if (isHashMode()) pathQuery = '/';else pathQuery = (location.pathname + location.search).slice(1);
 
     return util.normalizePathQuery(pathQuery);
   }
 
   function isHashMode() {
-    return (options.urlSync == 'hash');
+    return options.urlSync == 'hash';
   }
 
   /*
@@ -744,7 +712,7 @@ function Router(declarativeStates) {
   * Returns an object representing the current state of the router.
   */
   function getCurrent() {
-    return currentState ? currentState.asPublic : null;
+    return currentState && currentState.asPublic;
   }
 
   /*
@@ -752,7 +720,7 @@ function Router(declarativeStates) {
   * or null if the router is still in its initial state.
   */
   function getPrevious() {
-    return previousState ? previousState.asPublic : null;
+    return previousState && previousState.asPublic;
   }
 
   /*
@@ -784,19 +752,17 @@ function Router(declarativeStates) {
   function logStateTree() {
     if (!logger.enabled) return;
 
-    var indent = function(level) {
+    var indent = function indent(level) {
       if (level == 0) return '';
       return new Array(2 + (level - 1) * 4).join(' ') + '── ';
-    }
+    };
 
-    var stateTree = function(state) {
+    var stateTree = function stateTree(state) {
       var path = util.normalizePathQuery(state.fullPath());
-      var pathStr = (state.children.length == 0)
-        ? ' (@ path)'.replace('path', path)
-        : '';
+      var pathStr = state.children.length == 0 ? ' (@ path)'.replace('path', path) : '';
       var str = indent(state.parents.length) + state.name + pathStr + '\n';
       return str + state.children.map(stateTree).join('');
-    }
+    };
 
     var msg = '\nState tree\n\n';
     msg += util.objectToArray(states).map(stateTree).join('');
@@ -804,7 +770,6 @@ function Router(declarativeStates) {
 
     logger.log(msg);
   }
-
 
   // Public methods
 
@@ -830,7 +795,6 @@ function Router(declarativeStates) {
   return router;
 }
 
-
 // Logging
 
 var logger = {
@@ -839,28 +803,35 @@ var logger = {
   enabled: false
 };
 
-Router.enableLogs = function() {
+Router.enableLogs = function () {
   logger.enabled = true;
 
-  logger.log = function() {
-    var message = util.makeMessage.apply(null, arguments);
+  logger.log = function () {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    var message = util.makeMessage.apply(null, args);
     console.log(message);
   };
 
-  logger.error = function() {
-    var message = util.makeMessage.apply(null, arguments);
+  logger.error = function () {
+    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+      args[_key2] = arguments[_key2];
+    }
+
+    var message = util.makeMessage.apply(null, args);
     console.error(message);
   };
-
 };
 
-
 module.exports = Router;
-},{"./State":3,"./StateWithParams":4,"./Transition":5,"./anchors":6,"./api":7,"./util":10,"events":1}],3:[function(_dereq_,module,exports){
+
+},{"./State":3,"./StateWithParams":4,"./Transition":5,"./anchors":6,"./api":7,"./util":10,"events":1}],3:[function(require,module,exports){
 
 'use strict';
 
-var util  = _dereq_('./util');
+var util = require('./util');
 
 var PARAMS = /:[^\\?\/]*/g;
 
@@ -869,8 +840,8 @@ var PARAMS = /:[^\\?\/]*/g;
 * This is the internal representation of a state used by the router.
 */
 function State(options) {
-  var state    = {},
-      states   = options.children;
+  var state = {},
+      states = options.children;
 
   state.path = pathFromURI(options.uri);
   state.params = paramsFromURI(options.uri);
@@ -889,13 +860,14 @@ function State(options) {
   function init(router, name, parent) {
     state.router = router;
     state.name = name;
+    state.isDefault = name == '_default_';
     state.parent = parent;
     state.parents = getParents();
     state.root = state.parent ? state.parents[state.parents.length - 1] : state;
-    state.children = getChildren();
+    state.children = util.objectToArray(states);
     state.fullName = getFullName();
 
-    eachChildState(function(name, childState) {
+    eachChildState(function (name, childState) {
       childState.init(router, name, state);
     });
   }
@@ -904,7 +876,7 @@ function State(options) {
   * The full path, composed of all the individual paths of this state and its parents.
   */
   function fullPath() {
-    var result      = state.path,
+    var result = state.path,
         stateParent = state.parent;
 
     while (stateParent) {
@@ -920,7 +892,7 @@ function State(options) {
   */
   function getParents() {
     var parents = [],
-        parent  = state.parent;
+        parent = state.parent;
 
     while (parent) {
       parents.push(parent);
@@ -931,30 +903,19 @@ function State(options) {
   }
 
   /*
-  * The list of child states as an Array.
-  */
-  function getChildren() {
-    var children = [];
-
-    for (var name in states) {
-      children.push(states[name]);
-    }
-
-    return children;
-  }
-
-  /*
   * The fully qualified name of this state.
   * e.g granparentName.parentName.name
   */
   function getFullName() {
-    return state.parents.reduceRight(function(acc, parent) {
+    var result = state.parents.reduceRight(function (acc, parent) {
       return acc + parent.name + '.';
     }, '') + state.name;
+
+    return state.isDefault ? result.replace('._default_', '') : result;
   }
 
   function allQueryParams() {
-    return state.parents.reduce(function(acc, parent) {
+    return state.parents.reduce(function (acc, parent) {
       return util.mergeObjects(acc, parent.queryParams);
     }, util.copyObject(state.queryParams));
   }
@@ -974,8 +935,7 @@ function State(options) {
 
     var currentState = state;
 
-    while (currentState.ownData[key] === undefined && currentState.parent)
-      currentState = currentState.parent;
+    while (currentState.ownData[key] === undefined && currentState.parent) currentState = currentState.parent;
 
     return currentState.ownData[key];
   }
@@ -990,7 +950,7 @@ function State(options) {
   */
   function matches(paths) {
     var params = {};
-    var nonRestStatePaths = state.paths.filter(function(p) {
+    var nonRestStatePaths = state.paths.filter(function (p) {
       return p[p.length - 1] != '*';
     });
 
@@ -1016,8 +976,7 @@ function State(options) {
       if (isDynamic) {
         var name = paramName(thatPath);
         params[name] = path;
-      }
-      else if (thatPath != path) return false;
+      } else if (thatPath != path) return false;
     }
 
     return params;
@@ -1027,27 +986,25 @@ function State(options) {
   * Returns a URI built from this state and the passed params.
   */
   function interpolate(params) {
-    var path = state.fullPath().replace(PARAMS, function(p) {
+    var path = state.fullPath().replace(PARAMS, function (p) {
       return params[paramName(p)] || '';
     });
 
     var queryParams = allQueryParams();
-    var passedQueryParams = Object.keys(params).filter(function(p) {
+    var passedQueryParams = Object.keys(params).filter(function (p) {
       return queryParams[p];
     });
 
-    var query = passedQueryParams.map(function(p) {
+    var query = passedQueryParams.map(function (p) {
       return p + '=' + params[p];
     }).join('&');
 
-    return path + (query.length ? ('?' + query) : '');
+    return path + (query.length ? '?' + query : '');
   }
-
 
   function toString() {
     return state.fullName;
   }
-
 
   state.init = init;
   state.fullPath = fullPath;
@@ -1064,9 +1021,7 @@ function State(options) {
 }
 
 function paramName(param) {
-  return param[param.length - 1] == '*'
-    ? param.substr(1).slice(0, -1)
-    : param.substr(1);
+  return param[param.length - 1] == '*' ? param.substr(1).slice(0, -1) : param.substr(1);
 }
 
 function pathFromURI(uri) {
@@ -1080,15 +1035,14 @@ function paramsFromURI(uri) {
 
 function queryParamsFromURI(uri) {
   var query = (uri || '').split('?')[1];
-  return query ? util.arrayToObject(query.split('&')): {};
+  return query ? util.arrayToObject(query.split('&')) : {};
 }
 
-
 module.exports = State;
-},{"./util":10}],4:[function(_dereq_,module,exports){
+
+},{"./util":10}],4:[function(require,module,exports){
 
 'use strict';
-
 
 /*
 * Creates a new StateWithParams instance.
@@ -1127,18 +1081,18 @@ function makePublicAPI(state, params, pathQuery) {
     name: state ? state.name : '',
     fullName: state ? state.fullName : '',
     data: state ? state.data : null,
-    isIn: isIn,
+    isIn: isIn
   };
 }
 
 function toString() {
   var name = this.state && this.state.fullName;
-  return name + ':' + JSON.stringify(this.params)
+  return name + ':' + JSON.stringify(this.params);
 }
 
-
 module.exports = StateWithParams;
-},{}],5:[function(_dereq_,module,exports){
+
+},{}],5:[function(require,module,exports){
 
 'use strict';
 
@@ -1146,15 +1100,12 @@ module.exports = StateWithParams;
 * Create a new Transition instance.
 */
 function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, logger) {
-  var root,
-      enters,
-      error,
-      exits = [];
+  var root, enters, exits;
 
   var fromState = fromStateWithParams && fromStateWithParams.state;
   var toState = toStateWithParams.state;
   var params = toStateWithParams.params;
-  var isUpdate = (fromState == toState);
+  var isUpdate = fromState == toState;
 
   var transition = {
     from: fromState,
@@ -1167,12 +1118,11 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, log
   };
 
   // The first transition has no fromState.
-  if (fromState) {
-    root = transitionRoot(fromState, toState, isUpdate, paramsDiff);
-    exits = transitionStates(fromState, root, isUpdate);
-  }
+  if (fromState) root = transitionRoot(fromState, toState, isUpdate, paramsDiff);
 
-  enters = transitionStates(toState, root, isUpdate).reverse();
+  var inclusive = !root || isUpdate;
+  exits = fromState ? transitionStates(fromState, root, inclusive) : [];
+  enters = transitionStates(toState, root, inclusive).reverse();
 
   function run() {
     startTransition(enters, exits, params, transition, isUpdate, acc, logger);
@@ -1189,14 +1139,14 @@ function startTransition(enters, exits, params, transition, isUpdate, acc, logge
   acc = acc || {};
 
   transition.exiting = true;
-  exits.forEach(function(state) {
+  exits.forEach(function (state) {
     if (isUpdate && state.update) return;
     runStep(state, 'exit', params, transition, acc, logger);
   });
   transition.exiting = false;
 
-  enters.forEach(function(state) {
-    var fn = (isUpdate && state.update) ? 'update' : 'enter';
+  enters.forEach(function (state) {
+    var fn = isUpdate && state.update ? 'update' : 'enter';
     runStep(state, fn, params, transition, acc, logger);
   });
 }
@@ -1213,7 +1163,7 @@ function runStep(state, stepFn, params, transition, acc, logger) {
 
   if (transition.cancelled) return;
 
-  transition.currentState = (stepFn == 'exit') ? state.parent : state;
+  transition.currentState = stepFn == 'exit' ? state.parent : state;
 
   return result;
 }
@@ -1222,13 +1172,11 @@ function runStep(state, stepFn, params, transition, acc, logger) {
 * The top-most current state's parent that must be exited.
 */
 function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
-  var root,
-      parent,
-      param;
+  var root, parent, param;
 
   // For a param-only change, the root is the top-most state owning the param(s),
   if (isUpdate) {
-    [fromState].concat(fromState.parents).reverse().forEach(function(parent) {
+    [fromState].concat(fromState.parents).reverse().forEach(function (parent) {
       if (root) return;
 
       for (param in paramsDiff.all) {
@@ -1253,31 +1201,27 @@ function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
   return root;
 }
 
-function withParents(state, upTo, inclusive) {
-  var p   = state.parents,
-      end = Math.min(p.length, p.indexOf(upTo) + (inclusive ? 1 : 0));
+function transitionStates(state, root, inclusive) {
+  root = root || state.root;
+
+  var p = state.parents,
+      end = Math.min(p.length, p.indexOf(root) + (inclusive ? 1 : 0));
+
   return [state].concat(p.slice(0, end));
 }
 
-function transitionStates(state, root, isUpdate) {
-  var inclusive = !root || isUpdate;
-  return withParents(state, root || state.root, inclusive);
-}
-
-
 module.exports = Transition;
-},{}],6:[function(_dereq_,module,exports){
+
+},{}],6:[function(require,module,exports){
 
 'use strict';
-
 
 var router;
 
 function onMouseDown(evt) {
   var href = hrefForEvent(evt);
 
-  if (href !== undefined)
-    router.transitionTo(href);
+  if (href !== undefined) router.transitionTo(href);
 }
 
 function onMouseClick(evt) {
@@ -1336,18 +1280,17 @@ function isLocalLink(anchor) {
 
   // IE10 can lose the hostname/port property when setting a relative href from JS
   if (!hostname) {
-    var tempAnchor = document.createElement("a");
+    var tempAnchor = document.createElement('a');
     tempAnchor.href = anchor.href;
     hostname = tempAnchor.hostname;
     port = tempAnchor.port;
   }
 
-  var sameHostname = (hostname == location.hostname);
+  var sameHostname = hostname == location.hostname;
   var samePort = (port || '80') == (location.port || '80');
 
   return sameHostname && samePort;
 }
-
 
 module.exports = function interceptAnchors(forRouter) {
   router = forRouter;
@@ -1355,93 +1298,91 @@ module.exports = function interceptAnchors(forRouter) {
   document.addEventListener('mousedown', onMouseDown);
   document.addEventListener('click', onMouseClick);
 };
-},{}],7:[function(_dereq_,module,exports){
+
+},{}],7:[function(require,module,exports){
 
 /* Represents the public API of the last instanciated router; Useful to break circular dependencies between router and its states */
+"use strict";
+
 module.exports = {};
-},{}],8:[function(_dereq_,module,exports){
 
-var api = _dereq_('./api');
+},{}],8:[function(require,module,exports){
+'use strict';
 
+var api = require('./api');
 
 /* Wraps a thennable/promise and only resolve it if the router didn't transition to another state in the meantime */
 function async(wrapped) {
   var PromiseImpl = async.Promise || Promise;
   var fire = true;
 
-  api.transition.once('started', function() {
+  api.transition.once('started', function () {
     fire = false;
   });
 
-  var promise = new PromiseImpl(function(resolve, reject) {
-    wrapped.then(
-      function(value) { if (fire) resolve(value); },
-      function(err) { if (fire) reject(err); }
-    );
+  var promise = new PromiseImpl(function (resolve, reject) {
+    wrapped.then(function (value) {
+      if (fire) resolve(value);
+    }, function (err) {
+      if (fire) reject(err);
+    });
   });
 
   return promise;
 };
 
-
 module.exports = async;
-},{"./api":7}],9:[function(_dereq_,module,exports){
+
+},{"./api":7}],9:[function(require,module,exports){
 
 'use strict';
 
-var util = _dereq_('./util');
-
+var util = require('./util');
 
 var Abyssa = {
-  Router: _dereq_('./Router'),
-  api: _dereq_('./api'),
-  async: _dereq_('./async'),
+  Router: require('./Router'),
+  api: require('./api'),
+  async: require('./async'),
   State: util.stateShorthand,
 
   _util: util
 };
 
 module.exports = Abyssa;
-},{"./Router":2,"./api":7,"./async":8,"./util":10}],10:[function(_dereq_,module,exports){
+
+},{"./Router":2,"./api":7,"./async":8,"./util":10}],10:[function(require,module,exports){
 
 'use strict';
 
 var util = {};
 
+util.noop = function () {};
 
-util.noop = function() {};
-
-util.arrayToObject = function(array) {
-  return array.reduce(function(obj, item) {
+util.arrayToObject = function (array) {
+  return array.reduce(function (obj, item) {
     obj[item] = 1;
     return obj;
   }, {});
 };
 
-util.objectToArray = function(obj) {
+util.objectToArray = function (obj) {
   var array = [];
   for (var key in obj) array.push(obj[key]);
   return array;
 };
 
-util.copyObject = function(obj) {
+util.copyObject = function (obj) {
   var copy = {};
   for (var key in obj) copy[key] = obj[key];
   return copy;
 };
 
-util.mergeObjects = function(to, from) {
+util.mergeObjects = function (to, from) {
   for (var key in from) to[key] = from[key];
   return to;
 };
 
-util.objectSize = function(obj) {
-  var size = 0;
-  for (var key in obj) size++;
-  return size;
-};
-
-util.mapValues = function(obj, fn) {
+util.mapValues = function (obj, fn) {
   var result = {};
   for (var key in obj) {
     result[key] = fn(obj[key]);
@@ -1452,74 +1393,62 @@ util.mapValues = function(obj, fn) {
 /*
 * Return the set of all the keys that changed (either added, removed or modified).
 */
-util.objectDiff = function(obj1, obj2) {
-  var diff, update = {}, enter = {}, exit = {}, all = {},
+util.objectDiff = function (obj1, obj2) {
+  var update = {},
+      enter = {},
+      exit = {},
+      all = {},
       name,
       obj1 = obj1 || {};
 
   for (name in obj1) {
-    if (!(name in obj2))
-      exit[name] = all[name] = true;
-    else if (obj1[name] != obj2[name])
-      update[name] = all[name] = true;
+    if (!(name in obj2)) exit[name] = all[name] = true;else if (obj1[name] != obj2[name]) update[name] = all[name] = true;
   }
 
   for (name in obj2) {
-    if (!(name in obj1))
-      enter[name] = all[name] = true;
+    if (!(name in obj1)) enter[name] = all[name] = true;
   }
 
-  diff = {
-    all: all,
-    update: update,
-    enter: enter,
-    exit: exit
-  };
-
-  return diff;
+  return { all: all, update: update, enter: enter, exit: exit };
 };
 
-util.makeMessage = function() {
+util.makeMessage = function () {
   var message = arguments[0],
       tokens = Array.prototype.slice.call(arguments, 1);
 
-  for (var i = 0, l = tokens.length; i < l; i++) 
-    message = message.replace('{' + i + '}', tokens[i]);
+  for (var i = 0, l = tokens.length; i < l; i++) message = message.replace('{' + i + '}', tokens[i]);
 
   return message;
 };
 
-util.parsePaths = function(path) {
-  return path.split('/')
-    .filter(function(str) { return str.length })
-    .map(function(str) { return decodeURIComponent(str) });
+util.parsePaths = function (path) {
+  return path.split('/').filter(function (str) {
+    return str.length;
+  }).map(function (str) {
+    return decodeURIComponent(str);
+  });
 };
 
-util.parseQueryParams = function(query) {
-  return query ? query.split('&').reduce(function(res, paramValue) {
+util.parseQueryParams = function (query) {
+  return query ? query.split('&').reduce(function (res, paramValue) {
     var pv = paramValue.split('=');
     res[pv[0]] = decodeURIComponent(pv[1]);
     return res;
   }, {}) : {};
 };
 
-
 var LEADING_SLASHES = /^\/+/;
 var TRAILING_SLASHES = /^([^?]*?)\/+$/;
 var TRAILING_SLASHES_BEFORE_QUERY = /\/+\?/;
-util.normalizePathQuery = function(pathQuery) {
-  return ('/' + pathQuery
-    .replace(LEADING_SLASHES, '')
-    .replace(TRAILING_SLASHES, '$1')
-    .replace(TRAILING_SLASHES_BEFORE_QUERY, '?'));
+util.normalizePathQuery = function (pathQuery) {
+  return '/' + pathQuery.replace(LEADING_SLASHES, '').replace(TRAILING_SLASHES, '$1').replace(TRAILING_SLASHES_BEFORE_QUERY, '?');
 };
 
-util.stateShorthand = function(uri, options, children) {
+util.stateShorthand = function (uri, options, children) {
   return util.mergeObjects({ uri: uri, children: children || {} }, options);
 };
 
-
 module.exports = util;
-},{}]},{},[9])
-(9)
+
+},{}]},{},[9])(9)
 });
