@@ -20,6 +20,7 @@ Hierarchical router library for single page applications.
   * [Central router, modular states](#centralRouter)
   * [Highlight the selected primary navigation item](#navHighlight)
   * [Handling the change of some params differently in `update`](#updateParamChanges)
+  * [Integrating with React](#integratingWithReact)
 
 
 <a name="browser-support"></a>
@@ -468,7 +469,7 @@ Demo: [Abyssa demo async](http://abyssa-async.herokuapp.com/)
 Source: [Abyssa demo async source](https://github.com/AlexGalays/abyssa-demo/tree/async/client)  
 
 ## Abyssa + React
-[JSFiddle](http://jsfiddle.net/Wp3Yx/5/)
+[JSFiddle](http://jsfiddle.net/ku88Lcju/)
 
 <a name="cookbook"></a>
 # Cookbook
@@ -631,3 +632,16 @@ var state = State({
 });
 
 ```
+
+<a name="integratingWithReact"></a>
+## Integrating with React
+
+Abyssa provides an optional addon that implements one way to easily render states using React. It's perfectly doable and quite easy
+to use React and abyssa without this addon; the addon simply provides syntactic sugar.
+Just import it and use `ReactState` instead of `State` where applicable.
+
+```
+var ReactState = require('abyssa/addon/ReactState');
+```
+
+[JSFiddle Example](http://jsfiddle.net/ku88Lcju/)

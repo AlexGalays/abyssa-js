@@ -18,6 +18,7 @@ function ReactStateForContainer(container) {
       children: children
     };
 
+    // The component class chain.
     var components;
 
     if (children) {
