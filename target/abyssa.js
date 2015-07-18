@@ -1159,7 +1159,7 @@ function runStep(state, stepFn, params, transition, acc, logger) {
     logger.log(capitalizedStep + ' ' + state.fullName);
   }
 
-  var result = state[stepFn](params, acc, state.fullName);
+  var result = state[stepFn](params, acc);
 
   if (transition.cancelled) return;
 
