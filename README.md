@@ -641,7 +641,7 @@ to use React and abyssa without this addon; the addon simply provides syntactic 
 Just import it and use `ReactState` instead of `State` where applicable.
 
 ```
-var ReactState = require('abyssa/addon/ReactState');
+var ReactState = require('abyssa/src/addon/ReactState');
 ```
 
 [JSFiddle Example](http://jsfiddle.net/ku88Lcju/)
