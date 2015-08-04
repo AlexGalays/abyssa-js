@@ -3,7 +3,7 @@
     "description": "Hierarchical router for single page applications",
     "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState"],
     "homepage": "https://github.com/AlexGalays/abyssa-js/",
-    "version": "7.0.3",
+    "version": "7.0.4",
     "author": {
         "name": "Alexandre Galays",
         "url": "https://github.com/AlexGalays/"
@@ -21,12 +21,15 @@
         "url": "http://www.opensource.org/licenses/mit-license.php"
     }],
     "dependencies": {
-        "events":                "1.0.2"
+        "events":                "1.0.2",
+        "babelify":              "6.1.2"
+    },
+    "peerDependencies": {
+        "react":                 ">=0.13.0"
     },
     "devDependencies": {
         "browserify":            "10.2.4",
         "uglify-js":             "2.4.23",
-        "babelify":              "6.1.2",
 
         "grunt":                 "0.4.5",
         "grunt-cli":             "0.1.11",
@@ -34,6 +37,7 @@
         "grunt-saucelabs":       "*",
         "grunt-contrib-qunit":   "0.7.0"
     },
+    "browserify": { "transform": [ "babelify" ] },
     "scripts": {
         "build": "npm run build-js & npm run build-minified-js",
         "build-js": "browserify src/main.js -s Abyssa -o target/abyssa.js -t babelify",
