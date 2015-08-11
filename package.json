@@ -3,7 +3,7 @@
     "description": "Hierarchical router for single page applications",
     "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState"],
     "homepage": "https://github.com/AlexGalays/abyssa-js/",
-    "version": "7.0.4",
+    "version": "7.0.5",
     "author": {
         "name": "Alexandre Galays",
         "url": "https://github.com/AlexGalays/"
@@ -12,7 +12,7 @@
         "type": "git",
         "url": "https://github.com/AlexGalays/abyssa-js.git"
     },
-    "main": "src/main.js",
+    "main": "lib/main.js",
     "bugs": {
         "url": "https://github.com/AlexGalays/abyssa-js/issues"
     },
@@ -21,14 +21,15 @@
         "url": "http://www.opensource.org/licenses/mit-license.php"
     }],
     "dependencies": {
-        "events":                "1.0.2",
-        "babelify":              "6.1.2"
+        "events":                "1.0.2"
     },
     "peerDependencies": {
         "react":                 ">=0.13.0"
     },
     "devDependencies": {
         "browserify":            "10.2.4",
+        "babelify":              "6.1.2",
+        "babel":                 "5.8.21",
         "uglify-js":             "2.4.23",
 
         "grunt":                 "0.4.5",
@@ -37,11 +38,11 @@
         "grunt-saucelabs":       "*",
         "grunt-contrib-qunit":   "0.7.0"
     },
-    "browserify": { "transform": [ "babelify" ] },
     "scripts": {
-        "build": "npm run build-js & npm run build-minified-js",
-        "build-js": "browserify src/main.js -s Abyssa -o target/abyssa.js -t babelify",
-        "build-minified-js": "browserify src/main.js -s Abyssa -t babelify | node_modules/uglify-js/bin/uglifyjs -c -m > target/abyssa.min.js",
+        "build": "npm run build-main & npm run build-browser & npm run build-browser-min",
+        "build-main": "`npm bin`/babel src --out-dir lib",
+        "build-browser": "browserify src/main.js -s Abyssa -o target/abyssa.js -t babelify",
+        "build-browser-min": "browserify src/main.js -s Abyssa -t babelify | node_modules/uglify-js/bin/uglifyjs -c -m > target/abyssa.min.js",
         "test": "npm run build && grunt test"
     }
 }
