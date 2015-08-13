@@ -14,8 +14,8 @@ function ReactStateForContainer(container) {
   return function ReactState(uri, component, children) {
     var state = {
       _component: component,
-      uri: uri,
-      children: children
+      uri,
+      children
     };
 
     // The component class chain.
@@ -23,10 +23,7 @@ function ReactStateForContainer(container) {
 
     if (children) {
       children._default_ = ReactState('');
-
-      Object.keys(children).forEach(function(name) {
-        children[name]._parent = state;
-      });
+      Object.keys(children).forEach(name => children[name]._parent = state);
     }
 
     state.enter = function(params) {
@@ -47,13 +44,13 @@ function ReactStateForContainer(container) {
 
       var instance;
       if (components.length == 1)
-        instance = React.createElement(components[0], { params: params });
+        instance = React.createElement(components[0], { params });
       else
-        instance = components.reduceRight(function(child, parent) {
+        instance = components.reduceRight((child, parent) => {
           if (!React.isValidElement(child))
-            child = React.createElement(child, { params: params });
+            child = React.createElement(child, { params });
           
-          return React.createElement(parent, { params: params }, child);
+          return React.createElement(parent, { params }, child);
         });
 
        React.render(instance, container);
