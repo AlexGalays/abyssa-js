@@ -694,8 +694,9 @@ function Router(declarativeStates) {
     if (!state) throw new Error('Cannot find state ' + stateName);
 
     var interpolated = interpolate(state, params);
+    var uri = util.normalizePathQuery(interpolated);
 
-    return util.normalizePathQuery(interpolated);
+    return isHashMode() ? '#' + options.hashPrefix + uri : uri;
   }
 
   function interpolate(state, params) {

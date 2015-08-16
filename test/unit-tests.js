@@ -675,6 +675,28 @@ test('Reverse routing', function() {
 });
 
 
+test('Reverse routing in hash mode', function() {
+  var router = Router({
+
+    index: State(),
+
+    one: State('one?filter&pizza', {}, {
+      two: State(':id/:color')
+    })
+
+  })
+  .configure({ urlSync: 'hash', 'hashPrefix': '!' })
+  .init('');
+
+  var href = router.link('one.two', {id: 33, color: 'dark green', filter: 'a&b', pizza: 123, bla: 55});
+  equal(href, '#!/one/33/dark%20green?filter=a%26b&pizza=123');
+
+  href = router.link('one.two', {id: 33, color: 'dark green'});
+  equal(href, '#!/one/33/dark%20green')
+
+});
+
+
 test('params should be decoded automatically', function() {
   var passedParams;
 
