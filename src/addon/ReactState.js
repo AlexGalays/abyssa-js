@@ -22,12 +22,10 @@ function ReactStateForContainer(container) {
     var components;
 
     if (children) {
-      let names = Object.keys(children);
-
-      if (!names.some(name => children[name].uri == ''))
+      if (!Object.keys(children).some(name => children[name].uri == ''))
         children._default_ = ReactState('');
 
-      names.forEach(name => children[name]._parent = state);
+      Object.keys(children).forEach(name => children[name]._parent = state);
     }
 
     state.enter = function(params) {

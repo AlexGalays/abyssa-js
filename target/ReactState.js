@@ -19,13 +19,11 @@
       var components;
 
       if (children) {
-        var names = Object.keys(children);
-
-        if (!names.some(function (name) {
+        if (!Object.keys(children).some(function (name) {
           return children[name].uri == '';
         })) children._default_ = ReactState('');
 
-        names.forEach(function (name) {
+        Object.keys(children).forEach(function (name) {
           return children[name]._parent = state;
         });
       }
