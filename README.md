@@ -644,4 +644,4 @@ Just import it and use `ReactState` instead of `State` where applicable.
 var ReactState = require('abyssa/src/addon/ReactState');
 ```
 
-[JSFiddle Example](http://jsfiddle.net/ku88Lcju/)
+[JSFiddle Example](http://jsfiddle.net/79dw6vhp/)
