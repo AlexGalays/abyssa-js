@@ -952,6 +952,56 @@ test('router.current and router.previous', function() {
 });
 
 
+test('router.findState', function() {
+  var state1 = {
+    uri: 'articles',
+    enter: function() {},
+    data: { d: 66 },
+    children: {
+      detail: {
+        uri: ':id?q'
+      }
+    }
+  };
+
+  var state2 = {
+    uri: 'index',
+    children: {
+      dashboard: {
+        uri: 'dashboard'
+      },
+      stats: {
+        uri: 'stats'
+      }
+    }
+  };
+
+  var router = Router({
+    state1: state1,
+    state2: state2
+  })
+  .init('state1');
+
+  function assertStateApi(stateApi, name, fullName, data, parentFullName) {
+    equal(stateApi.name, name);
+    equal(stateApi.fullName, fullName);
+    equal(stateApi.data('d'), data);
+    equal((stateApi.parent && stateApi.parent.fullName), parentFullName)
+    equal(Object.keys(stateApi).length, 4);
+  }
+
+  var state1Api = router.findState(state1);
+  var state1Api2 = router.findState('state1');
+  assertStateApi(state1Api, 'state1', 'state1', 66, undefined);
+  equal(state1Api, state1Api2);
+
+  var state1DetailApi = router.findState('state1.detail');
+  assertStateApi(state1DetailApi, 'detail', 'state1.detail', 66, 'state1');
+
+  equal(router.findState('nope'), undefined);
+});
+
+
 test('urls can contain dots', function() {
 
   Router({
@@ -1069,7 +1119,7 @@ test('to break circular dependencies, the api object can be used instead of the 
 });
 
 
-test('an accumulator object is passed to all states', function() {
+test('All state callbacks are passed an accumulator object and the router instance', function() {
 
   var router = Abyssa.api;
 
@@ -1077,8 +1127,9 @@ test('an accumulator object is passed to all states', function() {
 
     articles: {
       uri: 'articles',
-      enter: function(params, acc) {
+      enter: function(params, acc, router) {
         deepEqual(acc, {});
+        ok(router.link !== undefined);
         acc.fromParent = 123;
       },
 

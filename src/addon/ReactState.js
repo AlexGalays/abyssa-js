@@ -4,7 +4,7 @@
 
 (function() {
 
-
+// Enable this addon even in build-less systems (JsFiddle, etc)
 var React = (typeof require == 'function')
   ? require('react')
   : window.React;
@@ -12,54 +12,52 @@ var React = (typeof require == 'function')
 
 function ReactStateForContainer(container) {
   return function ReactState(uri, component, children) {
+
+    // Create the Abyssa state object
     var state = {
-      _component: component,
+      data: { _component: component },
       uri,
       children
     };
 
-    // The component class chain.
-    var components;
+    // The router will add a default state to any parent without one; Add ours first so that it's a ReactState.
+    if (children && !Object.keys(children).some(name => children[name].uri == ''))
+      children._default_ = ReactState('');
 
-    if (children) {
-      if (!Object.keys(children).some(name => children[name].uri == ''))
-        children._default_ = ReactState('');
-
-      Object.keys(children).forEach(name => children[name]._parent = state);
-    }
-
-    state.enter = function(params) {
-      // It is the responsability of the leaf state to render the whole component chain; Bail if we're a parent.
+    state.enter = function(params, acc, router) {
+      // It is the responsability of the leaf state to render the whole component hierarchy; Bail if we're a parent.
       if (children) return;
 
-      if (!components) {
-        var parents = [];
-        var parent = state._parent;
+      let stateApi = router.findState(state);
+      let parents = parentStates(stateApi);
+      let states = component ? [stateApi].concat(parents) : parents;
 
-        while (parent) {
-          parents.push(parent._component);
-          parent = parent._parent;
-        }
-        parents.reverse();
-        components = component ? parents.concat(component) : parents;
-      }
+      // The actual VDOM element created from the component class hierarchy
+      let instance = states.slice(1).reduce((child, parent) => {
+        return createEl(parent.data('_component'), params, parent.fullName, child);
+      }, createEl(states[0].data('_component'), params, states[0].fullName));
 
-      var instance;
-      if (components.length == 1)
-        instance = React.createElement(components[0], { params });
-      else
-        instance = components.reduceRight((child, parent) => {
-          if (!React.isValidElement(child))
-            child = React.createElement(child, { params });
-          
-          return React.createElement(parent, { params }, child);
-        });
-
-       React.render(instance, container);
+      React.render(instance, container);
     };
 
     return state;
   }
+}
+
+function createEl(fromClass, params, key, child) {
+  return React.createElement(fromClass, { params, key }, child);
+}
+
+function parentStates(stateApi) {
+  let result = [];
+  let parent = stateApi.parent;
+
+  while (parent) {
+    result.push(parent);
+    parent = parent.parent;
+  }
+
+  return result;
 }
 
 (typeof module == 'object')

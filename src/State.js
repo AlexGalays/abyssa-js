@@ -10,7 +10,7 @@ var PARAMS = /:[^\\?\/]*/g;
 * This is the internal representation of a state used by the router.
 */
 function State(options) {
-  var state    = {},
+  var state    = { options },
       states   = options.children;
 
   state.path = pathFromURI(options.uri);
@@ -36,6 +36,7 @@ function State(options) {
     state.root = state.parent ? state.parents[state.parents.length - 1] : state;
     state.children = util.objectToArray(states);
     state.fullName = getFullName();
+    state.asPublic = makePublicAPI();
 
     eachChildState((name, childState) => {
       childState.init(router, name, state);
@@ -113,6 +114,15 @@ function State(options) {
     return currentState.ownData[key];
   }
 
+  function makePublicAPI() {
+    return {
+      name: state.name,
+      fullName: state.fullName,
+      parent: state.parent && state.parent.asPublic,
+      data
+    };
+  }
+
   function eachChildState(callback) {
     for (var name in states) callback(name, states[name]);
   }
@@ -179,9 +189,6 @@ function State(options) {
   state.allQueryParams = allQueryParams;
   state.matches = matches;
   state.interpolate = interpolate;
-
-  // Public methods
-
   state.data = data;
   state.toString = toString;
 

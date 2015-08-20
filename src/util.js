@@ -7,7 +7,7 @@ var util = {};
 util.noop = function() {};
 
 util.arrayToObject = function(array) {
-  return array.reduce(function(obj, item) {
+  return array.reduce((obj, item) => {
     obj[item] = 1;
     return obj;
   }, {});

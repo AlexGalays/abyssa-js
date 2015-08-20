@@ -70,6 +70,7 @@ function Router(declarativeStates) {
       toState,
       diff,
       acc,
+      router,
       logger
     );
 
@@ -456,6 +457,29 @@ function Router(declarativeStates) {
     return currentParamsDiff;
   }
 
+  function allStatesRec(states, acc) {
+    acc.push.apply(acc, states);
+    states.forEach(state => allStatesRec(state.children, acc));
+    return acc;
+  }
+
+  function allStates() {
+    return allStatesRec(util.objectToArray(states), []);
+  }
+
+  /*
+  * Returns the state object that was built with the given options object or that has the given fullName.
+  * Returns undefined if the state doesn't exist.
+  */
+  function findState(by) {
+    const filterFn = (typeof by === 'object')
+      ? state => by === state.options
+      : state => by === state.fullName;
+
+    const state = allStates().filter(filterFn)[0];
+    return state && state.asPublic;
+  }
+
   /*
   * Returns whether the router is executing its first transition.
   */
@@ -510,8 +534,10 @@ function Router(declarativeStates) {
   router.link = link;
   router.current = getCurrent;
   router.previous = getPrevious;
+  router.findState = findState;
   router.isFirstTransition = isFirstTransition;
   router.paramsDiff = getParamsDiff;
+  router.options = options;
 
   router.transition = new EventEmitter();
 

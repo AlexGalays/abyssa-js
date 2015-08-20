@@ -4,7 +4,7 @@
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, logger) {
+function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, router, logger) {
   var root, enters, exits;
 
   var fromState = fromStateWithParams && fromStateWithParams.state;
@@ -32,7 +32,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, log
   enters = transitionStates(toState, root, inclusive).reverse();
 
   function run() {
-    startTransition(enters, exits, params, transition, isUpdate, acc, logger);
+    startTransition(enters, exits, params, transition, isUpdate, acc, router, logger);
   }
 
   function cancel() {
@@ -42,23 +42,23 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, log
   return transition;
 }
 
-function startTransition(enters, exits, params, transition, isUpdate, acc, logger) {
+function startTransition(enters, exits, params, transition, isUpdate, acc, router, logger) {
   acc = acc || {};
 
   transition.exiting = true;
   exits.forEach(state => {
     if (isUpdate && state.update) return;
-    runStep(state, 'exit', params, transition, acc, logger);
+    runStep(state, 'exit', params, transition, acc, router, logger);
   });
   transition.exiting = false;
 
   enters.forEach(state => {
     var fn = (isUpdate && state.update) ? 'update' : 'enter';
-    runStep(state, fn, params, transition, acc, logger);
+    runStep(state, fn, params, transition, acc, router, logger);
   });
 }
 
-function runStep(state, stepFn, params, transition, acc, logger) {
+function runStep(state, stepFn, params, transition, acc, router, logger) {
   if (transition.cancelled) return;
 
   if (logger.enabled) {
@@ -66,7 +66,7 @@ function runStep(state, stepFn, params, transition, acc, logger) {
     logger.log(capitalizedStep + ' ' + state.fullName);
   }
 
-  var result = state[stepFn](params, acc);
+  var result = state[stepFn](params, acc, router);
 
   if (transition.cancelled) return;
 

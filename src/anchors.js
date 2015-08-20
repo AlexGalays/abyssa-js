@@ -36,7 +36,10 @@ function hrefForEvent(evt) {
   var href = anchor.getAttribute('href');
 
   if (!href) return;
-  if (href.charAt(0) == '#') return;
+  if (href.charAt(0) == '#') {
+    if (router.options.urlSync != 'hash') return;
+    href = href.slice(1);
+  }
   if (anchor.getAttribute('target') == '_blank') return;
   if (!isLocalLink(anchor)) return;
 

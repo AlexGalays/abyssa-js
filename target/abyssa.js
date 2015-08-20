@@ -366,7 +366,7 @@ function Router(declarativeStates) {
     currentState = toState;
     currentParamsDiff = diff;
 
-    transition = Transition(fromState, toState, diff, acc, logger);
+    transition = Transition(fromState, toState, diff, acc, router, logger);
 
     startingTransition(fromState, toState);
 
@@ -731,6 +731,33 @@ function Router(declarativeStates) {
     return currentParamsDiff;
   }
 
+  function allStatesRec(states, acc) {
+    acc.push.apply(acc, states);
+    states.forEach(function (state) {
+      return allStatesRec(state.children, acc);
+    });
+    return acc;
+  }
+
+  function allStates() {
+    return allStatesRec(util.objectToArray(states), []);
+  }
+
+  /*
+  * Returns the state object that was built with the given options object or that has the given fullName.
+  * Returns undefined if the state doesn't exist.
+  */
+  function findState(by) {
+    var filterFn = typeof by === 'object' ? function (state) {
+      return by === state.options;
+    } : function (state) {
+      return by === state.fullName;
+    };
+
+    var state = allStates().filter(filterFn)[0];
+    return state && state.asPublic;
+  }
+
   /*
   * Returns whether the router is executing its first transition.
   */
@@ -782,8 +809,10 @@ function Router(declarativeStates) {
   router.link = link;
   router.current = getCurrent;
   router.previous = getPrevious;
+  router.findState = findState;
   router.isFirstTransition = isFirstTransition;
   router.paramsDiff = getParamsDiff;
+  router.options = options;
 
   router.transition = new EventEmitter();
 
@@ -841,7 +870,7 @@ var PARAMS = /:[^\\?\/]*/g;
 * This is the internal representation of a state used by the router.
 */
 function State(options) {
-  var state = {},
+  var state = { options: options },
       states = options.children;
 
   state.path = pathFromURI(options.uri);
@@ -867,6 +896,7 @@ function State(options) {
     state.root = state.parent ? state.parents[state.parents.length - 1] : state;
     state.children = util.objectToArray(states);
     state.fullName = getFullName();
+    state.asPublic = makePublicAPI();
 
     eachChildState(function (name, childState) {
       childState.init(router, name, state);
@@ -941,6 +971,15 @@ function State(options) {
     return currentState.ownData[key];
   }
 
+  function makePublicAPI() {
+    return {
+      name: state.name,
+      fullName: state.fullName,
+      parent: state.parent && state.parent.asPublic,
+      data: data
+    };
+  }
+
   function eachChildState(callback) {
     for (var name in states) callback(name, states[name]);
   }
@@ -1012,9 +1051,6 @@ function State(options) {
   state.allQueryParams = allQueryParams;
   state.matches = matches;
   state.interpolate = interpolate;
-
-  // Public methods
-
   state.data = data;
   state.toString = toString;
 
@@ -1100,7 +1136,7 @@ module.exports = StateWithParams;
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, logger) {
+function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, router, logger) {
   var root, enters, exits;
 
   var fromState = fromStateWithParams && fromStateWithParams.state;
@@ -1126,7 +1162,7 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, log
   enters = transitionStates(toState, root, inclusive).reverse();
 
   function run() {
-    startTransition(enters, exits, params, transition, isUpdate, acc, logger);
+    startTransition(enters, exits, params, transition, isUpdate, acc, router, logger);
   }
 
   function cancel() {
@@ -1136,23 +1172,23 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, log
   return transition;
 }
 
-function startTransition(enters, exits, params, transition, isUpdate, acc, logger) {
+function startTransition(enters, exits, params, transition, isUpdate, acc, router, logger) {
   acc = acc || {};
 
   transition.exiting = true;
   exits.forEach(function (state) {
     if (isUpdate && state.update) return;
-    runStep(state, 'exit', params, transition, acc, logger);
+    runStep(state, 'exit', params, transition, acc, router, logger);
   });
   transition.exiting = false;
 
   enters.forEach(function (state) {
     var fn = isUpdate && state.update ? 'update' : 'enter';
-    runStep(state, fn, params, transition, acc, logger);
+    runStep(state, fn, params, transition, acc, router, logger);
   });
 }
 
-function runStep(state, stepFn, params, transition, acc, logger) {
+function runStep(state, stepFn, params, transition, acc, router, logger) {
   if (transition.cancelled) return;
 
   if (logger.enabled) {
@@ -1160,7 +1196,7 @@ function runStep(state, stepFn, params, transition, acc, logger) {
     logger.log(capitalizedStep + ' ' + state.fullName);
   }
 
-  var result = state[stepFn](params, acc);
+  var result = state[stepFn](params, acc, router);
 
   if (transition.cancelled) return;
 
@@ -1250,7 +1286,10 @@ function hrefForEvent(evt) {
   var href = anchor.getAttribute('href');
 
   if (!href) return;
-  if (href.charAt(0) == '#') return;
+  if (href.charAt(0) == '#') {
+    if (router.options.urlSync != 'hash') return;
+    href = href.slice(1);
+  }
   if (anchor.getAttribute('target') == '_blank') return;
   if (!isLocalLink(anchor)) return;
 
