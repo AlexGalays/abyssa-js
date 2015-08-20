@@ -174,6 +174,10 @@ Returns the previous state of the router or null if the router is still in its i
 ### current(): [StateWithParams](#api-stateWithParams)
 Returns the current state of the router.
 
+### findState(optionsOrFullName): State
+Returns the state object that was built with the given options Object or that has the given fullName String.  
+Returns undefined if the state doesn't exist.
+
 ### isFirstTransition(): Boolean
 Returns whether the router is executing its first transition.
 
@@ -226,16 +230,16 @@ A state is really just an object with an `uri` property. Optionally, the followi
 #### uri: String
 The path segment this state owns. Can also contain a query string. Ex: `uri: 'articles/:id?filter'`
 
-#### enter (params: Object, value: Any): void
+#### enter (params: Object, value: Any, router: Router): void
 Specify a function that should be called when the state is entered.  
 The params are the dynamic params (path and query alike in one object) of the current url.  
 This is where you could render the data into the DOM or do some general work once for many child states.
 
-#### exit (params: Object, value: Any): void
+#### exit (params: Object, value: Any, router: Router): void
 Same as the enter function but called when the state is exited.
 This is where you could teardown any state or side effects introduced by the enter function, if needed.
 
-#### update (params: Object, value: Any): void
+#### update (params: Object, value: Any, router: Router): void
 The update callback is called when the router is moving to the same state as the current state, but with different path/query params.  
 Specifying an update callback can be seen as an optimization preventing doing wasteful work in exit/enter, e.g removing and adding the same DOM elements that were already present in the document before the state change.  
 
