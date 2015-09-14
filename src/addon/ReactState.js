@@ -5,16 +5,15 @@
 (function() {
 
 // Enable this addon even in build-less systems (JsFiddle, etc)
-var React = (typeof require == 'function')
-  ? require('react')
-  : window.React;
+let React = (typeof require == 'function') ? require('react') : window.React;
+let ReactDOM = (typeof require == 'function') ? require('react-dom') : window.ReactDOM;
 
 
 function ReactStateForContainer(container) {
   return function ReactState(uri, component, children) {
 
     // Create the Abyssa state object
-    var state = {
+    let state = {
       data: { _component: component },
       uri,
       children
@@ -37,7 +36,7 @@ function ReactStateForContainer(container) {
         return createEl(parent.data('_component'), params, parent.fullName, child);
       }, createEl(states[0].data('_component'), params, states[0].fullName));
 
-      React.render(instance, container);
+      ReactDOM.render(instance, container);
     };
 
     return state;
