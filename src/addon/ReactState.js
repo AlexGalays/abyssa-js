@@ -20,7 +20,7 @@ function ReactStateForContainer(container) {
     };
 
     // The router will add a default state to any parent without one; Add ours first so that it's a ReactState.
-    if (children && !Object.keys(children).some(name => children[name].uri == ''))
+    if (children && !Object.keys(children).some(name => children[name].uri.split('?')[0] == ''))
       children._default_ = ReactState('');
 
     state.enter = function(params, acc, router) {
