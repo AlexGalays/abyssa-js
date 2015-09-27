@@ -649,3 +649,22 @@ var ReactState = require('abyssa/src/addon/ReactState');
 ```
 
 [JSFiddle Example](http://jsfiddle.net/79dw6vhp/)
+
+### State change hook
+To get notified when the state changes, declare the `onEnter` static method on any component directly declared by a `ReactState`.
+This is mostly useful to implement redirection, as you should otherwise use the component's `componentWillMount` method.
+
+```javascript
+import { api as router } from 'abyssa';
+
+let MyComp = React.createClass({
+  render: function() {}
+});
+
+MyComp.onEnter = function() {
+  // Make this component unreachable
+  router.transitionTo('anotherComponent');
+};
+
+export default MyComp;
+```

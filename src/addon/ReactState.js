@@ -24,6 +24,14 @@ function ReactStateForContainer(container) {
       children._default_ = ReactState('');
 
     state.enter = function(params, acc, router) {
+      // Let the component react to the route change, e.g to redirect to another state
+      if (component.onEnter) {
+        let current = router.current().fullName;
+        component.onEnter();
+        // The current state changed, cancel everything.
+        if (router.current().fullName != current) return;
+      }
+
       // It is the responsability of the leaf state to render the whole component hierarchy; Bail if we're a parent.
       if (children) return;
 
