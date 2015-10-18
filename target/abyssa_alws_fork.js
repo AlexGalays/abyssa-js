@@ -981,7 +981,7 @@ function State(options) {
   }
 
   function eachChildState(callback) {
-    for (var name in states) callback(name, states[name]);
+    for (var name in states) if (states.propertyIsEnumerable(name)) callback(name, states[name]);
   }
 
   /*
