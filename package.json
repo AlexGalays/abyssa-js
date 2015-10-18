@@ -3,7 +3,7 @@
     "description": "Hierarchical router for single page applications",
     "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState"],
     "homepage": "https://github.com/AlexGalays/abyssa-js/",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": {
         "name": "Alexandre Galays",
         "url": "https://github.com/AlexGalays/"
