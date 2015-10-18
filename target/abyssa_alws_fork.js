@@ -981,7 +981,7 @@ function State(options) {
   }
 
   function eachChildState(callback) {
-    for (var name in states) callback(name, states[name]);
+    for (var name in states) if (states.propertyIsEnumerable(name)) callback(name, states[name]);
   }
 
   /*
@@ -1226,14 +1226,14 @@ function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
   }
   // Else, the root is the closest common parent of the two states.
   else {
-    for (var i = 0; i < fromState.parents.length; i++) {
-      parent = fromState.parents[i];
-      if (toState.parents.indexOf(parent) > -1) {
-        root = parent;
-        break;
+      for (var i = 0; i < fromState.parents.length; i++) {
+        parent = fromState.parents[i];
+        if (toState.parents.indexOf(parent) > -1) {
+          root = parent;
+          break;
+        }
       }
     }
-  }
 
   return root;
 }
@@ -1320,7 +1320,7 @@ function isLocalLink(anchor) {
 
   // IE10 can lose the hostname/port property when setting a relative href from JS
   if (!hostname) {
-    var tempAnchor = document.createElement('a');
+    var tempAnchor = document.createElement("a");
     tempAnchor.href = anchor.href;
     hostname = tempAnchor.hostname;
     port = tempAnchor.port;
@@ -1407,7 +1407,9 @@ util.arrayToObject = function (array) {
 
 util.objectToArray = function (obj) {
   var array = [];
-  for (var key in obj) array.push(obj[key]);
+  for (var key in obj) {
+    if (obj.propertyIsEnumerable(key)) array.push(obj[key]);
+  }
   return array;
 };
 

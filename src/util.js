@@ -15,7 +15,9 @@ util.arrayToObject = function(array) {
 
 util.objectToArray = function(obj) {
   var array = [];
-  for (var key in obj) array.push(obj[key]);
+  for (var key in obj) {
+    if(obj.propertyIsEnumerable(key)) array.push(obj[key]);
+  }
   return array;
 };
 

@@ -1,9 +1,9 @@
 {
-    "name": "abyssa",
+    "name": "abyssa_alws_fork",
     "description": "Hierarchical router for single page applications",
     "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState"],
     "homepage": "https://github.com/AlexGalays/abyssa-js/",
-    "version": "7.2.0",
+    "version": "1.0.5",
     "author": {
         "name": "Alexandre Galays",
         "url": "https://github.com/AlexGalays/"
@@ -41,7 +41,7 @@
     "scripts": {
         "build": "npm run build-main & npm run build-browser & npm run build-browser-addon",
         "build-main": "`npm bin`/babel src --out-dir lib",
-        "build-browser": "browserify src/main.js -s Abyssa -o target/abyssa.js -t babelify",
+        "build-browser": "browserify src/main.js -s Abyssa -o target/abyssa_alws_fork.js -t babelify",
         "build-browser-addon": "`npm bin`/babel src/addon --out-dir target",
         "test": "npm run build && grunt test"
     }
