@@ -25,7 +25,7 @@ function ReactStateForContainer(container) {
 
     state.enter = function(params, acc, router) {
       // Let the component react to the route change, e.g to redirect to another state
-      if (component.onEnter) {
+      if (component && component.onEnter) {
         let current = router.current().fullName;
         component.onEnter();
         // The current state changed, cancel everything.
