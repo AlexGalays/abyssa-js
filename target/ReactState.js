@@ -42,8 +42,8 @@
 
         // The actual VDOM element created from the component class hierarchy
         var instance = states.slice(1).reduce(function (child, parent) {
-          return createEl(parent.data('_component'), params, parent.fullName, child);
-        }, createEl(states[0].data('_component'), params, states[0].fullName));
+          return createEl(parent.data('_component'), params, acc, parent.fullName, child);
+        }, createEl(states[0].data('_component'), params, acc, states[0].fullName));
 
         ReactDOM.render(instance, container);
       };
@@ -52,8 +52,8 @@
     };
   }
 
-  function createEl(fromClass, params, key, child) {
-    return React.createElement(fromClass, { params: params, key: key }, child);
+  function createEl(fromClass, params, acc, key, child) {
+    return React.createElement(fromClass, { params: params, acc: acc, key: key }, child);
   }
 
   function parentStates(stateApi) {
