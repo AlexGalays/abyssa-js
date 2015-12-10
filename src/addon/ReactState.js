@@ -5,15 +5,15 @@
 (function() {
 
 // Enable this addon even in build-less systems (JsFiddle, etc)
-let React = (typeof require == 'function') ? require('react') : window.React;
-let ReactDOM = (typeof require == 'function') ? require('react-dom') : window.ReactDOM;
+const React = (typeof require == 'function') ? require('react') : window.React;
+const ReactDOM = (typeof require == 'function') ? require('react-dom') : window.ReactDOM;
 
 
 function ReactStateForContainer(container) {
   return function ReactState(uri, component, children) {
 
     // Create the Abyssa state object
-    let state = {
+    const state = {
       data: { _component: component },
       uri,
       children
@@ -24,9 +24,11 @@ function ReactStateForContainer(container) {
       children._default_ = ReactState('');
 
     state.enter = function(params, acc, router) {
+      const route = router.current();
+
       // Let the component react to the route change, e.g to redirect to another state
       if (component && component.onEnter) {
-        let current = router.current().fullName;
+        const current = route.fullName;
         component.onEnter();
         // The current state changed, cancel everything.
         if (router.current().fullName != current) return;
@@ -35,14 +37,14 @@ function ReactStateForContainer(container) {
       // It is the responsability of the leaf state to render the whole component hierarchy; Bail if we're a parent.
       if (children) return;
 
-      let stateApi = router.findState(state);
-      let parents = parentStates(stateApi);
-      let states = component ? [stateApi].concat(parents) : parents;
+      const stateApi = router.findState(state);
+      const parents = parentStates(stateApi);
+      const states = component ? [stateApi].concat(parents) : parents;
 
       // The actual VDOM element created from the component class hierarchy
-      let instance = states.slice(1).reduce((child, parent) => {
-        return createEl(parent.data('_component'), params, acc, parent.fullName, child);
-      }, createEl(states[0].data('_component'), params, acc, states[0].fullName));
+      const instance = states.slice(1).reduce((child, parent) => {
+        return createEl(parent.data('_component'), route, params, acc, parent.fullName, child);
+      }, createEl(states[0].data('_component'), route, params, acc, states[0].fullName));
 
       ReactDOM.render(instance, container);
     };
@@ -51,12 +53,12 @@ function ReactStateForContainer(container) {
   }
 }
 
-function createEl(fromClass, params, acc, key, child) {
-  return React.createElement(fromClass, { params, acc, key }, child);
+function createEl(fromClass, route, params, acc, key, child) {
+  return React.createElement(fromClass, { route, params, acc, key }, child);
 }
 
 function parentStates(stateApi) {
-  let result = [];
+  const result = [];
   let parent = stateApi.parent;
 
   while (parent) {

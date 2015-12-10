@@ -25,9 +25,11 @@
       })) children._default_ = ReactState('');
 
       state.enter = function (params, acc, router) {
+        var route = router.current();
+
         // Let the component react to the route change, e.g to redirect to another state
         if (component && component.onEnter) {
-          var current = router.current().fullName;
+          var current = route.fullName;
           component.onEnter();
           // The current state changed, cancel everything.
           if (router.current().fullName != current) return;
@@ -42,8 +44,8 @@
 
         // The actual VDOM element created from the component class hierarchy
         var instance = states.slice(1).reduce(function (child, parent) {
-          return createEl(parent.data('_component'), params, acc, parent.fullName, child);
-        }, createEl(states[0].data('_component'), params, acc, states[0].fullName));
+          return createEl(parent.data('_component'), route, params, acc, parent.fullName, child);
+        }, createEl(states[0].data('_component'), route, params, acc, states[0].fullName));
 
         ReactDOM.render(instance, container);
       };
@@ -52,8 +54,8 @@
     };
   }
 
-  function createEl(fromClass, params, acc, key, child) {
-    return React.createElement(fromClass, { params: params, acc: acc, key: key }, child);
+  function createEl(fromClass, route, params, acc, key, child) {
+    return React.createElement(fromClass, { route: route, params: params, acc: acc, key: key }, child);
   }
 
   function parentStates(stateApi) {
