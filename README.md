@@ -373,7 +373,7 @@ The path and query params set for this state
 ### name: String
 The (local) name of the state
 
-### firstname: String
+### fullName: String
 The fully qualified, unique name of the state
 
 ### isIn(fullName: String): Boolean
