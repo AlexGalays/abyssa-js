@@ -648,7 +648,7 @@ Just import it and use `ReactState` instead of `State` where applicable.
 var ReactState = require('abyssa/src/addon/ReactState');
 ```
 
-[JSFiddle Example](http://jsfiddle.net/79dw6vhp/)
+[JSFiddle Example](http://jsfiddle.net/15ya949n/)
 
 ### State change hook
 To get notified when the state changes, declare the `onEnter` static method on any component directly declared by a `ReactState`.
