@@ -1,15 +1,45 @@
+'use strict';
+
+exports.__esModule = true;
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactDom = require('react-dom');
+
+var _reactDom2 = _interopRequireDefault(_reactDom);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /* Addon making using React easier */
 
-'use strict';
-
-(function () {
+exports.default = function () {
 
   // Enable this addon even in build-less systems (JsFiddle, etc)
-  var React = typeof require == 'function' ? require('react') : window.React;
-  var ReactDOM = typeof require == 'function' ? require('react-dom') : window.ReactDOM;
+  var React = _react2.default || window.React;
+  var ReactDOM = _reactDom2.default || window.ReactDOM;
 
-  function ReactStateForContainer(container) {
+  function createEl(fromClass, route, params, acc, key, child) {
+    return React.createElement(fromClass, { route: route, params: params, acc: acc, key: key }, child);
+  }
+
+  function parentStates(stateApi) {
+    var result = [];
+    var parent = stateApi.parent;
+
+    while (parent) {
+      result.push(parent);
+      parent = parent.parent;
+    }
+
+    return result;
+  }
+
+  // Enable this addon even in build-less systems (JsFiddle, etc)
+  if (window.Abyssa) window.Abyssa.ReactState = ReactStateForContainer;
+
+  return function ReactStateForContainer(container) {
     return function ReactState(uri, component, children) {
 
       // Create the Abyssa state object
@@ -52,23 +82,5 @@
 
       return state;
     };
-  }
-
-  function createEl(fromClass, route, params, acc, key, child) {
-    return React.createElement(fromClass, { route: route, params: params, acc: acc, key: key }, child);
-  }
-
-  function parentStates(stateApi) {
-    var result = [];
-    var parent = stateApi.parent;
-
-    while (parent) {
-      result.push(parent);
-      parent = parent.parent;
-    }
-
-    return result;
-  }
-
-  typeof module == 'object' ? module.exports = ReactStateForContainer : Abyssa.ReactState = ReactStateForContainer;
-})();
+  };
+}();

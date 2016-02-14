@@ -129,8 +129,8 @@ The available options are:
 - enableLogs: Whether (debug and error) console logs should be enabled. Defaults to false.  
 - interceptAnchors: Whether anchor mousedown/clicks should be intercepted and trigger a state change. Defaults to true.  
 - notFound: The State to enter when no state matching the current path query or name could be found. This is a string representing the fullName of an existing state. Defaults to null.  
-- urlSync: How the router state and the URL should be kept in sync. Defaults to true. Possible values are:  
-  - true: The router uses the history pushState API.
+- urlSync: How the router state and the URL should be kept in sync. Defaults to 'history'. Possible values are:  
+  - 'history': The router uses the history pushState API.
   - 'hash': The router uses the hash part of the URL for all browsers.
 - hashPrefix: Customize the hash separator. Set to '!' in order to have a hashbang like '/#!/'. Defaults to empty string.
 
@@ -271,14 +271,14 @@ A map of child names to states.
 
 Given a state represented by the path "articles", with a child state named "item" represented by the dynamic path "id".  
 When the router is in the state "articles.item" with the id param equal to 33, the browser url is http://yourdomain/articles/33.  
-There are at least 3 ways to build such a router; It is advised to build the router centrally, even if the state definitions are 
+There are at least 3 ways to build such a router; It is advised to build the router centrally, even if the state definitions are
 located in their own modules.
 
 Using pojos
 ```javascript
 var router = Router({
   articles: {
-    uri: 'articles', 
+    uri: 'articles',
     children: {
       item: {
         uri: ':id'
@@ -509,7 +509,7 @@ var index = require('./index'),
     articlesDetailEdit = require('./articles/detailEdit');
 
 Router({
-  
+
   index: State('', index),
 
   articles: State('articles', articles, {

@@ -25,7 +25,7 @@ function Router(declarativeStates) {
         enableLogs: false,
         interceptAnchors: true,
         notFound: null,
-        urlSync: true,
+        urlSync: 'history',
         hashPrefix: ''
       },
       ignoreNextURLChange = false,

@@ -1,15 +1,36 @@
-
 /* Addon making using React easier */
 
+import _React from 'react';
+import _ReactDOM from 'react-dom';
 
-(function() {
+export default (function() {
 
 // Enable this addon even in build-less systems (JsFiddle, etc)
-const React = (typeof require == 'function') ? require('react') : window.React;
-const ReactDOM = (typeof require == 'function') ? require('react-dom') : window.ReactDOM;
+const React = _React || window.React;
+const ReactDOM = _ReactDOM || window.ReactDOM;
+
+function createEl(fromClass, route, params, acc, key, child) {
+  return React.createElement(fromClass, { route, params, acc, key }, child);
+}
+
+function parentStates(stateApi) {
+  const result = [];
+  let parent = stateApi.parent;
+
+  while (parent) {
+    result.push(parent);
+    parent = parent.parent;
+  }
+
+  return result;
+}
+
+// Enable this addon even in build-less systems (JsFiddle, etc)
+if (window.Abyssa)
+  window.Abyssa.ReactState = ReactStateForContainer
 
 
-function ReactStateForContainer(container) {
+return function ReactStateForContainer(container) {
   return function ReactState(uri, component, children) {
 
     // Create the Abyssa state object
@@ -52,25 +73,5 @@ function ReactStateForContainer(container) {
     return state;
   }
 }
-
-function createEl(fromClass, route, params, acc, key, child) {
-  return React.createElement(fromClass, { route, params, acc, key }, child);
-}
-
-function parentStates(stateApi) {
-  const result = [];
-  let parent = stateApi.parent;
-
-  while (parent) {
-    result.push(parent);
-    parent = parent.parent;
-  }
-
-  return result;
-}
-
-(typeof module == 'object')
-  ? (module.exports = ReactStateForContainer)
-  : (Abyssa.ReactState = ReactStateForContainer);
 
 })();

@@ -305,6 +305,8 @@ function isUndefined(arg) {
 
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 var EventEmitter = require('events'),
     interceptAnchors = require('./anchors'),
     StateWithParams = require('./StateWithParams'),
@@ -328,7 +330,7 @@ function Router(declarativeStates) {
     enableLogs: false,
     interceptAnchors: true,
     notFound: null,
-    urlSync: true,
+    urlSync: 'history',
     hashPrefix: ''
   },
       ignoreNextURLChange = false,
@@ -575,7 +577,9 @@ function Router(declarativeStates) {
   }
 
   function eachRootState(callback) {
-    for (var name in states) callback(name, states[name]);
+    for (var name in states) {
+      callback(name, states[name]);
+    }
   }
 
   function registerLeafStates(states, leafStates) {
@@ -748,7 +752,7 @@ function Router(declarativeStates) {
   * Returns undefined if the state doesn't exist.
   */
   function findState(by) {
-    var filterFn = typeof by === 'object' ? function (state) {
+    var filterFn = (typeof by === 'undefined' ? 'undefined' : _typeof(by)) === 'object' ? function (state) {
       return by === state.options;
     } : function (state) {
       return by === state.fullName;
@@ -966,9 +970,9 @@ function State(options) {
 
     var currentState = state;
 
-    while (currentState.ownData[key] === undefined && currentState.parent) currentState = currentState.parent;
-
-    return currentState.ownData[key];
+    while (currentState.ownData[key] === undefined && currentState.parent) {
+      currentState = currentState.parent;
+    }return currentState.ownData[key];
   }
 
   function makePublicAPI() {
@@ -981,7 +985,9 @@ function State(options) {
   }
 
   function eachChildState(callback) {
-    for (var name in states) callback(name, states[name]);
+    for (var name in states) {
+      callback(name, states[name]);
+    }
   }
 
   /*
@@ -1089,6 +1095,7 @@ module.exports = State;
 *
 * This is an internal model; The public model is the asPublic property.
 */
+
 function StateWithParams(state, params, pathQuery) {
   return {
     state: state,
@@ -1136,6 +1143,7 @@ module.exports = StateWithParams;
 /*
 * Create a new Transition instance.
 */
+
 function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, router, logger) {
   var root, enters, exits;
 
@@ -1226,14 +1234,14 @@ function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
   }
   // Else, the root is the closest common parent of the two states.
   else {
-    for (var i = 0; i < fromState.parents.length; i++) {
-      parent = fromState.parents[i];
-      if (toState.parents.indexOf(parent) > -1) {
-        root = parent;
-        break;
+      for (var i = 0; i < fromState.parents.length; i++) {
+        parent = fromState.parents[i];
+        if (toState.parents.indexOf(parent) > -1) {
+          root = parent;
+          break;
+        }
       }
     }
-  }
 
   return root;
 }
@@ -1320,7 +1328,7 @@ function isLocalLink(anchor) {
 
   // IE10 can lose the hostname/port property when setting a relative href from JS
   if (!hostname) {
-    var tempAnchor = document.createElement('a');
+    var tempAnchor = document.createElement("a");
     tempAnchor.href = anchor.href;
     hostname = tempAnchor.hostname;
     port = tempAnchor.port;
@@ -1340,10 +1348,9 @@ module.exports = function interceptAnchors(forRouter) {
 };
 
 },{}],7:[function(require,module,exports){
-
-/* Represents the public API of the last instanciated router; Useful to break circular dependencies between router and its states */
 "use strict";
 
+/* Represents the public API of the last instanciated router; Useful to break circular dependencies between router and its states */
 module.exports = {};
 
 },{}],8:[function(require,module,exports){
@@ -1407,19 +1414,22 @@ util.arrayToObject = function (array) {
 
 util.objectToArray = function (obj) {
   var array = [];
-  for (var key in obj) array.push(obj[key]);
-  return array;
+  for (var key in obj) {
+    array.push(obj[key]);
+  }return array;
 };
 
 util.copyObject = function (obj) {
   var copy = {};
-  for (var key in obj) copy[key] = obj[key];
-  return copy;
+  for (var key in obj) {
+    copy[key] = obj[key];
+  }return copy;
 };
 
 util.mergeObjects = function (to, from) {
-  for (var key in from) to[key] = from[key];
-  return to;
+  for (var key in from) {
+    to[key] = from[key];
+  }return to;
 };
 
 util.mapValues = function (obj, fn) {
@@ -1456,9 +1466,9 @@ util.makeMessage = function () {
   var message = arguments[0],
       tokens = Array.prototype.slice.call(arguments, 1);
 
-  for (var i = 0, l = tokens.length; i < l; i++) message = message.replace('{' + i + '}', tokens[i]);
-
-  return message;
+  for (var i = 0, l = tokens.length; i < l; i++) {
+    message = message.replace('{' + i + '}', tokens[i]);
+  }return message;
 };
 
 util.parsePaths = function (path) {

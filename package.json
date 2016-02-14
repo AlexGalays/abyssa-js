@@ -1,48 +1,47 @@
 {
-    "name": "abyssa",
-    "description": "Hierarchical router for single page applications",
-    "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState"],
-    "homepage": "https://github.com/AlexGalays/abyssa-js/",
-    "version": "7.2.4",
-    "author": {
-        "name": "Alexandre Galays",
-        "url": "https://github.com/AlexGalays/"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/AlexGalays/abyssa-js.git"
-    },
-    "main": "lib/main.js",
-    "bugs": {
-        "url": "https://github.com/AlexGalays/abyssa-js/issues"
-    },
-    "licenses": [{
-        "type": "MIT",
-        "url": "http://www.opensource.org/licenses/mit-license.php"
+  "name": "abyssa",
+  "description": "Hierarchical router for single page applications",
+  "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState", "typescript"],
+  "homepage": "https://github.com/AlexGalays/abyssa-js/",
+  "version": "7.2.5",
+  "author": {
+    "name": "Alexandre Galays",
+    "url": "https://github.com/AlexGalays/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlexGalays/abyssa-js.git"
+  },
+  "main": "lib/main.js",
+  "typings": "typings/abyssa.d.ts",
+  "licenses": [{
+    "type": "MIT",
+    "url": "http://www.opensource.org/licenses/mit-license.php"
     }],
     "dependencies": {
-        "events":                "1.0.2"
+      "events":                "1.0.2"
     },
     "peerDependencies": {
-        "react":                 "^0.14.0",
-        "react-dom":             "^0.14.0"
+      "react":                 "^0.14.0",
+      "react-dom":             "^0.14.0"
     },
     "devDependencies": {
-        "browserify":            "10.2.4",
-        "babelify":              "6.1.2",
-        "babel":                 "5.8.21",
+      "browserify":            "10.2.4",
+      "babelify":              "7.2.0",
+      "babel-cli":             "6.4.5",
+      "babel-preset-es2015-loose": "7.0.0",
 
-        "grunt":                 "0.4.5",
-        "grunt-cli":             "0.1.11",
-        "grunt-contrib-connect": "0.8.0",
-        "grunt-saucelabs":       "*",
-        "grunt-contrib-qunit":   "0.7.0"
+      "grunt":                 "0.4.5",
+      "grunt-cli":             "0.1.11",
+      "grunt-contrib-connect": "0.8.0",
+      "grunt-contrib-qunit":   "0.7.0"
     },
     "scripts": {
-        "build": "npm run build-main & npm run build-browser & npm run build-browser-addon",
-        "build-main": "`npm bin`/babel src --out-dir lib",
-        "build-browser": "browserify src/main.js -s Abyssa -o target/abyssa.js -t babelify",
-        "build-browser-addon": "`npm bin`/babel src/addon --out-dir target",
-        "test": "npm run build && grunt test"
+      "copy-typings": "cp typings/abyssa.d.ts lib && cp typings/ReactState.d.ts lib",
+      "build": "npm run copy-typings & npm run build-main & npm run build-browser & npm run build-browser-addon",
+      "build-main": "node node_modules/babel-cli/bin/babel.js src --out-dir lib",
+      "build-browser": "node node_modules/browserify/bin/cmd.js src/main.js -s Abyssa -o target/abyssa.js -t babelify",
+      "build-browser-addon": "node node_modules/babel-cli/bin/babel.js src/ReactState.js --out-file target/ReactState.js",
+      "test": "npm run build && grunt test"
     }
-}
+  }

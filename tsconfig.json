@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"noEmit": true
+	},
+	"compileOnSave": false,
+	"atom": {
+		"rewriteTsconfig": true
+	},
+	"filesGlob": [
+		"typings/**/*.d.ts"
+	],
+	"files": [
+		"typings/abyssa.d.ts",
+		"typings/react/react-dom.d.ts",
+		"typings/react/react.d.ts",
+		"typings/ReactState.d.ts"
+	]
+}
