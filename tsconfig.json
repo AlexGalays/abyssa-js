@@ -1,6 +1,7 @@
 {
 	"compilerOptions": {
-		"noEmit": true
+		"noEmit": true,
+		"noImplicitAny": true
 	},
 	"compileOnSave": false,
 	"atom": {
