@@ -2,7 +2,7 @@
 interface RouterAPI {
   transitionTo(stateName: string, params?: Object, acc?: any): void;
   transitionTo(pathQuery: string, acc?: any): void;
-  backTo(stateName: string, defaultParams?: Object, acc?: any);
+  backTo(stateName: string, defaultParams?: Object, acc?: any): void;
   link(stateName: string, params?: Object): string;
   previous(): StateWithParams;
   current(): StateWithParams;
@@ -41,11 +41,11 @@ interface State {
 }
 
 interface ConfigOptions {
-  enableLogs?: boolean,
-  interceptAnchors?: boolean,
-  notFound?: string,
-  urlSync?: 'history' | 'hash',
-  hashPrefix?: string
+  enableLogs?: boolean;
+  interceptAnchors?: boolean;
+  notFound?: string;
+  urlSync?: 'history' | 'hash';
+  hashPrefix?: string;
 }
 
 interface Params {
@@ -54,12 +54,12 @@ interface Params {
 
 type LifeCycleCallback = (params: Params, value: any, router: RouterAPI) => void;
 
-type StateOptions = {
-  uri: string,
-  children?: StateMap,
-  enter?: LifeCycleCallback,
-  exit?: LifeCycleCallback,
-  update?: LifeCycleCallback
+interface StateOptions {
+  uri: string;
+  children?: StateMap;
+  enter?: LifeCycleCallback;
+  exit?: LifeCycleCallback;
+  update?: LifeCycleCallback;
 };
 
 
