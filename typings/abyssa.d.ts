@@ -55,14 +55,12 @@ interface Params {
 type LifeCycleCallback = (params: Params, value: any, router: RouterAPI) => void;
 
 interface StateOptions {
-  uri: string;
-  children?: StateMap;
   enter?: LifeCycleCallback;
   exit?: LifeCycleCallback;
   update?: LifeCycleCallback;
-};
+}
 
 
 export function Router(states: StateMap): Router;
-export function State(uri: string, options: StateOptions): State;
+export function State(uri: string, options: StateOptions, children?: StateMap): State;
 export var api: RouterAPI;
