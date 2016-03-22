@@ -487,6 +487,12 @@ function Router(declarativeStates) {
     return previousState == null;
   }
 
+  /* Fluent API alias */
+  function on() {
+    router.transition.on.apply(router.transition, arguments);
+    return router;
+  }
+
   function stateTrees(states) {
     return util.mapValues(states, stateTree);
   }
@@ -540,6 +546,7 @@ function Router(declarativeStates) {
   router.options = options;
 
   router.transition = new EventEmitter();
+  router.on = on;
 
   // Used for testing purposes only
   router.urlPathQuery = urlPathQuery;

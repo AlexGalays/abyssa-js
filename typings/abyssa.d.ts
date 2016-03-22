@@ -10,13 +10,13 @@ interface RouterAPI {
   isFirstTransition(): boolean;
   paramsDiff(): Object;
 
-  transition: { on: (eventName: 'started' | 'ended',
-    handler: (currentState: State, previousState: State) => void) => void };
+  transition: { on: (eventName: 'started' | 'ended', handler: (currentState: State, previousState: State) => void) => void };
 }
 
 interface Router {
   configure(options: ConfigOptions): this;
   addState(name: string, state: State): this;
+  on(eventName: 'started' | 'ended', handler: (currentState: State, previousState: State) => void): this;
   init(initState?: string, initParams?: Object): RouterAPI;
 }
 
