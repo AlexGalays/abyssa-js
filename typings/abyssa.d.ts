@@ -2,6 +2,7 @@
 interface RouterAPI {
   transitionTo(stateName: string, params?: Object, acc?: any): void;
   transitionTo(pathQuery: string, acc?: any): void;
+  replaceStateParams(newParams: {[ key: string ]: any }): void;
   backTo(stateName: string, defaultParams?: Object, acc?: any): void;
   link(stateName: string, params?: Object): string;
   previous(): StateWithParams;
@@ -10,13 +11,14 @@ interface RouterAPI {
   isFirstTransition(): boolean;
   paramsDiff(): Object;
 
-  transition: { on: (eventName: 'started' | 'ended', handler: (currentState: State, previousState: State) => void) => void };
+  transition: { on: (eventName: 'started' | 'ended',
+    handler: (currentState: StateWithParams, previousState?: StateWithParams) => void) => void };
 }
 
 interface Router {
   configure(options: ConfigOptions): this;
   addState(name: string, state: State): this;
-  on(eventName: 'started' | 'ended', handler: (currentState: State, previousState: State) => void): this;
+  on(eventName: 'started' | 'ended', handler: (currentState: StateWithParams, previousState?: StateWithParams) => void): this;
   init(initState?: string, initParams?: Object): RouterAPI;
 }
 

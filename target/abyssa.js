@@ -612,6 +612,19 @@ function Router(declarativeStates) {
   }
 
   /*
+   * Replaces the current state's params in the history with new params.
+   * The state is NOT exited/re-entered.
+   */
+  function replaceStateParams(newParams) {
+    if (!currentState) return;
+
+    currentState.params = newParams;
+
+    var newUri = router.link(currentState.state.fullName, newParams);
+    history.replaceState(newUri, document.title, newUri);
+  }
+
+  /*
   * Attempt to navigate to 'stateName' with its previous params or
   * fallback to the defaultParams parameter if the state was never entered.
   */
@@ -814,6 +827,7 @@ function Router(declarativeStates) {
   router.configure = configure;
   router.init = init;
   router.transitionTo = transitionTo;
+  router.replaceStateParams = replaceStateParams;
   router.backTo = backTo;
   router.addState = addState;
   router.link = link;
