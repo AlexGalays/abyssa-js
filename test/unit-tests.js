@@ -135,7 +135,7 @@ test('Simple states with shorthand function', function() {
   deepEqual(events, ['indexExit', 'articlesEnter']);
   strictEqual(lastArticleId, '38');
   strictEqual(lastFilter, 'dark green');
-  events = [];  
+  events = [];
 
   router.transitionTo('index');
 
@@ -577,7 +577,7 @@ test('Query-only transitions', function() {
   function onlyExitedUpToStateOwningFilter() {
     deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
   }
-  
+
   function swapFilterValue() {
     events = [];
     router.transitionTo('blog/articles/33/edit?filter=34');
@@ -722,7 +722,7 @@ test('redirect', function() {
 
     oldRoute: State('oldRoute', {
       enter: function() {
-        router.transitionTo('newRoute'); 
+        router.transitionTo('newRoute');
       },
       exit: function() { oldRouteExited = true; }
     }, {
@@ -883,6 +883,7 @@ test('update', function() {
 
 
 function stateWithParamsAssertions(stateWithParams) {
+  equal(stateWithParams.uri, '/state1/33/misc?filter=true')
   equal(stateWithParams.name, 'state1Child');
   equal(stateWithParams.fullName, 'state1.state1Child');
 
@@ -910,7 +911,7 @@ test('event handlers are passed StateWithParams objects', function() {
     state2: State('state2/:country/:city')
   });
 
-  router.transition.once('started', stateWithParamsAssertions);
+  router.transition.once('started', stateWithParamsAssertions)
 
   router.init('state1/33/misc?filter=true');
 });
@@ -1028,7 +1029,7 @@ test('util.normalizePathQuery', function() {
   expect("/path?query", "/path?query");
   expect("/path/a/b/c?query", "/path/a/b/c?query");
   expect("/path/a/b/c?query=///", "/path/a/b/c?query=///");
-  
+
   // Slashes are added
   expect("", "/");
   expect("path", "/path");
@@ -1036,7 +1037,7 @@ test('util.normalizePathQuery', function() {
   expect("path?query", "/path?query");
   expect("path/a/b/c?query", "/path/a/b/c?query");
   expect("?query", "/?query");
-  
+
   // Slashes are removed
   expect("//", "/");
   expect("///", "/");
@@ -1074,7 +1075,7 @@ test('can prevent a transition by navigating to self from the exit handler', fun
   .init('uno');
 
   router.transitionTo('dos');
-  // Only the initial event is here. 
+  // Only the initial event is here.
   // Since the exit was interrupted, there's no reason to re-enter.
   deepEqual(events, ['unoEnter']);
   equal(router.current().name, 'uno');

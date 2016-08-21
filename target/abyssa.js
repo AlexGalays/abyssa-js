@@ -352,7 +352,7 @@ function Router(declarativeStates) {
   function setState(state, params, acc) {
     var fromState = transition ? StateWithParams(transition.currentState, transition.toParams) : currentState;
 
-    var toState = StateWithParams(state, params);
+    var toState = StateWithParams(state, params, currentPathQuery);
     var diff = util.objectDiff(fromState && fromState.params, params);
 
     if (preventTransition(fromState, toState, diff)) {
