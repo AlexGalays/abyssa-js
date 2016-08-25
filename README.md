@@ -4,7 +4,6 @@
 Hierarchical router library for single page applications.
 
 # Content
-* [Browser support](#browser-support)
 * [Introduction](#introduction)
 * [Installation](#installation)
 * [Transitions](#transitions)
@@ -12,23 +11,14 @@ Hierarchical router library for single page applications.
   * [Router](#api-router)
   * [State](#api-state)
   * [StateWithParams](#api-stateWithParams)
-  * [async](#api-async)
 * [Anchor interception](#anchor-interception)
 * [Code examples](#code-examples)
 * [Cookbook](#cookbook)
   * [Removing router <-> state circular dependencies](#removingCircularDeps)
   * [Central router, modular states](#centralRouter)
-  * [Highlight the selected primary navigation item](#navHighlight)
   * [Handling the change of some params differently in `update`](#updateParamChanges)
   * [Integrating with React](#integratingWithReact)
 
-
-<a name="browser-support"></a>
-# Browser support
-
-[![SauceLabs Status](https://saucelabs.com/browser-matrix/bagonzago.svg)](https://saucelabs.com/u/bagonzago)
-
-With IE8/IE9, The router won't throw any errors at script evaluation time, so it can be used to support these browsers in degraded mode.
 
 <a name="introduction"></a>
 # Introduction
@@ -86,6 +76,8 @@ When going from a state A to a state B, as far as a stateless router is concerne
 Here, Abyssa will simply swap the red bit for the green bit. Why should everything be redrawn? It's slower and the software would lose all the state implicitly stored in the previous DOM.
 
 Read this excellent blog post for more information: [Make the most of your routes](http://codebrief.com/2012/03/make-the-most-of-your-routes/)
+
+Note: With the emergence of VDOM approaches, using abyssa as a stateful router has less of an impact, as VDOM diffing/patching will usually take care of good enough performances. Also, a component based view library can handle hierarchical data loading and caching.
 
 <a name="installation"></a>
 # Installation
@@ -344,22 +336,6 @@ State('path/:rest*')
 // router.transitionTo('path/other/yetAnother'); // params.rest === 'other/yetAnother'
 ```
 
-#### Setting state data
-
-You can set arbitrary data declaratively by just specifying a custom property in the State options.  
-This data can be read by all descendant states (Using `stateWithParams.data('myArbitraryData')`) and from event handlers.  
-For more elaborated use cases, you can store the data in a custom external service or model.
-```javascript
-var state = State('articles?filter', {
-  data: { myArbitraryData: 66 }
-});
-
-// The data can also be read inside event handlers
-router.transition.on('ended', function(oldState, newState) {
-  // Do something based on newState.data('myArbitraryData')
-});
-```
-
 <a name="api-stateWithParams"></a>
 ## StateWithParams
 `StateWithParams` objects are returned from `router.previous()`, `router.current()` and passed in event handlers.  
@@ -379,73 +355,6 @@ The fully qualified, unique name of the state
 ### isIn(fullName: String): Boolean
 Returns whether this state or any of its parents has the given fullName.
 
-### data (key: String, value: Any): Any
-Get or Set some data by key on this state.  
-child states have access to their parents' data.  
-This can be useful when using external models/services as a mean to communicate between states is not desired.  
-Returns the state to allow chaining.
-
-Example:  
-```javascript
-
-var router = Router({
-
-  books: State('books', {
-    data: { myData: 33 }
-  }, {
-    listing: State(':kind')
-  })
-
-}).init('books/scifi?limit=10');
-
-var state = router.current();
-
-// state looks as follow:
-
-{
-  uri: 'books/scifi?limit=10'
-  name: 'listing'
-  fullName: 'books.listing'
-  params: {kind: 'scifi', limit: 10}
-  data // state.data('myData') == 33
-  isIn // state.isIn('books') === true
-}
-```
-
-<a name="api-async"></a>
-## async
-
-Async is a convenient mean to let the router know some async operations tied to the current state are ongoing.  
-The router will ignore (The fulfill/reject handlers will never be called) these promises if the router state changes in the meantime.  
-This behavior is useful to prevent states from affecting each other (with side effects such as DOM mutation in the promise handlers)  
-You can have as many Async blocks as required.
-
-
-### Example
-```javascript
-var async = Abyssa.async;
-
-var state = State('articles/:id': {
-
-  enter: function(params) {
-    $('button.refresh').click(function() {
-      // The user clicked on a button: Load some data before performing the action.
-      // Loading the data is asynchronous, and the response should be ignored if the user
-      // navigated away to another state in the meantime.
-      async(loadData()).then(function(data) {
-        // Perform the action safely; the router is still in the right state.
-      });
-    });
-  }
-}
-```
-
-### Note
-In order to use the `async` function, you either need to have a modern browser supporting promises natively (or shimmed globally) or give the `async` function a suitable shim for it:  
-
-```javascript
-require('abyssa').async.Promise = Q.Promise;  // Or when, bluebird, etc.
-```
 
 <a name="anchor-interception"></a>
 # Anchor interception
@@ -534,75 +443,6 @@ module.exports = {
 
 ```
 
-<a name="navHighlight"></a>
-## Highlight the selected primary navigation item
-
-Assuming the following highlight function is in scope:  
-
-```javascript
-function highlight(navItem) {
-  $('li.nav').removeClass('active');
-  $('li.nav.' + navItem).addClass('active');
-}
-
-```
-
-We can either:  
-
-**1) Observe all state changes externally**  
-
-```javascript
-
-var router = Router({
-
-  section1: State('section1', {}, {
-    data: { navItem: 'section1' } // custom data property; seen by any substate.
-  }),
-
-  section2: State('section2', {}, {
-    data: { navItem: 'section2' }
-  })
-
-}).init('section1');
-
-
-router.transition.on('started', function(state) {
-  highlight(state.data('navItem'));
-});
-
-```
-
-Or  
-
-**2) Create a State factory to deal with that common concern**  
-
-```javascript
-
-function NavState(state) {
-  var enter = state.enter;
-
-  state.enter = function(params, acc) {
-    highlight(state.data.navItem);
-    enter(params, acc);
-  };
-
-  return state;
-}
-
-var router = Router({
-
-  section1: NavState(State('section1', {}, {
-    data: { navItem: 'section1' }
-  })),
-
-  section2: NavState(State('section2', {}, {
-    data: { navItem: 'section2' }
-  }))
-
-}).init('section1');
-
-```
-
 <a name="updateParamChanges"></a>
 ## Handling the change of some params differently in `update`
 
@@ -640,31 +480,4 @@ var state = State({
 <a name="integratingWithReact"></a>
 ## Integrating with React
 
-Abyssa provides an optional addon that implements one way to easily render states using React. It's perfectly doable and quite easy
-to use React and abyssa without this addon; the addon simply provides syntactic sugar.
-Just import it and use `ReactState` instead of `State` where applicable.
-
-```
-var ReactState = require('abyssa/src/addon/ReactState');
-```
-
-[JSFiddle Example](http://jsfiddle.net/15ya949n/)
-
-### State change hook
-To get notified when the state changes, declare the `onEnter` static method on any component directly declared by a `ReactState`.
-This is mostly useful to implement redirection, as you should otherwise use the component's `componentWillMount` method.
-
-```javascript
-import { api as router } from 'abyssa';
-
-let MyComp = React.createClass({
-  render: function() {}
-});
-
-MyComp.onEnter = function() {
-  // Make this component unreachable
-  router.transitionTo('anotherComponent');
-};
-
-export default MyComp;
-```
+Check this [gist](https://gist.github.com/AlexGalays/f3ee01ff940defd147700c2725dd3976) to get a `ReactState` that can be used to automatically insert React children based on routing:

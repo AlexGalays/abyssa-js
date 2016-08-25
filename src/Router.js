@@ -1,9 +1,7 @@
 
 'use strict';
 
-
-var EventEmitter     = require('events'),
-    interceptAnchors = require('./anchors'),
+var interceptAnchors = require('./anchors'),
     StateWithParams  = require('./StateWithParams'),
     Transition       = require('./Transition'),
     util             = require('./util'),
@@ -37,7 +35,8 @@ function Router(declarativeStates) {
       leafStates,
       urlChanged,
       initialized,
-      hashSlashString;
+      hashSlashString,
+      eventCallbacks = {};
 
   /*
   * Setting a new state will start a transition from the current state to the target state.
@@ -103,7 +102,7 @@ function Router(declarativeStates) {
     var from = fromState ? fromState.asPublic : null;
     var to = toState.asPublic;
 
-    router.transition.emit('started', to, from);
+    eventCallbacks.started && eventCallbacks.started(to, from);
   }
 
   function endingTransition(fromState, toState) {
@@ -120,7 +119,7 @@ function Router(declarativeStates) {
 
     var from = fromState ? fromState.asPublic : null;
     var to = toState.asPublic;
-    router.transition.emit('ended', to, from);
+    eventCallbacks.ended && eventCallbacks.ended(to, from);
   }
 
   function updateURLFromState(state, title, url) {
@@ -175,7 +174,7 @@ function Router(declarativeStates) {
   * 2) The state captured by the current URL
   */
   function init(initState, initParams) {
-    if (options.enableLogs)
+    if (options.enableLogs || Router.log)
       Router.enableLogs();
 
     if (options.interceptAnchors)
@@ -500,9 +499,8 @@ function Router(declarativeStates) {
     return previousState == null;
   }
 
-  /* Fluent API alias */
-  function on() {
-    router.transition.on.apply(router.transition, arguments);
+  function on(eventName, cb) {
+    eventCallbacks[eventName] = cb
     return router;
   }
 
@@ -558,8 +556,6 @@ function Router(declarativeStates) {
   router.isFirstTransition = isFirstTransition;
   router.paramsDiff = getParamsDiff;
   router.options = options;
-
-  router.transition = new EventEmitter();
   router.on = on;
 
   // Used for testing purposes only

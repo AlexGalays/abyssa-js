@@ -38,7 +38,7 @@ function makePublicAPI(state, params, pathQuery) {
     params: params,
     name: state ? state.name : '',
     fullName: state ? state.fullName : '',
-    data: state ? state.data : null,
+    data: state ? state.data : {},
     isIn: isIn,
   };
 }

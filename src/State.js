@@ -6,7 +6,7 @@ var util  = require('./util');
 var PARAMS = /:[^\\?\/]*/g;
 
 /*
-* Creates a new State instance from a {uri, enter, exit, update, data, children} object.
+* Creates a new State instance from a {uri, enter, exit, update, children} object.
 * This is the internal representation of a state used by the router.
 */
 function State(options) {
@@ -17,12 +17,11 @@ function State(options) {
   state.params = paramsFromURI(options.uri);
   state.queryParams = queryParamsFromURI(options.uri);
   state.states = states;
+  state.data = options.data;
 
   state.enter = options.enter || util.noop;
   state.update = options.update;
   state.exit = options.exit || util.noop;
-
-  state.ownData = options.data || {};
 
   /*
   * Initialize and freeze this state.
@@ -93,33 +92,12 @@ function State(options) {
     }, util.copyObject(state.queryParams));
   }
 
-  /*
-  * Get or Set some arbitrary data by key on this state.
-  * child states have access to their parents' data.
-  *
-  * This can be useful when using external models/services
-  * as a mean to communicate between states is not desired.
-  */
-  function data(key, value) {
-    if (value !== undefined) {
-      state.ownData[key] = value;
-      return state;
-    }
-
-    var currentState = state;
-
-    while (currentState.ownData[key] === undefined && currentState.parent)
-      currentState = currentState.parent;
-
-    return currentState.ownData[key];
-  }
-
   function makePublicAPI() {
     return {
       name: state.name,
       fullName: state.fullName,
-      parent: state.parent && state.parent.asPublic,
-      data
+      data: options.data || {},
+      parent: state.parent && state.parent.asPublic
     };
   }
 
@@ -189,7 +167,6 @@ function State(options) {
   state.allQueryParams = allQueryParams;
   state.matches = matches;
   state.interpolate = interpolate;
-  state.data = data;
   state.toString = toString;
 
   return state;

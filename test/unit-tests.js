@@ -1,42 +1,10 @@
+
+
 Router = Abyssa.Router;
 State  = Abyssa.State;
 
 //Router.enableLogs();
 stubHistory();
-Abyssa.async.Promise = Q.Promise;
-
-
-
-// ====== Saucelabs integration
-var log = [];
-var testName;
-
-QUnit.done(function (test_results) {
-  var tests = [];
-  for(var i = 0, len = log.length; i < len; i++) {
-    var details = log[i];
-    tests.push({
-      name: details.name,
-      result: details.result,
-      expected: details.expected,
-      actual: details.actual,
-      source: details.source
-    });
-  }
-  test_results.tests = tests;
-
-  window.global_test_results = test_results;
-});
-
-QUnit.testStart(function(testDetails){
-  QUnit.log(function(details){
-    if (!details.result) {
-      details.name = testDetails.name;
-      log.push(details);
-    }
-  });
-});
-// =====
 
 
 test('Simple states', function() {
@@ -625,36 +593,6 @@ test('The query string is provided to all states', function() {
 });
 
 
-test('Data can be stored on states and later retrieved', function() {
-
-  var two = State('', {
-    enter: function() {
-      // A child state can see the data of its parent
-      equal(this.data('someArbitraryData'), 3);
-      equal(this.data('otherData'), 5);
-
-      // The parent can see its own data
-      equal(this.parent.data('someArbitraryData'), 3);
-    }
-  });
-
-  var router = Router({
-
-    one: State('', {
-      // Statically declared
-      data: { someArbitraryData: 3 },
-
-      enter: function() {
-        // We can also store data at an arbitrary time.
-        this.data('otherData', 5);
-      }
-    }, { two: two })
-
-  }).init('');
-
-});
-
-
 test('Reverse routing', function() {
   var router = Router({
 
@@ -752,7 +690,8 @@ test('Redirecting from transition.started', function() {
   })
   .init('');
 
-  router.transition.once('started', function() {
+  router.on('started', function() {
+    router.on('started', null);
     router.transitionTo('dos');
   });
 
@@ -886,8 +825,7 @@ function stateWithParamsAssertions(stateWithParams) {
   equal(stateWithParams.uri, '/state1/33/misc?filter=true')
   equal(stateWithParams.name, 'state1Child');
   equal(stateWithParams.fullName, 'state1.state1Child');
-
-  ok(stateWithParams.data('myData'), 666);
+  equal(stateWithParams.data.dd, 12);
 
   ok(stateWithParams.params.id, '33');
   ok(stateWithParams.params.category, 'misc');
@@ -903,15 +841,16 @@ test('event handlers are passed StateWithParams objects', function() {
   var router = Router({
 
     state1: State('state1/:id', {}, {
-      state1Child: State(':category', {
-        data: { myData: 666 }
-      })
+      state1Child: State(':category', { data: { dd: 12 } })
     }),
 
     state2: State('state2/:country/:city')
   });
 
-  router.transition.once('started', stateWithParamsAssertions)
+  router.on('started', function(newState) {
+    router.on('started', null);
+    stateWithParamsAssertions(newState);
+  });
 
   router.init('state1/33/misc?filter=true');
 });
@@ -923,8 +862,8 @@ test('router.current and router.previous', function() {
 
     state1: State('state1/:id', {}, {
       state1Child: State(':category', {
-        enter: assertions,
-        data: { myData: 666 }
+        data: { dd: 12 },
+        enter: assertions
       })
     }),
 
@@ -957,12 +896,13 @@ test('router.findState', function() {
   var state1 = {
     uri: 'articles',
     enter: function() {},
-    data: { d: 66 },
     children: {
       detail: {
-        uri: ':id?q'
+        uri: ':id?q',
+        data: { kk: 'bb' }
       }
-    }
+    },
+    data: { kk: 'aa' }
   };
 
   var state2 = {
@@ -983,21 +923,21 @@ test('router.findState', function() {
   })
   .init('state1');
 
-  function assertStateApi(stateApi, name, fullName, data, parentFullName) {
+  function assertStateApi(stateApi, name, fullName, parentFullName, data) {
     equal(stateApi.name, name);
     equal(stateApi.fullName, fullName);
-    equal(stateApi.data('d'), data);
-    equal((stateApi.parent && stateApi.parent.fullName), parentFullName)
+    equal((stateApi.parent && stateApi.parent.fullName), parentFullName);
+    equal(stateApi.data.kk, data);
     equal(Object.keys(stateApi).length, 4);
   }
 
   var state1Api = router.findState(state1);
   var state1Api2 = router.findState('state1');
-  assertStateApi(state1Api, 'state1', 'state1', 66, undefined);
+  assertStateApi(state1Api, 'state1', 'state1', undefined, 'aa');
   equal(state1Api, state1Api2);
 
   var state1DetailApi = router.findState('state1.detail');
-  assertStateApi(state1DetailApi, 'detail', 'state1.detail', 66, 'state1');
+  assertStateApi(state1DetailApi, 'detail', 'state1.detail', 'state1', 'bb');
 
   equal(router.findState('nope'), undefined);
 });
@@ -1207,32 +1147,6 @@ test('The public fullName of a _default_ state is the same as its parent', funct
 
   // The router is actually at articles.detail._default_ but that should be an implementation detail.
   equal(router.current().fullName, 'articles.detail');
-});
-
-
-asyncTest('registering promises with the router', function() {
-
-  var async = Abyssa.async;
-
-  var router = Router({
-
-    index: State('', {}),
-    articles: State('articles', {})
-
-  }).init('');
-
-  async(Q.delay(20)).then(function() {
-    // Should never get there as we changed state before the resolution of the promise
-    ok(false)
-  });
-
-  router.transitionTo('articles');
-
-  async(Q.delay(123, 40)).then(function(val) {
-    equal(val, 123);
-    start();
-  });
-
 });
 
 

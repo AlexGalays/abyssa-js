@@ -1,24 +1,28 @@
 
-interface RouterAPI {
+type Obj = { [key: string]: any }
+
+interface RouterCommon {
+  on(eventName: 'started' | 'ended', handler?: (currentState: StateWithParams, previousState?: StateWithParams) => void): this;
+}
+
+/* The initialized router API */
+interface RouterAPI extends RouterCommon {
   transitionTo(stateName: string, params?: Object, acc?: any): void;
   transitionTo(pathQuery: string, acc?: any): void;
   replaceStateParams(newParams: {[ key: string ]: any }): void;
   backTo(stateName: string, defaultParams?: Object, acc?: any): void;
   link(stateName: string, params?: Object): string;
-  previous(): StateWithParams;
+  previous(): StateWithParams | void;
   current(): StateWithParams;
-  findState(optionsOrFullName: any): State;
+  findState(optionsOrFullName: any): State | void;
   isFirstTransition(): boolean;
   paramsDiff(): Object;
-
-  transition: { on: (eventName: 'started' | 'ended',
-    handler: (currentState: StateWithParams, previousState?: StateWithParams) => void) => void };
 }
 
-interface Router {
+/* The router API while it's still in its builder phase */
+interface Router extends RouterCommon {
   configure(options: ConfigOptions): this;
   addState(name: string, state: State): this;
-  on(eventName: 'started' | 'ended', handler: (currentState: StateWithParams, previousState?: StateWithParams) => void): this;
   init(initState?: string, initParams?: Object): RouterAPI;
 }
 
@@ -27,11 +31,9 @@ interface StateWithParams {
   params: Params;
   name: string;
   fullName: string;
+  data: Obj;
 
   isIn(fullName: string): boolean;
-
-  data(key: string): any;
-  data(key: string, value: any): void;
 }
 
 interface StateMap {
@@ -39,7 +41,10 @@ interface StateMap {
 }
 
 interface State {
-  uri: string
+  name: string
+  fullName: string
+  parent: State | void
+  data: Obj
 }
 
 interface ConfigOptions {
@@ -60,9 +65,15 @@ interface StateOptions {
   enter?: LifeCycleCallback;
   exit?: LifeCycleCallback;
   update?: LifeCycleCallback;
+  data?: Obj
+}
+
+interface RouterObject {
+  (states: StateMap): Router;
+  log: boolean;
 }
 
 
-export function Router(states: StateMap): Router;
+export const Router: RouterObject;
 export function State(uri: string, options: StateOptions, children?: StateMap): State;
 export var api: RouterAPI;
