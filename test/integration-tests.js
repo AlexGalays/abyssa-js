@@ -269,6 +269,57 @@ asyncTest('customize hashbang', function() {
 });
 
 
+test('replaceParams', function() {
+  var router = Abyssa.api;
+
+  Router({
+
+    articles: {
+      uri: 'articles?popup',
+
+      children: {
+        detail: {
+          uri: ':id',
+
+          children: {
+            moreDetails: {
+              uri: 'moreDetails'
+            }
+          }
+        }
+      }
+    }
+
+  })
+  .init('articles/33/moreDetails?popup=true')
+
+  equal(router.current().params.id, '33')
+  equal(router.current().params.popup, 'true')
+
+  var transitionHappened = false
+  router.on('ended', function() {
+    transitionHappened = true
+    router.on('ended', undefined)
+  })
+
+  router.replaceParams({ id: '44', popup: 'false' })
+
+  equal(transitionHappened, false)
+  equal(router.current().params.id, '44')
+  equal(router.current().params.popup, 'false')
+  equal(router.current().uri, '/articles/44/moreDetails?popup=false')
+  equal(router.urlPathQuery(), '/articles/44/moreDetails?popup=false')
+
+  router.replaceParams({ id: '44', popup: undefined })
+
+  equal(transitionHappened, false)
+  equal(router.current().params.id, '44')
+  equal(router.current().params.popup, undefined)
+  equal(router.current().uri, '/articles/44/moreDetails')
+  equal(router.urlPathQuery(), '/articles/44/moreDetails')
+})
+
+
 function changeURL(pathQuery) {
   history.pushState('', '', pathQuery);
 }

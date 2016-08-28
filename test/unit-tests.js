@@ -598,16 +598,16 @@ test('Reverse routing', function() {
 
     index: State(),
 
-    one: State('one?filter&pizza', {}, {
+    one: State('one?filter&pizza&ble', {}, {
       two: State(':id/:color')
     })
 
   }).init('');
 
-  var href = router.link('one.two', {id: 33, color: 'dark green', filter: 'a&b', pizza: 123, bla: 55});
+  var href = router.link('one.two', { id: 33, color: 'dark green', filter: 'a&b', pizza: 123, bla: 55, ble: undefined });
   equal(href, '/one/33/dark%20green?filter=a%26b&pizza=123');
 
-  href = router.link('one.two', {id: 33, color: 'dark green'});
+  href = router.link('one.two', { id: 33, color: 'dark green' });
   equal(href, '/one/33/dark%20green')
 
 });
