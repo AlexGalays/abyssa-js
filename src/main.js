@@ -1,15 +1,12 @@
+import * as util from './util'
+import Router from './Router'
+import api from './api'
 
-'use strict';
+const State = util.stateShorthand
 
-var util = require('./util');
-
-
-var Abyssa = {
-  Router: require('./Router'),
-  api: require('./api'),
-  State: util.stateShorthand,
-
-  _util: util
-};
-
-module.exports = Abyssa;
+export {
+  Router,
+  api,
+  State,
+  util
+}

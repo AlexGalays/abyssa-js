@@ -1,104 +1,97 @@
 
-'use strict';
+export function noop() {}
 
-var util = {};
-
-
-util.noop = function() {};
-
-util.arrayToObject = function(array) {
+export function arrayToObject(array) {
   return array.reduce((obj, item) => {
-    obj[item] = 1;
-    return obj;
-  }, {});
-};
+    obj[item] = 1
+    return obj
+  }, {})
+}
 
-util.objectToArray = function(obj) {
-  var array = [];
-  for (var key in obj) array.push(obj[key]);
-  return array;
-};
+export function objectToArray(obj) {
+  const array = []
+  for (let key in obj) array.push(obj[key])
+  return array
+}
 
-util.copyObject = function(obj) {
-  var copy = {};
-  for (var key in obj) copy[key] = obj[key];
-  return copy;
-};
+export function copyObject(obj) {
+  const copy = {}
+  for (let key in obj) copy[key] = obj[key]
+  return copy
+}
 
-util.mergeObjects = function(to, from) {
-  for (var key in from) to[key] = from[key];
-  return to;
-};
+export function mergeObjects(to, from) {
+  for (let key in from) to[key] = from[key]
+  return to
+}
 
-util.mapValues = function(obj, fn) {
-  var result = {};
-  for (var key in obj) {
-    result[key] = fn(obj[key]);
-  }
-  return result;
-};
+export function mapValues(obj, fn) {
+  const result = {}
+  for (let key in obj) result[key] = fn(obj[key])
+  return result
+}
 
 /*
 * Return the set of all the keys that changed (either added, removed or modified).
 */
-util.objectDiff = function(obj1, obj2) {
-  var update = {}, enter = {}, exit = {}, all = {},
-      name,
-      obj1 = obj1 || {};
+export function objectDiff(obj1, obj2) {
+  const update = {}
+  const enter = {}
+  const exit = {}
+  const all = {}
 
-  for (name in obj1) {
+  obj1 = obj1 || {}
+
+  for (let name in obj1) {
     if (!(name in obj2))
-      exit[name] = all[name] = true;
+      exit[name] = all[name] = true
     else if (obj1[name] != obj2[name])
-      update[name] = all[name] = true;
+      update[name] = all[name] = true
   }
 
-  for (name in obj2) {
+  for (let name in obj2) {
     if (!(name in obj1))
-      enter[name] = all[name] = true;
+      enter[name] = all[name] = true
   }
 
-  return { all, update, enter, exit };
-};
+  return { all, update, enter, exit }
+}
 
-util.makeMessage = function() {
-  var message = arguments[0],
-      tokens = Array.prototype.slice.call(arguments, 1);
+export function makeMessage() {
+  let message = arguments[0]
+  const tokens = Array.prototype.slice.call(arguments, 1)
 
-  for (var i = 0, l = tokens.length; i < l; i++) 
-    message = message.replace('{' + i + '}', tokens[i]);
+  for (let i = 0, l = tokens.length; i < l; i++)
+    message = message.replace('{' + i + '}', tokens[i])
 
-  return message;
-};
+  return message
+}
 
-util.parsePaths = function(path) {
+export function parsePaths(path) {
   return path.split('/')
     .filter(str => str.length)
-    .map(str => decodeURIComponent(str));
-};
+    .map(str => decodeURIComponent(str))
+}
 
-util.parseQueryParams = function(query) {
+export function parseQueryParams(query) {
   return query ? query.split('&').reduce((res, paramValue) => {
-    var pv = paramValue.split('=');
-    res[pv[0]] = decodeURIComponent(pv[1]);
-    return res;
-  }, {}) : {};
-};
+    const [param, value] = paramValue.split('=')
+    res[param] = decodeURIComponent(value)
+    return res
+  }, {}) : {}
+}
 
 
-var LEADING_SLASHES = /^\/+/;
-var TRAILING_SLASHES = /^([^?]*?)\/+$/;
-var TRAILING_SLASHES_BEFORE_QUERY = /\/+\?/;
-util.normalizePathQuery = function(pathQuery) {
+var LEADING_SLASHES = /^\/+/
+var TRAILING_SLASHES = /^([^?]*?)\/+$/
+var TRAILING_SLASHES_BEFORE_QUERY = /\/+\?/
+export function normalizePathQuery(pathQuery) {
   return ('/' + pathQuery
     .replace(LEADING_SLASHES, '')
     .replace(TRAILING_SLASHES, '$1')
-    .replace(TRAILING_SLASHES_BEFORE_QUERY, '?'));
-};
+    .replace(TRAILING_SLASHES_BEFORE_QUERY, '?'))
+}
 
-util.stateShorthand = function(uri, options, children) {
-  return util.mergeObjects({ uri: uri, children: children || {} }, options);
-};
-
-
-module.exports = util;
+export function stateShorthand(uri, options, children) {
+  return mergeObjects({ uri: uri, children: children || {} }, options)
+}

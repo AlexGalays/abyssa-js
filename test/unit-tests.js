@@ -1,27 +1,26 @@
 
+Router = Abyssa.Router
+State  = Abyssa.State
 
-Router = Abyssa.Router;
-State  = Abyssa.State;
-
-//Router.enableLogs();
-stubHistory();
+//Router.enableLogs()
+stubHistory()
 
 
 test('Simple states', function() {
 
   var events = [],
       lastArticleId,
-      lastFilter;
+      lastFilter
 
   var router = Router({
 
     index: {
       enter: function() {
-        events.push('indexEnter');
+        events.push('indexEnter')
       },
 
       exit: function() {
-        events.push('indexExit');
+        events.push('indexExit')
       }
     },
 
@@ -29,93 +28,93 @@ test('Simple states', function() {
       uri: 'articles/:id?filter',
 
       enter: function(params) {
-        events.push('articlesEnter');
-        lastArticleId = params.id;
-        lastFilter = params.filter;
+        events.push('articlesEnter')
+        lastArticleId = params.id
+        lastFilter = params.filter
       },
 
       exit: function() {
-        events.push('articlesExit');
+        events.push('articlesExit')
       }
     }
 
-  }).init('');
+  }).init('')
 
-  deepEqual(events, ['indexEnter']);
-  events = [];
+  deepEqual(events, ['indexEnter'])
+  events = []
 
-  router.transitionTo('articles', { id: 38, filter: 'dark green' });
+  router.transitionTo('articles', { id: 38, filter: 'dark green' })
 
-  deepEqual(events, ['indexExit', 'articlesEnter']);
-  strictEqual(lastArticleId, '38');
-  strictEqual(lastFilter, 'dark green');
-  events = [];
+  deepEqual(events, ['indexExit', 'articlesEnter'])
+  strictEqual(lastArticleId, '38')
+  strictEqual(lastFilter, 'dark green')
+  events = []
 
-  router.transitionTo('index');
+  router.transitionTo('index')
 
-  deepEqual(events, ['articlesExit', 'indexEnter']);
-  events = [];
+  deepEqual(events, ['articlesExit', 'indexEnter'])
+  events = []
 
-  router.transitionTo('articles/44?filter=666');
+  router.transitionTo('articles/44?filter=666')
 
-  deepEqual(events, ['indexExit', 'articlesEnter']);
-  strictEqual(lastArticleId, '44');
-  strictEqual(lastFilter, '666');
-});
+  deepEqual(events, ['indexExit', 'articlesEnter'])
+  strictEqual(lastArticleId, '44')
+  strictEqual(lastFilter, '666')
+})
 
 test('Simple states with shorthand function', function() {
 
   var events = [],
       lastArticleId,
-      lastFilter;
+      lastFilter
 
   var router = Router({
 
     index: State('', {
       enter: function() {
-        events.push('indexEnter');
+        events.push('indexEnter')
       },
 
       exit: function() {
-        events.push('indexExit');
+        events.push('indexExit')
       }
     }),
 
     articles: State('articles/:id?filter', {
       enter: function(params) {
-        events.push('articlesEnter');
-        lastArticleId = params.id;
-        lastFilter = params.filter;
+        events.push('articlesEnter')
+        lastArticleId = params.id
+        lastFilter = params.filter
       },
 
       exit: function() {
-        events.push('articlesExit');
+        events.push('articlesExit')
       }
     })
 
-  }).init('');
+  }).init('')
 
-  deepEqual(events, ['indexEnter']);
-  events = [];
+  deepEqual(events, ['indexEnter'])
+  events = []
 
-  router.transitionTo('articles', { id: 38, filter: 'dark green' });
+  router.transitionTo('articles', { id: 38, filter: 'dark green' })
 
-  deepEqual(events, ['indexExit', 'articlesEnter']);
-  strictEqual(lastArticleId, '38');
-  strictEqual(lastFilter, 'dark green');
-  events = [];
+  deepEqual(events, ['indexExit', 'articlesEnter'])
+  strictEqual(lastArticleId, '38')
+  strictEqual(lastFilter, 'dark green')
+  events = []
 
-  router.transitionTo('index');
+  router.transitionTo('index')
 
-  deepEqual(events, ['articlesExit', 'indexEnter']);
-  events = [];
+  deepEqual(events, ['articlesExit', 'indexEnter'])
+  events = []
 
-  router.transitionTo('articles/44?filter=666');
+  router.transitionTo('articles/44?filter=666')
 
-  deepEqual(events, ['indexExit', 'articlesEnter']);
-  strictEqual(lastArticleId, '44');
-  strictEqual(lastFilter, '666');
-});
+  deepEqual(events, ['indexExit', 'articlesEnter'])
+  strictEqual(lastArticleId, '44')
+  strictEqual(lastFilter, '666')
+})
 
 
 test('Custom initial state', function() {
@@ -125,14 +124,14 @@ test('Custom initial state', function() {
     articles: State('articles/:id', {}, {
       edit: State('edit', {
         enter: function() {
-          ok(true);
+          ok(true)
         }
       })
     })
 
-  }).init('articles/33/edit');
+  }).init('articles/33/edit')
 
-});
+})
 
 
 test('Multiple dynamic paths', function() {
@@ -141,15 +140,15 @@ test('Multiple dynamic paths', function() {
     article: State('articles/:slug/:articleId', {}, {
       changeLogs: State('changelogs/:changeLogId', {
         enter: function(params) {
-          equal(params.slug, 'le-roi-est-mort');
-          equal(params.articleId, 127);
-          equal(params.changeLogId, 5);
+          equal(params.slug, 'le-roi-est-mort')
+          equal(params.articleId, 127)
+          equal(params.changeLogId, 5)
         }
       })
     })
-  }).init('articles/le-roi-est-mort/127/changelogs/5');
+  }).init('articles/le-roi-est-mort/127/changelogs/5')
 
-});
+})
 
 
 test('Nested state with pathless parents', function() {
@@ -161,20 +160,20 @@ test('Nested state with pathless parents', function() {
       nature: State('', {}, {
         edit: State('articles/nature/:id/edit', {
           enter: function() {
-            ok(true);
+            ok(true)
           }
         })
       })
     })
 
-  }).init('articles/nature/88/edit');
+  }).init('articles/nature/88/edit')
 
-});
+})
 
 
 test('Missing state with a "notFound" state defined by its fullName', function() {
 
-  var reachedNotFound;
+  var reachedNotFound
 
   var router = Router({
 
@@ -187,26 +186,26 @@ test('Missing state with a "notFound" state defined by its fullName', function()
     }),
 
     iamNotFound: State('404', {
-      enter: function() { reachedNotFound = true; }
+      enter: function() { reachedNotFound = true }
     })
 
   })
   .configure({
     notFound: 'iamNotFound'
   })
-  .init('articles/naturess/88/edit');
+  .init('articles/naturess/88/edit')
 
 
-  ok(reachedNotFound);
+  ok(reachedNotFound)
 
-  router.transitionTo('');
-  reachedNotFound = false;
+  router.transitionTo('')
+  reachedNotFound = false
 
   // Should also work with the reverse routing notation
-  router.transitionTo('articles.naturess.edit', { id: '88' });
+  router.transitionTo('articles.naturess.edit', { id: '88' })
 
-  ok(reachedNotFound);
-});
+  ok(reachedNotFound)
+})
 
 
 test('Missing state without a "notFound" state defined', function() {
@@ -221,18 +220,18 @@ test('Missing state without a "notFound" state defined', function() {
       })
     }),
 
-  }).init('');
+  }).init('')
 
   throws(function() {
-    router.transitionTo('articles/naturess/88/edit');
-  });
+    router.transitionTo('articles/naturess/88/edit')
+  })
 
   // Also work with the reverse routing notation
   throws(function() {
-    router.transitionTo('articles.naturess.edit', { id: '88' });
-  });
+    router.transitionTo('articles.naturess.edit', { id: '88' })
+  })
 
-});
+})
 
 
 test('The router can be built bit by bit', function() {
@@ -241,57 +240,57 @@ test('The router can be built bit by bit', function() {
       router = Router(),
       index = State(''),
       articles = State('articles'),
-      edit = State('edit');
+      edit = State('edit')
 
   edit.enter = function() {
-    reachedArticlesEdit = true;
-  };
+    reachedArticlesEdit = true
+  }
 
-  articles.children.edit = edit;
+  articles.children.edit = edit
 
-  router.addState('index', index);
-  router.addState('articles', articles);
-  router.init('articles.edit');
+  router.addState('index', index)
+  router.addState('articles', articles)
+  router.init('articles.edit')
 
-  ok(reachedArticlesEdit);
-});
+  ok(reachedArticlesEdit)
+})
 
 
 test('Sibling states can not have the same path', function() {
   var router = Router({
     index: State('index'),
     index2: State('index')
-  });
+  })
 
-  throws(function() { router.init('/index'); });
+  throws(function() { router.init('/index') })
 
   var nestedRouter = Router({
     top: State('top', {}, {
       index: State('index'),
       index2: State('index')
     })
-  });
+  })
 
-  throws(function() { nestedRouter.init('top/index'); });
-});
+  throws(function() { nestedRouter.init('top/index') })
+})
 
 
 test('State names must be unique among siblings', function() {
-  var router, root;
+  var router, root
 
-  router = Router();
-  router.addState('root', State());
+  router = Router()
+  router.addState('root', State())
   throws(function() {
-    router.addState('root', State());
-  });
+    router.addState('root', State())
+  })
 
-  root = State();
-  root.children.child = State();
+  root = State()
+  root.children.child = State()
   throws(function() {
-    root.addState('child', State());
-  });
+    root.addState('child', State())
+  })
 
-});
+})
 
 
 test('Ambiguous paths in different states are forbidden', function() {
@@ -303,20 +302,20 @@ test('Ambiguous paths in different states are forbidden', function() {
     oldBooks: State('books', {}, {
       default: State('', {}, {})
     })
-  });
+  })
 
-  throws(function() { router.init('books') });
-});
+  throws(function() { router.init('books') })
+})
 
 
 test('Transitioning to a non leaf state is possible', function() {
-  var events = [];
+  var events = []
 
   function recordEvents(name) {
     return {
-      enter: function() { events.push(name + 'Enter'); },
-      exit: function() { events.push(name + 'Exit'); }
-    };
+      enter: function() { events.push(name + 'Enter') },
+      exit: function() { events.push(name + 'Exit') }
+    }
   }
 
   var router = Router({
@@ -325,238 +324,238 @@ test('Transitioning to a non leaf state is possible', function() {
     articles: State('', recordEvents('articles'), {
       item: State('articles/:id', recordEvents('item'))
     })
-  }).init('index');
+  }).init('index')
 
-  events = [];
-  router.transitionTo('articles');
+  events = []
+  router.transitionTo('articles')
 
-  deepEqual(events, ['indexExit', 'articlesEnter']);
-  events = [];
+  deepEqual(events, ['indexExit', 'articlesEnter'])
+  events = []
 
-  router.transitionTo('articles/33');
+  router.transitionTo('articles/33')
 
-  deepEqual(events, ['itemEnter']);
-});
+  deepEqual(events, ['itemEnter'])
+})
 
 
 test('No transition occurs when going to the same state', function() {
 
-  var events = [];
+  var events = []
   var router = Router({
 
     articles: State('articles/:id', {
-      enter: function() { events.push('articlesEnter'); },
-      exit: function() { events.push('articlesExit'); },
+      enter: function() { events.push('articlesEnter') },
+      exit: function() { events.push('articlesExit') },
     }, {
       today: State('today', {
-        enter: function() { events.push('todayEnter'); },
-        exit: function() { events.push('todayExit'); }
+        enter: function() { events.push('todayEnter') },
+        exit: function() { events.push('todayExit') }
       })
     })
 
-  }).init('articles/33/today');
+  }).init('articles/33/today')
 
-  events = [];
+  events = []
 
-  router.transitionTo('articles/33/today');
-  deepEqual(events, []);
+  router.transitionTo('articles/33/today')
+  deepEqual(events, [])
 
-});
+})
 
 
 test('Param and query changes should trigger a transition', function() {
 
   var events = [],
-      lastArticleId;
+      lastArticleId
 
   var router = Router({
 
     blog: State('blog', {
       enter: function() {
-        events.push('blogEnter');
+        events.push('blogEnter')
       },
 
       exit: function() {
-        events.push('blogExit');
+        events.push('blogExit')
       }
     }, {
 
       articles: State('articles/:id', {
         enter: function(params) {
-          events.push('articlesEnter');
-          lastArticleId = params.id;
+          events.push('articlesEnter')
+          lastArticleId = params.id
         },
 
         exit: function() {
-          events.push('articlesExit');
+          events.push('articlesExit')
         },
       }, {
 
         edit: State('edit', {
           enter: function() {
-            events.push('editEnter');
+            events.push('editEnter')
           },
 
           exit: function() {
-            events.push('editExit');
+            events.push('editExit')
           }
         })
       })
     })
 
-  }).init('blog/articles/33/edit');
+  }).init('blog/articles/33/edit')
 
 
-  events = [];
-  router.transitionTo('blog/articles/44/edit');
+  events = []
+  router.transitionTo('blog/articles/44/edit')
 
   // The transition only goes up to the state owning the param
-  deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
-  events = [];
+  deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter'])
+  events = []
 
-  router.transitionTo('blog/articles/44/edit?filter=1');
+  router.transitionTo('blog/articles/44/edit?filter=1')
 
   // By default, a change in the query will result in a complete transition to the root state and back.
-  deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
-  events = [];
+  deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter'])
+  events = []
 
-  router.transitionTo('blog/articles/44/edit?filter=2');
+  router.transitionTo('blog/articles/44/edit?filter=2')
 
-  deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
-});
+  deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter'])
+})
 
 
 test('Param changes in a leaf state should not trigger a parent transition', function() {
 
   var events = [],
-      lastArticleId;
+      lastArticleId
 
   var router = Router({
 
     blog: State('blog', {
       enter: function() {
-        events.push('blogEnter');
+        events.push('blogEnter')
       },
 
       exit: function() {
-        events.push('blogExit');
+        events.push('blogExit')
       }
     }, {
       articles: State('articles/:id', {
         enter: function(params) {
-          events.push('articlesEnter');
-          lastArticleId = params.id;
+          events.push('articlesEnter')
+          lastArticleId = params.id
         },
 
         exit: function() {
-          events.push('articlesExit');
+          events.push('articlesExit')
         }
 
       })
     })
 
-  }).init('/blog/articles/33');
+  }).init('/blog/articles/33')
 
 
-  events = [];
-  router.transitionTo('/blog/articles/44');
+  events = []
+  router.transitionTo('/blog/articles/44')
 
   // The transition only goes up to the state owning the param
-  deepEqual(events, ['articlesExit', 'articlesEnter']);
-  events = [];
+  deepEqual(events, ['articlesExit', 'articlesEnter'])
+  events = []
 
-  router.transitionTo('/blog/articles/44?filter=1');
+  router.transitionTo('/blog/articles/44?filter=1')
 
   // By default, a change in the query will result in a complete transition to the root state and back.
-  deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter']);
-  events = [];
+  deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter'])
+  events = []
 
-  router.transitionTo('/blog/articles/44?filter=2');
+  router.transitionTo('/blog/articles/44?filter=2')
 
-  deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter']);
-});
+  deepEqual(events, ['articlesExit', 'blogExit', 'blogEnter', 'articlesEnter'])
+})
 
 
 test('Query-only transitions', function() {
 
-  var events = [];
+  var events = []
 
   var router = Router({
 
     blog: State('blog', {
       enter: function() {
-        events.push('blogEnter');
+        events.push('blogEnter')
       },
 
       exit: function() {
-        events.push('blogExit');
+        events.push('blogExit')
       }
     }, {
 
       // articles is the state that owns the filter query param
       articles: State('articles/:id?filter', {
         enter: function() {
-          events.push('articlesEnter');
+          events.push('articlesEnter')
         },
 
         exit: function() {
-          events.push('articlesExit');
+          events.push('articlesExit')
         }
       }, {
 
         edit: State('edit', {
           enter: function() {
-            events.push('editEnter');
+            events.push('editEnter')
           },
 
           exit: function() {
-            events.push('editExit');
+            events.push('editExit')
           }
         })
       })
     })
-  }).init('blog/articles/33/edit');
+  }).init('blog/articles/33/edit')
 
 
-  setSomeUnknownQuery();
-  fullTransitionOccurred();
-  setFilterQuery();
-  onlyExitedUpToStateOwningFilter();
-  swapFilterValue();
-  onlyExitedUpToStateOwningFilter();
-  removeFilterQuery();
-  onlyExitedUpToStateOwningFilter();
+  setSomeUnknownQuery()
+  fullTransitionOccurred()
+  setFilterQuery()
+  onlyExitedUpToStateOwningFilter()
+  swapFilterValue()
+  onlyExitedUpToStateOwningFilter()
+  removeFilterQuery()
+  onlyExitedUpToStateOwningFilter()
 
 
   function setSomeUnknownQuery() {
-    events = [];
-    router.transitionTo('blog/articles/33/edit?someQuery=true');
+    events = []
+    router.transitionTo('blog/articles/33/edit?someQuery=true')
   }
 
   function fullTransitionOccurred() {
-    deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter']);
+    deepEqual(events, ['editExit', 'articlesExit', 'blogExit', 'blogEnter', 'articlesEnter', 'editEnter'])
   }
 
   function setFilterQuery() {
-    events = [];
-    router.transitionTo('blog/articles/33/edit?filter=33');
+    events = []
+    router.transitionTo('blog/articles/33/edit?filter=33')
   }
 
   function onlyExitedUpToStateOwningFilter() {
-    deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter']);
+    deepEqual(events, ['editExit', 'articlesExit', 'articlesEnter', 'editEnter'])
   }
 
   function swapFilterValue() {
-    events = [];
-    router.transitionTo('blog/articles/33/edit?filter=34');
+    events = []
+    router.transitionTo('blog/articles/33/edit?filter=34')
   }
 
   function removeFilterQuery() {
-    events = [];
-    router.transitionTo('blog/articles/33/edit');
+    events = []
+    router.transitionTo('blog/articles/33/edit')
   }
 
-});
+})
 
 
 test('The query string is provided to all states', function() {
@@ -564,33 +563,33 @@ test('The query string is provided to all states', function() {
   Router({
     one: State('one/:one', {
       enter: function(param) {
-        assertions(param.one, 44, param);
+        assertions(param.one, 44, param)
       }
     }, {
 
       two: State('two/:two', {
         enter: function(param) {
-          assertions(param.two, 'bla', param);
+          assertions(param.two, 'bla', param)
         }
       }, {
 
         three: State('three/:three', {
           enter: function(param) {
-            assertions(param.three, 33, param);
+            assertions(param.three, 33, param)
           }
         })
       })
     })
-  }).init('one/44/two/bla/three/33?filter1=123&filter2=456');
+  }).init('one/44/two/bla/three/33?filter1=123&filter2=456')
 
 
   function assertions(param, expectedParam, queryObj) {
-    equal(param, expectedParam);
-    equal(queryObj.filter1, 123);
-    equal(queryObj.filter2, 456);
+    equal(param, expectedParam)
+    equal(queryObj.filter1, 123)
+    equal(queryObj.filter2, 456)
   }
 
-});
+})
 
 
 test('Reverse routing', function() {
@@ -602,15 +601,15 @@ test('Reverse routing', function() {
       two: State(':id/:color')
     })
 
-  }).init('');
+  }).init('')
 
-  var href = router.link('one.two', { id: 33, color: 'dark green', filter: 'a&b', pizza: 123, bla: 55, ble: undefined });
-  equal(href, '/one/33/dark%20green?filter=a%26b&pizza=123');
+  var href = router.link('one.two', { id: 33, color: 'dark green', filter: 'a&b', pizza: 123, bla: 55, ble: undefined })
+  equal(href, '/one/33/dark%20green?filter=a%26b&pizza=123')
 
-  href = router.link('one.two', { id: 33, color: 'dark green' });
+  href = router.link('one.two', { id: 33, color: 'dark green' })
   equal(href, '/one/33/dark%20green')
 
-});
+})
 
 
 test('Reverse routing in hash mode', function() {
@@ -624,116 +623,116 @@ test('Reverse routing in hash mode', function() {
 
   })
   .configure({ urlSync: 'hash', 'hashPrefix': '!' })
-  .init('');
+  .init('')
 
-  var href = router.link('one.two', {id: 33, color: 'dark green', filter: 'a&b', pizza: 123, bla: 55});
-  equal(href, '#!/one/33/dark%20green?filter=a%26b&pizza=123');
+  var href = router.link('one.two', {id: 33, color: 'dark green', filter: 'a&b', pizza: 123, bla: 55})
+  equal(href, '#!/one/33/dark%20green?filter=a%26b&pizza=123')
 
-  href = router.link('one.two', {id: 33, color: 'dark green'});
+  href = router.link('one.two', {id: 33, color: 'dark green'})
   equal(href, '#!/one/33/dark%20green')
 
-});
+})
 
 
 test('params should be decoded automatically', function() {
-  var passedParams;
+  var passedParams
 
   var router = Router({
 
     index: State('index/:id/:filter', { enter: function(params) {
-      passedParams = params;
+      passedParams = params
     }})
 
-  }).init('index/The%20midget%20%40/a%20b%20c');
+  }).init('index/The%20midget%20%40/a%20b%20c')
 
-  equal(passedParams.id, 'The midget @');
-  equal(passedParams.filter, 'a b c');
-});
+  equal(passedParams.id, 'The midget @')
+  equal(passedParams.filter, 'a b c')
+})
 
 
 test('redirect', function() {
-  var oldRouteChildEntered;
-  var oldRouteExited;
-  var newRouteEntered;
+  var oldRouteChildEntered
+  var oldRouteExited
+  var newRouteEntered
 
   var router = Router({
 
     oldRoute: State('oldRoute', {
       enter: function() {
-        router.transitionTo('newRoute');
+        router.transitionTo('newRoute')
       },
-      exit: function() { oldRouteExited = true; }
+      exit: function() { oldRouteExited = true }
     }, {
-      oldRouteChild: State('child', { enter: function() { oldRouteChildEntered = true; } })
+      oldRouteChild: State('child', { enter: function() { oldRouteChildEntered = true } })
     }),
 
-    newRoute: State('newRoute', { enter: function() { newRouteEntered = true; } })
+    newRoute: State('newRoute', { enter: function() { newRouteEntered = true } })
 
-  });
+  })
 
-  router.init('oldRoute.oldRouteChild');
+  router.init('oldRoute.oldRouteChild')
 
-  ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.');
-  ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered');
-  ok(newRouteEntered);
-});
+  ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.')
+  ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered')
+  ok(newRouteEntered)
+})
 
 
 test('Redirecting from transition.started', function() {
 
-  var completedCount = 0;
+  var completedCount = 0
 
   var router = Router({
     index: State(''),
     uno: State('uno', { enter: incrementCompletedCount }),
     dos: State('dos', { enter: incrementCompletedCount })
   })
-  .init('');
+  .init('')
 
   router.on('started', function() {
-    router.on('started', null);
-    router.transitionTo('dos');
-  });
+    router.on('started', null)
+    router.transitionTo('dos')
+  })
 
-  router.transitionTo('uno');
+  router.transitionTo('uno')
 
-  equal(completedCount, 1);
-  equal(router.current().name, 'dos');
+  equal(completedCount, 1)
+  equal(router.current().name, 'dos')
 
   function incrementCompletedCount() {
-    completedCount++;
+    completedCount++
   }
-});
+})
 
 
 test('rest params', function() {
 
-  var lastParams;
+  var lastParams
 
   var router = Router({
     index: State(),
     colors: State('colors/:rest*', { enter: function(params) {
-      lastParams = params;
+      lastParams = params
     }})
-  }).init('');
+  }).init('')
 
 
-  router.transitionTo('colors');
+  router.transitionTo('colors')
 
-  strictEqual(lastParams.rest, undefined);
+  strictEqual(lastParams.rest, undefined)
 
-  router.transitionTo('colors/red');
+  router.transitionTo('colors/red')
 
-  strictEqual(lastParams.rest, 'red');
+  strictEqual(lastParams.rest, 'red')
 
-  router.transitionTo('colors/red/blue');
+  router.transitionTo('colors/red/blue')
 
-  strictEqual(lastParams.rest, 'red/blue');
-});
+  strictEqual(lastParams.rest, 'red/blue')
+})
 
 
 test('backTo', function() {
-  var passedParams;
+  var passedParams
 
   var router = Router({
 
@@ -743,43 +742,43 @@ test('backTo', function() {
 
     cart: State('cart/:mode', { enter: rememberParams })
 
-  }).init('articles/33?filter=66');
+  }).init('articles/33?filter=66')
 
 
-  router.transitionTo('books');
+  router.transitionTo('books')
 
-  passedParams = null;
-  router.backTo('articles', { id: 1 });
+  passedParams = null
+  router.backTo('articles', { id: 1 })
 
-  strictEqual(passedParams.id, '33');
-  strictEqual(passedParams.filter, '66');
+  strictEqual(passedParams.id, '33')
+  strictEqual(passedParams.filter, '66')
 
   // We've never been to cart before, thus the default params we pass should be used
-  router.backTo('cart', { mode: 'default' });
+  router.backTo('cart', { mode: 'default' })
 
-  strictEqual(passedParams.mode, 'default');
+  strictEqual(passedParams.mode, 'default')
 
 
   function rememberParams(params) {
-    passedParams = params;
+    passedParams = params
   }
-});
+})
 
 
 test('update', function() {
-  var events = [];
-  var updateParams;
+  var events = []
+  var updateParams
 
-  var root    = RecordingState('root', '');
-  var news    = RecordingState('news', 'news/:id', root, true);
-  var archive = RecordingState('archive', 'archive', news);
-  var detail  = RecordingState('detail', 'detail', archive, true);
+  var root    = RecordingState('root', '')
+  var news    = RecordingState('news', 'news/:id', root, true)
+  var archive = RecordingState('archive', 'archive', news)
+  var detail  = RecordingState('detail', 'detail', archive, true)
 
 
   var router = Router({
     root: root
   })
-  .init('root.news.archive.detail', { id: 33 });
+  .init('root.news.archive.detail', { id: 33 })
 
 
   deepEqual(events, [
@@ -787,53 +786,53 @@ test('update', function() {
     'newsEnter',
     'archiveEnter',
     'detailEnter'
-  ]);
+  ])
 
-  events = [];
-  updateParams = null;
-  router.transitionTo('root.news.archive.detail', { id: 34 });
+  events = []
+  updateParams = null
+  router.transitionTo('root.news.archive.detail', { id: 34 })
 
   deepEqual(events, [
     'archiveExit',
     'newsUpdate',
     'archiveEnter',
     'detailUpdate'
-  ]);
-  strictEqual(updateParams.id, '34');
+  ])
+  strictEqual(updateParams.id, '34')
 
 
   function RecordingState(name, path, parent, withUpdate) {
     var state = State(path, {
-      enter: function(params) { events.push(name + 'Enter'); },
-      exit: function() { events.push(name + 'Exit'); }
-    });
+      enter: function(params) { events.push(name + 'Enter') },
+      exit: function() { events.push(name + 'Exit') }
+    })
 
     if (withUpdate) state.update = function(params) {
-      events.push(name + 'Update');
-      updateParams = params;
-    };
+      events.push(name + 'Update')
+      updateParams = params
+    }
 
-    if (parent) parent.children[name] = state;
+    if (parent) parent.children[name] = state
 
-    return state;
+    return state
   }
 
-});
+})
 
 
 function stateWithParamsAssertions(stateWithParams) {
   equal(stateWithParams.uri, '/state1/33/misc?filter=true')
-  equal(stateWithParams.name, 'state1Child');
-  equal(stateWithParams.fullName, 'state1.state1Child');
-  equal(stateWithParams.data.dd, 12);
+  equal(stateWithParams.name, 'state1Child')
+  equal(stateWithParams.fullName, 'state1.state1Child')
+  equal(stateWithParams.data.dd, 12)
 
-  ok(stateWithParams.params.id, '33');
-  ok(stateWithParams.params.category, 'misc');
-  ok(stateWithParams.params.filter, true);
+  ok(stateWithParams.params.id, '33')
+  ok(stateWithParams.params.category, 'misc')
+  ok(stateWithParams.params.filter, true)
 
-  ok(stateWithParams.isIn('state1'));
-  ok(stateWithParams.isIn('state1.state1Child'));
-  ok(!stateWithParams.isIn('state2'));
+  ok(stateWithParams.isIn('state1'))
+  ok(stateWithParams.isIn('state1.state1Child'))
+  ok(!stateWithParams.isIn('state2'))
 }
 
 test('event handlers are passed StateWithParams objects', function() {
@@ -845,15 +844,15 @@ test('event handlers are passed StateWithParams objects', function() {
     }),
 
     state2: State('state2/:country/:city')
-  });
+  })
 
   router.on('started', function(newState) {
-    router.on('started', null);
-    stateWithParamsAssertions(newState);
-  });
+    router.on('started', null)
+    stateWithParamsAssertions(newState)
+  })
 
-  router.init('state1/33/misc?filter=true');
-});
+  router.init('state1/33/misc?filter=true')
+})
 
 
 test('router.current and router.previous', function() {
@@ -869,27 +868,27 @@ test('router.current and router.previous', function() {
 
     state2: State('state2/:country/:city')
 
-  });
+  })
 
-  router.init('state1/33/misc?filter=true');
+  router.init('state1/33/misc?filter=true')
 
 
   function assertions() {
-    var state = router.current();
-    stateWithParamsAssertions(state);
+    var state = router.current()
+    stateWithParamsAssertions(state)
 
-    equal(router.previous(), null);
+    equal(router.previous(), null)
 
-    router.transitionTo('state2/england/london');
+    router.transitionTo('state2/england/london')
 
-    var previous = router.previous();
-    equal(previous, state);
-    stateWithParamsAssertions(previous);
+    var previous = router.previous()
+    equal(previous, state)
+    stateWithParamsAssertions(previous)
 
-    equal(router.current().fullName, 'state2');
+    equal(router.current().fullName, 'state2')
   }
 
-});
+})
 
 
 test('router.findState', function() {
@@ -903,7 +902,7 @@ test('router.findState', function() {
       }
     },
     data: { kk: 'aa' }
-  };
+  }
 
   var state2 = {
     uri: 'index',
@@ -915,127 +914,127 @@ test('router.findState', function() {
         uri: 'stats'
       }
     }
-  };
+  }
 
   var router = Router({
     state1: state1,
     state2: state2
   })
-  .init('state1');
+  .init('state1')
 
   function assertStateApi(stateApi, name, fullName, parentFullName, data) {
-    equal(stateApi.name, name);
-    equal(stateApi.fullName, fullName);
-    equal((stateApi.parent && stateApi.parent.fullName), parentFullName);
-    equal(stateApi.data.kk, data);
-    equal(Object.keys(stateApi).length, 4);
+    equal(stateApi.name, name)
+    equal(stateApi.fullName, fullName)
+    equal((stateApi.parent && stateApi.parent.fullName), parentFullName)
+    equal(stateApi.data.kk, data)
+    equal(Object.keys(stateApi).length, 4)
   }
 
-  var state1Api = router.findState(state1);
-  var state1Api2 = router.findState('state1');
-  assertStateApi(state1Api, 'state1', 'state1', undefined, 'aa');
-  equal(state1Api, state1Api2);
+  var state1Api = router.findState(state1)
+  var state1Api2 = router.findState('state1')
+  assertStateApi(state1Api, 'state1', 'state1', undefined, 'aa')
+  equal(state1Api, state1Api2)
 
-  var state1DetailApi = router.findState('state1.detail');
-  assertStateApi(state1DetailApi, 'detail', 'state1.detail', 'state1', 'bb');
+  var state1DetailApi = router.findState('state1.detail')
+  assertStateApi(state1DetailApi, 'detail', 'state1.detail', 'state1', 'bb')
 
-  equal(router.findState('nope'), undefined);
-});
+  equal(router.findState('nope'), undefined)
+})
 
 
 test('urls can contain dots', function() {
 
   Router({
     map: State('map/:lat/:lon', { enter: function(params) {
-      strictEqual(params.lat, '1.5441');
-      strictEqual(params.lon, '0.9986');
+      strictEqual(params.lat, '1.5441')
+      strictEqual(params.lon, '0.9986')
     }})
-  }).init('map/1.5441/0.9986');
+  }).init('map/1.5441/0.9986')
 
-});
+})
 
 
 test('util.normalizePathQuery', function() {
 
   function expect(from, to) {
-    var assertMessage = ('"' + from + '" => "' + to + '"');
-    equal(Abyssa._util.normalizePathQuery(from), to, assertMessage);
+    var assertMessage = ('"' + from + '" => "' + to + '"')
+    equal(Abyssa.util.normalizePathQuery(from), to, assertMessage)
   }
 
   // No slash changes required
-  expect("/", "/");
-  expect("/path", "/path");
-  expect("/path/a/b/c", "/path/a/b/c");
-  expect("/path?query", "/path?query");
-  expect("/path/a/b/c?query", "/path/a/b/c?query");
-  expect("/path/a/b/c?query=///", "/path/a/b/c?query=///");
+  expect("/", "/")
+  expect("/path", "/path")
+  expect("/path/a/b/c", "/path/a/b/c")
+  expect("/path?query", "/path?query")
+  expect("/path/a/b/c?query", "/path/a/b/c?query")
+  expect("/path/a/b/c?query=///", "/path/a/b/c?query=///")
 
   // Slashes are added
-  expect("", "/");
-  expect("path", "/path");
-  expect("path/a/b/c", "/path/a/b/c");
-  expect("path?query", "/path?query");
-  expect("path/a/b/c?query", "/path/a/b/c?query");
-  expect("?query", "/?query");
+  expect("", "/")
+  expect("path", "/path")
+  expect("path/a/b/c", "/path/a/b/c")
+  expect("path?query", "/path?query")
+  expect("path/a/b/c?query", "/path/a/b/c?query")
+  expect("?query", "/?query")
 
   // Slashes are removed
-  expect("//", "/");
-  expect("///", "/");
-  expect("//path", "/path");
-  expect("//path/a/b/c", "/path/a/b/c");
-  expect("//path/", "/path");
-  expect("//path/a/b/c/", "/path/a/b/c");
-  expect("//path//", "/path");
-  expect("//path/a/b/c//", "/path/a/b/c");
-  expect("/path//", "/path");
-  expect("/path/a/b/c//", "/path/a/b/c");
-  expect("//path?query", "/path?query");
-  expect("//path/a/b/c?query", "/path/a/b/c?query");
-  expect("/path/?query", "/path?query");
-  expect("/path/a/b/c/?query", "/path/a/b/c?query");
-  expect("/path//?query", "/path?query");
-  expect("/path/a/b/c//?query", "/path/a/b/c?query");
-});
+  expect("//", "/")
+  expect("///", "/")
+  expect("//path", "/path")
+  expect("//path/a/b/c", "/path/a/b/c")
+  expect("//path/", "/path")
+  expect("//path/a/b/c/", "/path/a/b/c")
+  expect("//path//", "/path")
+  expect("//path/a/b/c//", "/path/a/b/c")
+  expect("/path//", "/path")
+  expect("/path/a/b/c//", "/path/a/b/c")
+  expect("//path?query", "/path?query")
+  expect("//path/a/b/c?query", "/path/a/b/c?query")
+  expect("/path/?query", "/path?query")
+  expect("/path/a/b/c/?query", "/path/a/b/c?query")
+  expect("/path//?query", "/path?query")
+  expect("/path/a/b/c//?query", "/path/a/b/c?query")
+})
 
 
 test('can prevent a transition by navigating to self from the exit handler', function() {
 
-  var events = [];
+  var events = []
 
   var router = Router({
     uno: State('uno', {
-      enter: function() { events.push('unoEnter'); },
-      exit: function() { router.transitionTo('uno'); }
+      enter: function() { events.push('unoEnter') },
+      exit: function() { router.transitionTo('uno') }
     }),
     dos: State('dos', {
-      enter: function() { events.push('dosEnter'); },
-      exit: function() { events.push('dosExit'); }
+      enter: function() { events.push('dosEnter') },
+      exit: function() { events.push('dosExit') }
     })
   })
-  .init('uno');
+  .init('uno')
 
-  router.transitionTo('dos');
+  router.transitionTo('dos')
   // Only the initial event is here.
   // Since the exit was interrupted, there's no reason to re-enter.
-  deepEqual(events, ['unoEnter']);
-  equal(router.current().name, 'uno');
-});
+  deepEqual(events, ['unoEnter'])
+  equal(router.current().name, 'uno')
+})
 
 
 test('to break circular dependencies, the api object can be used instead of the router', function() {
 
-  var router = Abyssa.api;
-  var events = [];
+  var router = Abyssa.api
+  var events = []
 
   Router({
 
     index: {
       enter: function() {
-        events.push('indexEnter');
+        events.push('indexEnter')
       },
 
       exit: function() {
-        events.push('indexExit');
+        events.push('indexExit')
       }
     },
 
@@ -1043,56 +1042,56 @@ test('to break circular dependencies, the api object can be used instead of the 
       uri: 'articles/:id?filter',
 
       enter: function(params) {
-        events.push('articlesEnter');
+        events.push('articlesEnter')
       },
 
       exit: function() {
-        events.push('articlesExit');
+        events.push('articlesExit')
       }
     }
 
-  }).init('');
+  }).init('')
 
-  events = [];
-  router.transitionTo('articles/33');
+  events = []
+  router.transitionTo('articles/33')
 
-  deepEqual(events, ['indexExit', 'articlesEnter']);
-});
+  deepEqual(events, ['indexExit', 'articlesEnter'])
+})
 
 
 test('All state callbacks are passed an accumulator object and the router instance', function() {
 
-  var router = Abyssa.api;
+  var router = Abyssa.api
 
   Router({
 
     articles: {
       uri: 'articles',
       enter: function(params, acc, router) {
-        deepEqual(acc, {});
-        ok(router.link !== undefined);
-        acc.fromParent = 123;
+        deepEqual(acc, {})
+        ok(router.link !== undefined)
+        acc.fromParent = 123
       },
 
       children: {
         detail: {
           uri: ':id',
           enter: function(params, acc) {
-            deepEqual(acc, { fromParent: 123 });
+            deepEqual(acc, { fromParent: 123 })
           }
         }
       }
     }
 
-  }).init('articles/33');
-});
+  }).init('articles/33')
+})
 
 
 test('a custom accumulator object can be passed to all states', function() {
 
-  var myAcc = {};
+  var myAcc = {}
 
-  var router = Abyssa.api;
+  var router = Abyssa.api
 
   Router({
 
@@ -1101,29 +1100,29 @@ test('a custom accumulator object can be passed to all states', function() {
     articles: {
       uri: 'articles',
       enter: function(params, acc) {
-        equal(myAcc, acc);
-        acc.fromParent = 123;
+        equal(myAcc, acc)
+        acc.fromParent = 123
       },
 
       children: {
         detail: {
           uri: ':id',
           enter: function(params, acc) {
-            equal(myAcc, acc);
-            deepEqual(acc, { fromParent: 123 });
+            equal(myAcc, acc)
+            deepEqual(acc, { fromParent: 123 })
           }
         }
       }
     }
 
-  }).init('');
+  }).init('')
 
-  router.transitionTo('articles/33', myAcc);
-});
+  router.transitionTo('articles/33', myAcc)
+})
 
 
 test('The public fullName of a _default_ state is the same as its parent', function() {
-  var router = Abyssa.api;
+  var router = Abyssa.api
 
   Router({
 
@@ -1143,13 +1142,13 @@ test('The public fullName of a _default_ state is the same as its parent', funct
       }
     }
 
-  }).init('articles/33');
+  }).init('articles/33')
 
   // The router is actually at articles.detail._default_ but that should be an implementation detail.
-  equal(router.current().fullName, 'articles.detail');
-});
+  equal(router.current().fullName, 'articles.detail')
+})
 
 
 function stubHistory() {
-  window.history.pushState = function() {};
+  window.history.pushState = function() {}
 }

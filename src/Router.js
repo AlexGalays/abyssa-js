@@ -1,12 +1,9 @@
-
-'use strict';
-
-var interceptAnchors = require('./anchors'),
-    StateWithParams  = require('./StateWithParams'),
-    Transition       = require('./Transition'),
-    util             = require('./util'),
-    State            = require('./State'),
-    api              = require('./api');
+import interceptAnchors from './anchors'
+import StateWithParams from './StateWithParams'
+import Transition from './Transition'
+import * as util from './util'
+import State from './State'
+import api from './api'
 
 /*
 * Create a new Router instance, passing any state defined declaratively.
@@ -16,27 +13,28 @@ var interceptAnchors = require('./anchors'),
 * should be used inside an application.
 */
 function Router(declarativeStates) {
-  var router = {},
-      states = stateTrees(declarativeStates),
-      firstTransition = true,
-      options = {
-        enableLogs: false,
-        interceptAnchors: true,
-        notFound: null,
-        urlSync: 'history',
-        hashPrefix: ''
-      },
-      ignoreNextURLChange = false,
-      currentPathQuery,
-      currentParamsDiff = {},
-      currentState,
-      previousState,
-      transition,
-      leafStates,
-      urlChanged,
-      initialized,
-      hashSlashString,
-      eventCallbacks = {};
+  const router = {}
+  const states = stateTrees(declarativeStates)
+  const options = {
+    enableLogs: false,
+    interceptAnchors: true,
+    notFound: null,
+    urlSync: 'history',
+    hashPrefix: ''
+  }
+  const eventCallbacks = {}
+
+  let firstTransition = true
+  let ignoreNextURLChange = false
+  let currentPathQuery
+  let currentParamsDiff = {}
+  let currentState
+  let previousState
+  let transition
+  let leafStates
+  let urlChanged
+  let initialized
+  let hashSlashString
 
   /*
   * Setting a new state will start a transition from the current state to the target state.
@@ -44,25 +42,25 @@ function Router(declarativeStates) {
   * A failed transition will leave the router in its current state.
   */
   function setState(state, params, acc) {
-    var fromState = transition
+    const fromState = transition
       ? StateWithParams(transition.currentState, transition.toParams)
-      : currentState;
+      : currentState
 
-    var toState = StateWithParams(state, params, currentPathQuery);
-    var diff = util.objectDiff(fromState && fromState.params, params);
+    const toState = StateWithParams(state, params, currentPathQuery)
+    const diff = util.objectDiff(fromState && fromState.params, params)
 
     if (preventTransition(fromState, toState, diff)) {
-      if (transition && transition.exiting) cancelTransition();
-      return;
+      if (transition && transition.exiting) cancelTransition()
+      return
     }
 
-    if (transition) cancelTransition();
+    if (transition) cancelTransition()
 
     // While the transition is running, any code asking the router about the previous/current state should
     // get the end result state.
-    previousState = currentState;
-    currentState = toState;
-    currentParamsDiff = diff;
+    previousState = currentState
+    currentState = toState
+    currentParamsDiff = diff
 
     transition = Transition(
       fromState,
@@ -71,86 +69,86 @@ function Router(declarativeStates) {
       acc,
       router,
       logger
-    );
+    )
 
-    startingTransition(fromState, toState);
+    startingTransition(fromState, toState)
 
     // In case of a redirect() called from 'startingTransition', the transition already ended.
-    if (transition) transition.run();
+    if (transition) transition.run()
 
     // In case of a redirect() called from the transition itself, the transition already ended
     if (transition) {
-      if (transition.cancelled) currentState = fromState;
-      else endingTransition(fromState, toState);
+      if (transition.cancelled) currentState = fromState
+      else endingTransition(fromState, toState)
     }
 
-    transition = null;
+    transition = null
   }
 
   function cancelTransition() {
     logger.log('Cancelling existing transition from {0} to {1}',
-      transition.from, transition.to);
+      transition.from, transition.to)
 
-    transition.cancel();
+    transition.cancel()
 
-    firstTransition = false;
+    firstTransition = false
   }
 
   function startingTransition(fromState, toState) {
-    logger.log('Starting transition from {0} to {1}', fromState, toState);
+    logger.log('Starting transition from {0} to {1}', fromState, toState)
 
-    var from = fromState ? fromState.asPublic : null;
-    var to = toState.asPublic;
+    const from = fromState ? fromState.asPublic : null
+    const to = toState.asPublic
 
-    eventCallbacks.started && eventCallbacks.started(to, from);
+    eventCallbacks.started && eventCallbacks.started(to, from)
   }
 
   function endingTransition(fromState, toState) {
     if (!urlChanged && !firstTransition) {
-      logger.log('Updating URL: {0}', currentPathQuery);
-      updateURLFromState(currentPathQuery, document.title, currentPathQuery);
+      logger.log('Updating URL: {0}', currentPathQuery)
+      updateURLFromState(currentPathQuery, document.title, currentPathQuery)
     }
 
-    firstTransition = false;
+    firstTransition = false
 
-    logger.log('Transition from {0} to {1} ended', fromState, toState);
+    logger.log('Transition from {0} to {1} ended', fromState, toState)
 
-    toState.state.lastParams = toState.params;
+    toState.state.lastParams = toState.params
 
-    var from = fromState ? fromState.asPublic : null;
-    var to = toState.asPublic;
-    eventCallbacks.ended && eventCallbacks.ended(to, from);
+    const from = fromState ? fromState.asPublic : null
+    const to = toState.asPublic
+    eventCallbacks.ended && eventCallbacks.ended(to, from)
   }
 
   function updateURLFromState(state, title, url) {
     if (isHashMode()) {
-      ignoreNextURLChange = true;
-      location.hash = options.hashPrefix + url;
+      ignoreNextURLChange = true
+      location.hash = options.hashPrefix + url
     }
     else
-      history.pushState(state, title, url);
+      history.pushState(state, title, url)
   }
 
   /*
-  * Return whether the passed state is the same as the current one;
+  * Return whether the passed state is the same as the current one
   * in which case the router can ignore the change.
   */
   function preventTransition(current, newState, diff) {
-    if (!current) return false;
+    if (!current) return false
 
-    return (newState.state == current.state) && (Object.keys(diff.all).length == 0);
+    return (newState.state == current.state) && (Object.keys(diff.all).length == 0)
   }
 
   /*
-  * The state wasn't found;
+  * The state wasn't found
   * Transition to the 'notFound' state if the developer specified it or else throw an error.
   */
   function notFound(state) {
-    logger.log('State not found: {0}', state);
+    logger.log('State not found: {0}', state)
 
     if (options.notFound)
-      return setState(leafStates[options.notFound], {});
-    else throw new Error ('State "' + state + '" could not be found');
+      return setState(leafStates[options.notFound], {})
+    else throw new Error ('State "' + state + '" could not be found')
   }
 
   /*
@@ -163,8 +161,8 @@ function Router(declarativeStates) {
   *   hashPrefix: Customize the hash separator. Set to '!' in order to have a hashbang like '/#!/'. Defaults to empty string.
   */
   function configure(withOptions) {
-    util.mergeObjects(options, withOptions);
-    return router;
+    util.mergeObjects(options, withOptions)
+    return router
   }
 
   /*
@@ -175,27 +173,27 @@ function Router(declarativeStates) {
   */
   function init(initState, initParams) {
     if (options.enableLogs || Router.log)
-      Router.enableLogs();
+      Router.enableLogs()
 
     if (options.interceptAnchors)
-      interceptAnchors(router);
+      interceptAnchors(router)
 
-    hashSlashString = '#' + options.hashPrefix + '/';
+    hashSlashString = '#' + options.hashPrefix + '/'
 
-    logger.log('Router init');
+    logger.log('Router init')
 
-    initStates();
-    logStateTree();
+    initStates()
+    logStateTree()
 
-    initState = (initState !== undefined) ? initState : urlPathQuery();
+    initState = (initState !== undefined) ? initState : urlPathQuery()
 
-    logger.log('Initializing to state {0}', initState || '""');
-    transitionTo(initState, initParams);
+    logger.log('Initializing to state {0}', initState || '""')
+    transitionTo(initState, initParams)
 
-    listenToURLChanges();
+    listenToURLChanges()
 
-    initialized = true;
-    return router;
+    initialized = true
+    return router
   }
 
   /*
@@ -203,102 +201,102 @@ function Router(declarativeStates) {
   * Used for testing purposes.
   */
   function terminate() {
-    window.onhashchange = null;
-    window.onpopstate = null;
+    window.onhashchange = null
+    window.onpopstate = null
   }
 
   function listenToURLChanges() {
 
     function onURLChange(evt) {
       if (ignoreNextURLChange) {
-        ignoreNextURLChange = false;
-        return;
+        ignoreNextURLChange = false
+        return
       }
 
-      var newState = evt.state || urlPathQuery();
+      const newState = evt.state || urlPathQuery()
 
-      logger.log('URL changed: {0}', newState);
-      urlChanged = true;
-      setStateForPathQuery(newState);
+      logger.log('URL changed: {0}', newState)
+      urlChanged = true
+      setStateForPathQuery(newState)
     }
 
-    window[isHashMode() ? 'onhashchange' : 'onpopstate'] = onURLChange;
+    window[isHashMode() ? 'onhashchange' : 'onpopstate'] = onURLChange
   }
 
   function initStates() {
-    var stateArray = util.objectToArray(states);
+    const stateArray = util.objectToArray(states)
 
-    addDefaultStates(stateArray);
+    addDefaultStates(stateArray)
 
     eachRootState((name, state) => {
-      state.init(router, name);
-    });
+      state.init(router, name)
+    })
 
-    assertPathUniqueness(stateArray);
+    assertPathUniqueness(stateArray)
 
-    leafStates = registerLeafStates(stateArray, {});
+    leafStates = registerLeafStates(stateArray, {})
 
-    assertNoAmbiguousPaths();
+    assertNoAmbiguousPaths()
   }
 
   function assertPathUniqueness(states) {
-    var paths = {};
+    const paths = {}
 
     states.forEach(state => {
       if (paths[state.path]) {
-        var fullPaths = states.map(function(s) { return s.fullPath() || 'empty' });
-        throw new Error('Two sibling states have the same path (' + fullPaths + ')');
+        const fullPaths = states.map(s => s.fullPath() || 'empty')
+        throw new Error('Two sibling states have the same path (' + fullPaths + ')')
       }
 
-      paths[state.path] = 1;
-      assertPathUniqueness(state.children);
-    });
+      paths[state.path] = 1
+      assertPathUniqueness(state.children)
+    })
   }
 
   function assertNoAmbiguousPaths() {
-    var paths = {};
+    const paths = {}
 
     for (var name in leafStates) {
-      var path = util.normalizePathQuery(leafStates[name].fullPath());
-      if (paths[path]) throw new Error('Ambiguous state paths: ' + path);
-      paths[path] = 1;
+      const path = util.normalizePathQuery(leafStates[name].fullPath())
+      if (paths[path]) throw new Error('Ambiguous state paths: ' + path)
+      paths[path] = 1
     }
   }
 
   function addDefaultStates(states) {
     states.forEach(state => {
-      var children = util.objectToArray(state.states);
+      var children = util.objectToArray(state.states)
 
       // This is a parent state: Add a default state to it if there isn't already one
       if (children.length) {
-        addDefaultStates(children);
+        addDefaultStates(children)
 
         var hasDefaultState = children.reduce((result, state) => {
-          return state.path == '' || result;
-        }, false);
+          return state.path == '' || result
+        }, false)
 
-        if (hasDefaultState) return;
+        if (hasDefaultState) return
 
-        var defaultState = State({ uri: '' });
-        state.states._default_ = defaultState;
+        var defaultState = State({ uri: '' })
+        state.states._default_ = defaultState
       }
-    });
+    })
   }
 
   function eachRootState(callback) {
-    for (var name in states) callback(name, states[name]);
+    for (let name in states) callback(name, states[name])
   }
 
   function registerLeafStates(states, leafStates) {
     return states.reduce((leafStates, state) => {
       if (state.children.length)
-        return registerLeafStates(state.children, leafStates);
+        return registerLeafStates(state.children, leafStates)
       else {
-        leafStates[state.fullName] = state;
-        state.paths = util.parsePaths(state.fullPath());
-        return leafStates;
+        leafStates[state.fullName] = state
+        state.paths = util.parsePaths(state.fullPath())
+        return leafStates
       }
-    }, leafStates);
+    }, leafStates)
   }
 
   /*
@@ -309,18 +307,18 @@ function Router(declarativeStates) {
   * transitionTo('target/33?filter=desc')
   */
   function transitionTo(pathQueryOrName) {
-    var name = leafStates[pathQueryOrName];
-    var params = (name ? arguments[1] : null) || {};
-    var acc = name ? arguments[2] : arguments[1];
+    const name = leafStates[pathQueryOrName]
+    const params = (name ? arguments[1] : null) || {}
+    const acc = name ? arguments[2] : arguments[1]
 
-    logger.log('Changing state to {0}', pathQueryOrName || '""');
+    logger.log('Changing state to {0}', pathQueryOrName || '""')
 
-    urlChanged = false;
+    urlChanged = false
 
     if (name)
-      setStateByName(name, params, acc);
+      setStateByName(name, params, acc)
     else
-      setStateForPathQuery(pathQueryOrName, acc);
+      setStateForPathQuery(pathQueryOrName, acc)
   }
 
   /*
@@ -328,13 +326,13 @@ function Router(declarativeStates) {
    * The state is NOT exited/re-entered.
    */
   function replaceParams(newParams) {
-    if (!currentState) return;
+    if (!currentState) return
 
-    const newUri = router.link(currentState.state.fullName, newParams);
+    const newUri = router.link(currentState.state.fullName, newParams)
 
-    currentState = StateWithParams(currentState.state, newParams, newUri);
+    currentState = StateWithParams(currentState.state, newParams, newUri)
 
-    history.replaceState(newUri, document.title, newUri);
+    history.replaceState(newUri, document.title, newUri)
   }
 
   /*
@@ -342,43 +340,43 @@ function Router(declarativeStates) {
   * fallback to the defaultParams parameter if the state was never entered.
   */
   function backTo(stateName, defaultParams, acc) {
-    var params = leafStates[stateName].lastParams || defaultParams;
-    transitionTo(stateName, params, acc);
+    const params = leafStates[stateName].lastParams || defaultParams
+    transitionTo(stateName, params, acc)
   }
 
   function setStateForPathQuery(pathQuery, acc) {
-    var state, params, _state, _params;
+    let state, params, _state, _params
 
-    currentPathQuery = util.normalizePathQuery(pathQuery);
+    currentPathQuery = util.normalizePathQuery(pathQuery)
 
-    var pq = currentPathQuery.split('?');
-    var path = pq[0];
-    var query = pq[1];
-    var paths = util.parsePaths(path);
-    var queryParams = util.parseQueryParams(query);
+    const pq = currentPathQuery.split('?')
+    const path = pq[0]
+    const query = pq[1]
+    const paths = util.parsePaths(path)
+    const queryParams = util.parseQueryParams(query)
 
     for (var name in leafStates) {
-      _state = leafStates[name];
-      _params = _state.matches(paths);
+      _state = leafStates[name]
+      _params = _state.matches(paths)
 
       if (_params) {
-        state = _state;
-        params = util.mergeObjects(_params, queryParams);
-        break;
+        state = _state
+        params = util.mergeObjects(_params, queryParams)
+        break
       }
     }
 
-    if (state) setState(state, params, acc);
-    else notFound(currentPathQuery);
+    if (state) setState(state, params, acc)
+    else notFound(currentPathQuery)
   }
 
   function setStateByName(name, params, acc) {
-    var state = leafStates[name];
+    const state = leafStates[name]
 
-    if (!state) return notFound(name);
+    if (!state) return notFound(name)
 
-    var pathQuery = interpolate(state, params);
-    setStateForPathQuery(pathQuery, acc);
+    const pathQuery = interpolate(state, params)
+    setStateForPathQuery(pathQuery, acc)
   }
 
   /*
@@ -387,39 +385,39 @@ function Router(declarativeStates) {
   */
   function addState(name, state) {
     if (states[name])
-      throw new Error('A state already exist in the router with the name ' + name);
+      throw new Error('A state already exist in the router with the name ' + name)
 
-    state = stateTree(state);
+    state = stateTree(state)
 
-    states[name] = state;
+    states[name] = state
 
     if (initialized) {
-      state.init(router, name);
-      registerLeafStates({ _: state });
+      state.init(router, name)
+      registerLeafStates({ _: state })
     }
 
-    return router;
+    return router
   }
 
   /*
   * Read the path/query from the URL.
   */
   function urlPathQuery() {
-    var hashSlash = location.href.indexOf(hashSlashString);
-    var pathQuery;
+    const hashSlash = location.href.indexOf(hashSlashString)
+    let pathQuery
 
     if (hashSlash > -1)
-      pathQuery = location.href.slice(hashSlash + hashSlashString.length);
+      pathQuery = location.href.slice(hashSlash + hashSlashString.length)
     else if (isHashMode())
-      pathQuery = '/';
+      pathQuery = '/'
     else
-      pathQuery = (location.pathname + location.search).slice(1);
+      pathQuery = (location.pathname + location.search).slice(1)
 
-    return util.normalizePathQuery(pathQuery);
+    return util.normalizePathQuery(pathQuery)
   }
 
   function isHashMode() {
-    return options.urlSync == 'hash';
+    return options.urlSync == 'hash'
   }
 
   /*
@@ -427,33 +425,33 @@ function Router(declarativeStates) {
   * from a state name and a list of params, a.k.a reverse routing.
   */
   function link(stateName, params) {
-    var state = leafStates[stateName];
-    if (!state) throw new Error('Cannot find state ' + stateName);
+    const state = leafStates[stateName]
+    if (!state) throw new Error('Cannot find state ' + stateName)
 
-    var interpolated = interpolate(state, params);
-    var uri = util.normalizePathQuery(interpolated);
+    const interpolated = interpolate(state, params)
+    const uri = util.normalizePathQuery(interpolated)
 
     return isHashMode()
       ? '#' + options.hashPrefix + uri
-      : uri;
+      : uri
   }
 
   function interpolate(state, params) {
-    var encodedParams = {};
+    const encodedParams = {}
 
-    for (var key in params) {
+    for (let key in params) {
       if (params[key] !== undefined)
-        encodedParams[key] = encodeURIComponent(params[key]);
+        encodedParams[key] = encodeURIComponent(params[key])
     }
 
-    return state.interpolate(encodedParams);
+    return state.interpolate(encodedParams)
   }
 
   /*
   * Returns an object representing the current state of the router.
   */
   function getCurrent() {
-    return currentState && currentState.asPublic;
+    return currentState && currentState.asPublic
   }
 
   /*
@@ -461,24 +459,24 @@ function Router(declarativeStates) {
   * or null if the router is still in its initial state.
   */
   function getPrevious() {
-    return previousState && previousState.asPublic;
+    return previousState && previousState.asPublic
   }
 
   /*
   * Returns the diff between the current params and the previous ones.
   */
   function getParamsDiff() {
-    return currentParamsDiff;
+    return currentParamsDiff
   }
 
   function allStatesRec(states, acc) {
-    acc.push.apply(acc, states);
-    states.forEach(state => allStatesRec(state.children, acc));
-    return acc;
+    acc.push.apply(acc, states)
+    states.forEach(state => allStatesRec(state.children, acc))
+    return acc
   }
 
   function allStates() {
-    return allStatesRec(util.objectToArray(states), []);
+    return allStatesRec(util.objectToArray(states), [])
   }
 
   /*
@@ -488,110 +486,110 @@ function Router(declarativeStates) {
   function findState(by) {
     const filterFn = (typeof by === 'object')
       ? state => by === state.options
-      : state => by === state.fullName;
+      : state => by === state.fullName
 
-    const state = allStates().filter(filterFn)[0];
-    return state && state.asPublic;
+    const state = allStates().filter(filterFn)[0]
+    return state && state.asPublic
   }
 
   /*
   * Returns whether the router is executing its first transition.
   */
   function isFirstTransition() {
-    return previousState == null;
+    return previousState == null
   }
 
   function on(eventName, cb) {
     eventCallbacks[eventName] = cb
-    return router;
+    return router
   }
 
   function stateTrees(states) {
-    return util.mapValues(states, stateTree);
+    return util.mapValues(states, stateTree)
   }
 
   /*
   * Creates an internal State object from a specification POJO.
   */
   function stateTree(state) {
-    if (state.children) state.children = stateTrees(state.children);
-    return State(state);
+    if (state.children) state.children = stateTrees(state.children)
+    return State(state)
   }
 
   function logStateTree() {
-    if (!logger.enabled) return;
+    if (!logger.enabled) return
 
-    var indent = function(level) {
-      if (level == 0) return '';
-      return new Array(2 + (level - 1) * 4).join(' ') + '── ';
+    function indent(level) {
+      if (level == 0) return ''
+      return new Array(2 + (level - 1) * 4).join(' ') + '── '
     }
 
-    var stateTree = function(state) {
-      var path = util.normalizePathQuery(state.fullPath());
-      var pathStr = (state.children.length == 0)
+    const stateTree = function(state) {
+      const path = util.normalizePathQuery(state.fullPath())
+      const pathStr = (state.children.length == 0)
         ? ' (@ path)'.replace('path', path)
-        : '';
-      var str = indent(state.parents.length) + state.name + pathStr + '\n';
-      return str + state.children.map(stateTree).join('');
+        : ''
+      const str = indent(state.parents.length) + state.name + pathStr + '\n'
+      return str + state.children.map(stateTree).join('')
     }
 
-    var msg = '\nState tree\n\n';
-    msg += util.objectToArray(states).map(stateTree).join('');
-    msg += '\n';
+    let msg = '\nState tree\n\n'
+    msg += util.objectToArray(states).map(stateTree).join('')
+    msg += '\n'
 
-    logger.log(msg);
+    logger.log(msg)
   }
 
 
   // Public methods
 
-  router.configure = configure;
-  router.init = init;
-  router.transitionTo = transitionTo;
-  router.replaceParams = replaceParams;
-  router.backTo = backTo;
-  router.addState = addState;
-  router.link = link;
-  router.current = getCurrent;
-  router.previous = getPrevious;
-  router.findState = findState;
-  router.isFirstTransition = isFirstTransition;
-  router.paramsDiff = getParamsDiff;
-  router.options = options;
-  router.on = on;
+  router.configure = configure
+  router.init = init
+  router.transitionTo = transitionTo
+  router.replaceParams = replaceParams
+  router.backTo = backTo
+  router.addState = addState
+  router.link = link
+  router.current = getCurrent
+  router.previous = getPrevious
+  router.findState = findState
+  router.isFirstTransition = isFirstTransition
+  router.paramsDiff = getParamsDiff
+  router.options = options
+  router.on = on
 
   // Used for testing purposes only
-  router.urlPathQuery = urlPathQuery;
-  router.terminate = terminate;
+  router.urlPathQuery = urlPathQuery
+  router.terminate = terminate
 
-  util.mergeObjects(api, router);
+  util.mergeObjects(api, router)
 
-  return router;
+  return router
 }
 
 
 // Logging
 
-var logger = {
+const logger = {
   log: util.noop,
   error: util.noop,
   enabled: false
-};
+}
 
 Router.enableLogs = function() {
-  logger.enabled = true;
+  logger.enabled = true
 
   logger.log = function(...args) {
-    var message = util.makeMessage.apply(null, args);
-    console.log(message);
-  };
+    const message = util.makeMessage.apply(null, args)
+    console.log(message)
+  }
 
   logger.error = function(...args) {
-    var message = util.makeMessage.apply(null, args);
-    console.error(message);
-  };
+    const message = util.makeMessage.apply(null, args)
+    console.error(message)
+  }
 
-};
+}
 
 
-module.exports = Router;
+export default Router
