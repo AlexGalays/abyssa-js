@@ -175,6 +175,7 @@ Returns whether the router is executing its first transition.
 
 ### replaceParams(params: Object): void
 Replaces the current state's params in the history with new params.  
+Note: `replaceParams` only works with `urlSync` = `history`.  
 The state is NOT exited/re-entered. That means you must store this params state outside the router to know
 what to render. This functionality is useful when some url changes shouldn't re-render the whole application, nor create a separate entry in the browser history. (ex: scroll position, active filters, whether a popup is visible)
 
