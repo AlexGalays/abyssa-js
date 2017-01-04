@@ -558,6 +558,40 @@ test('Query-only transitions', function() {
 })
 
 
+test('Updating both a parent param and navigating to a different child state', function() {
+  var events = []
+  var router = Router({
+
+    articles: State('articles/:id', {
+      enter: function() {
+        events.push('articlesEnter')
+      },
+
+      exit: function() {
+        events.push('articlesExit')
+      }
+    }, {
+
+      edit: State('edit', {
+        enter: function() {
+          events.push('editEnter')
+        },
+
+        exit: function() {
+          events.push('editExit')
+        }
+      })
+    })
+  }).init('articles/33')
+
+  events = []
+
+  router.transitionTo('articles/88/edit')
+
+  deepEqual(events, ['articlesExit', 'articlesEnter', 'editEnter'])
+})
+
+
 test('The query string is provided to all states', function() {
 
   Router({

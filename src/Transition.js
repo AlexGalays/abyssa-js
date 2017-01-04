@@ -2,7 +2,7 @@
 * Create a new Transition instance.
 */
 function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, router, logger) {
-  let root
+  let root = { root: null, inclusive: true }
   let enters
   let exits
 
@@ -15,19 +15,18 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, rou
     from: fromState,
     to: toState,
     toParams: params,
-    cancel: cancel,
+    cancel,
+    run,
     cancelled: false,
-    currentState: fromState,
-    run: run
+    currentState: fromState
   }
 
   // The first transition has no fromState.
   if (fromState)
     root = transitionRoot(fromState, toState, isUpdate, paramsDiff)
 
-  const inclusive = !root || isUpdate
-  exits = fromState ? transitionStates(fromState, root, inclusive) : []
-  enters = transitionStates(toState, root, inclusive).reverse()
+  exits = fromState ? transitionStates(fromState, root) : []
+  enters = transitionStates(toState, root).reverse()
 
   function run() {
     startTransition(enters, exits, params, transition, isUpdate, acc, router, logger)
@@ -74,40 +73,45 @@ function runStep(state, stepFn, params, transition, acc, router, logger) {
 }
 
 /*
-* The top-most current state's parent that must be exited.
+* The top-most fromState's parent that must be exited
+* or undefined if the two states are in distinct branches of the tree.
 */
 function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
-  let root
+  let closestCommonParent
 
-  // For a param-only change, the root is the top-most state owning the param(s),
-  if (isUpdate) {
-    [fromState].concat(fromState.parents).reverse().forEach(parent => {
-      if (root) return
+  const parents = [fromState].concat(fromState.parents).reverse()
 
-      for (let param in paramsDiff.all) {
-        if (parent.params[param] || parent.queryParams[param]) {
-          root = parent
-          break
-        }
-      }
-    })
-  }
-  // Else, the root is the closest common parent of the two states.
-  else {
-    let parent
-    for (var i = 0; i < fromState.parents.length; i++) {
-      parent = fromState.parents[i]
+  // Find the closest common parent of the from/to states, if any.
+  if (!isUpdate) {
+    for (let i = 0; i < fromState.parents.length; i++) {
+      const parent = fromState.parents[i]
+
       if (toState.parents.indexOf(parent) > -1) {
-        root = parent
+        closestCommonParent = parent
         break
       }
     }
   }
 
-  return root
+  // Find the top-most parent owning some updated param(s) or bail if we first reach the closestCommonParent
+  for (let i = 0; i < parents.length; i++) {
+    const parent = parents[i]
+
+    for (let param in paramsDiff.all) {
+      if (parent.params[param] || parent.queryParams[param])
+        return { root: parent, inclusive: true }
+    }
+
+    if (parent === closestCommonParent)
+      return { root: closestCommonParent, inclusive: false }
+  }
+
+  return closestCommonParent
+    ? { root: closestCommonParent, inclusive: false }
+    : { inclusive: true }
 }
 
-function transitionStates(state, root, inclusive) {
+function transitionStates(state, { root, inclusive }) {
   root = root || state.root
 
   const p = state.parents
