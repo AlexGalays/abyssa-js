@@ -6,16 +6,16 @@
 *
 * This is an internal model The public model is the asPublic property.
 */
-export default function StateWithParams(state, params, pathQuery) {
+export default function StateWithParams(state, params, pathQuery, diff) {
   return {
     state,
     params,
     toString,
-    asPublic: makePublicAPI(state, params, pathQuery)
+    asPublic: makePublicAPI(state, params, pathQuery, diff)
   }
 }
 
-function makePublicAPI(state, params, pathQuery) {
+function makePublicAPI(state, params, pathQuery, paramsDiff) {
 
   /*
   * Returns whether this state or any of its parents has the given fullName.
@@ -32,10 +32,11 @@ function makePublicAPI(state, params, pathQuery) {
   return {
     uri: pathQuery,
     params,
+    paramsDiff,
     name: state ? state.name : '',
     fullName: state ? state.fullName : '',
     data: state ? state.data : {},
-    isIn,
+    isIn
   }
 }
 

@@ -860,9 +860,12 @@ function stateWithParamsAssertions(stateWithParams) {
   equal(stateWithParams.fullName, 'state1.state1Child')
   equal(stateWithParams.data.dd, 12)
 
-  ok(stateWithParams.params.id, '33')
-  ok(stateWithParams.params.category, 'misc')
-  ok(stateWithParams.params.filter, true)
+  equal(stateWithParams.params.id, '33')
+  equal(stateWithParams.params.category, 'misc')
+  equal(stateWithParams.params.filter, 'true')
+
+  equal(stateWithParams.paramsDiff.enter.filter, true)
+  equal(stateWithParams.paramsDiff.all.filter, true)
 
   ok(stateWithParams.isIn('state1'))
   ok(stateWithParams.isIn('state1.state1Child'))

@@ -46,8 +46,9 @@ function Router(declarativeStates) {
       ? StateWithParams(transition.currentState, transition.toParams)
       : currentState
 
-    const toState = StateWithParams(state, params, currentPathQuery)
     const diff = util.objectDiff(fromState && fromState.params, params)
+
+    const toState = StateWithParams(state, params, currentPathQuery, diff)
 
     if (preventTransition(fromState, toState, diff)) {
       if (transition && transition.exiting) cancelTransition()
