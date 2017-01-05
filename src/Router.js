@@ -392,9 +392,10 @@ function Router(declarativeStates) {
 
     states[name] = state
 
+    // The router is already initialized: Hot patch this state in.
     if (initialized) {
       state.init(router, name)
-      registerLeafStates({ _: state })
+      registerLeafStates([state], leafStates)
     }
 
     return router

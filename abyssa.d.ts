@@ -3,12 +3,12 @@ type Obj<T> = { [key: string]: T }
 
 interface RouterCommon {
   on(eventName: 'started' | 'ended', handler?: (currentState: CurrentStateWithParams, previousState?: StateWithParams) => void): this
+  addState(name: string, state: State): this
 }
 
 /* The router API while it's still in its builder phase */
 interface Router extends RouterCommon {
   configure(options: ConfigOptions): this
-  addState(name: string, state: State): this
   init(initState?: string, initParams?: Object): RouterAPI
 }
 

@@ -256,6 +256,23 @@ test('The router can be built bit by bit', function() {
 })
 
 
+test('More states can be added after router initialization', function() {
+  var router = Router({
+    index: State('')
+  })
+
+  router.init('')
+
+  router.addState('articles', State('articles/:id', {}, {
+    detail: State('detail')
+  }))
+
+  router.transitionTo('articles.detail', { id: '33' })
+
+  equal(router.current().fullName, 'articles.detail')
+})
+
+
 test('Sibling states can not have the same path', function() {
   var router = Router({
     index: State('index'),
