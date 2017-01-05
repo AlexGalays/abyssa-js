@@ -721,7 +721,11 @@ test('redirect', function() {
 
   })
 
+  pushedStates.length = 0
+
   router.init('oldRoute.oldRouteChild')
+
+  equal(pushedStates.length, 1, 'A redirection should push a single history entry')
 
   ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.')
   ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered')
@@ -1203,6 +1207,13 @@ test('The public fullName of a _default_ state is the same as its parent', funct
 })
 
 
+const pushedStates = []
 function stubHistory() {
-  window.history.pushState = function() {}
+  window.history.pushState = function(state, title, url) {
+    pushedStates.push({
+      state: state,
+      title: title,
+      url: url
+    })
+  }
 }
