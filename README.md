@@ -129,7 +129,7 @@ The available options are:
 ### init (initState: String, initParams: Object): Router
 Initialize the router.  
 The router will immediately initiate a transition to, in order of priority:  
-1) The init state passed as an argument (useful for testing and debugging)  
+1) The init state passed as an argument (mostly useful for testing and debugging)  
 2) The state captured by the current URL  
 
 ### addState (name: String, state: Object): Router
@@ -201,6 +201,8 @@ var diff = router.paramsDiff();
   }
 }
 ```
+
+The paramsDiff is also accessible from the current state.  
 
 ### Events
 
