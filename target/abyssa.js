@@ -1062,6 +1062,7 @@ function anchorTarget(target) {
 function isLocalLink(anchor) {
   var hostname = anchor.hostname;
   var port = anchor.port;
+  var protocol = anchor.protocol;
 
   // IE10 can lose the hostname/port property when setting a relative href from JS
   if (!hostname) {
@@ -1069,10 +1070,13 @@ function isLocalLink(anchor) {
     tempAnchor.href = anchor.href;
     hostname = tempAnchor.hostname;
     port = tempAnchor.port;
+    protocol = tempAnchor.protocol;
   }
 
+  var defaultPort = protocol.split(':')[0] === 'https' ? '443' : '80';
+
   var sameHostname = hostname == location.hostname;
-  var samePort = (port || '80') == (location.port || '80');
+  var samePort = (port || defaultPort) == (location.port || defaultPort);
 
   return sameHostname && samePort;
 }
