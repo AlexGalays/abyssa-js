@@ -5,6 +5,15 @@ import * as util from './util'
 import State from './State'
 import api from './api'
 
+
+const defaultOptions = {
+  enableLogs: false,
+  interceptAnchors: true,
+  notFound: null,
+  urlSync: 'history',
+  hashPrefix: ''
+}
+
 /*
 * Create a new Router instance, passing any state defined declaratively.
 * More states can be added using addState().
@@ -15,15 +24,9 @@ import api from './api'
 function Router(declarativeStates) {
   const router = {}
   const states = stateTrees(declarativeStates)
-  const options = {
-    enableLogs: false,
-    interceptAnchors: true,
-    notFound: null,
-    urlSync: 'history',
-    hashPrefix: ''
-  }
   const eventCallbacks = {}
 
+  let options = util.copyObject(defaultOptions)
   let firstTransition = true
   let ignoreNextURLChange = false
   let currentPathQuery
@@ -199,11 +202,14 @@ function Router(declarativeStates) {
 
   /*
   * Remove any possibility of side effect this router instance might cause.
-  * Used for testing purposes.
+  * Used for testing purposes where we keep reusing the same router instance.
   */
   function terminate() {
     window.onhashchange = null
     window.onpopstate = null
+    options = util.copyObject(defaultOptions)
+    logger.enabled = false
+    logger.log = logger.error = util.noop
   }
 
   function listenToURLChanges() {

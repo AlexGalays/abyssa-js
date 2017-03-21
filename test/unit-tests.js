@@ -5,6 +5,10 @@ State  = Abyssa.State
 //Router.enableLogs()
 stubHistory()
 
+QUnit.testDone(function() {
+  Abyssa.api.terminate()
+})
+
 
 test('Simple states', function() {
 

@@ -22,6 +22,7 @@
     "browserify": "10.2.4",
     "babelify": "7.2.0",
     "babel-cli": "6.4.5",
+    "babel-preset-es2015": "6.24.0",
     "babel-preset-es2015-loose": "7.0.0",
     "grunt": "0.4.5",
     "grunt-cli": "0.1.11",
