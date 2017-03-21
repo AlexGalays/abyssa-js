@@ -3,7 +3,7 @@
 
 exports.__esModule = true;
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var _anchors = require('./anchors');
 
@@ -33,6 +33,14 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var defaultOptions = {
+  enableLogs: false,
+  interceptAnchors: true,
+  notFound: null,
+  urlSync: 'history',
+  hashPrefix: ''
+};
+
 /*
 * Create a new Router instance, passing any state defined declaratively.
 * More states can be added using addState().
@@ -43,26 +51,20 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function Router(declarativeStates) {
   var router = {};
   var states = stateTrees(declarativeStates);
-  var options = {
-    enableLogs: false,
-    interceptAnchors: true,
-    notFound: null,
-    urlSync: 'history',
-    hashPrefix: ''
-  };
   var eventCallbacks = {};
 
+  var options = util.copyObject(defaultOptions);
   var firstTransition = true;
   var ignoreNextURLChange = false;
-  var currentPathQuery = undefined;
+  var currentPathQuery = void 0;
   var currentParamsDiff = {};
-  var currentState = undefined;
-  var previousState = undefined;
-  var transition = undefined;
-  var leafStates = undefined;
-  var urlChanged = undefined;
-  var initialized = undefined;
-  var hashSlashString = undefined;
+  var currentState = void 0;
+  var previousState = void 0;
+  var transition = void 0;
+  var leafStates = void 0;
+  var urlChanged = void 0;
+  var initialized = void 0;
+  var hashSlashString = void 0;
 
   /*
   * Setting a new state will start a transition from the current state to the target state.
@@ -210,11 +212,14 @@ function Router(declarativeStates) {
 
   /*
   * Remove any possibility of side effect this router instance might cause.
-  * Used for testing purposes.
+  * Used for testing purposes where we keep reusing the same router instance.
   */
   function terminate() {
     window.onhashchange = null;
     window.onpopstate = null;
+    options = util.copyObject(defaultOptions);
+    logger.enabled = false;
+    logger.log = logger.error = util.noop;
   }
 
   function listenToURLChanges() {
@@ -356,10 +361,10 @@ function Router(declarativeStates) {
   }
 
   function setStateForPathQuery(pathQuery, acc) {
-    var state = undefined,
-        params = undefined,
-        _state = undefined,
-        _params = undefined;
+    var state = void 0,
+        params = void 0,
+        _state = void 0,
+        _params = void 0;
 
     currentPathQuery = util.normalizePathQuery(pathQuery);
 
@@ -417,7 +422,7 @@ function Router(declarativeStates) {
   */
   function urlPathQuery() {
     var hashSlash = location.href.indexOf(hashSlashString);
-    var pathQuery = undefined;
+    var pathQuery = void 0;
 
     if (hashSlash > -1) pathQuery = location.href.slice(hashSlash + hashSlashString.length);else if (isHashMode()) pathQuery = '/';else pathQuery = (location.pathname + location.search).slice(1);
 
@@ -748,8 +753,8 @@ function State(options) {
 
       var isDynamic = thatPath[0] === ':';
       if (isDynamic) {
-        var name = paramName(thatPath);
-        params[name] = path;
+        var _name = paramName(thatPath);
+        params[_name] = path;
       } else if (thatPath != path) return false;
     }
 
@@ -871,8 +876,8 @@ exports.__esModule = true;
 */
 function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, router, logger) {
   var root = { root: null, inclusive: true };
-  var enters = undefined;
-  var exits = undefined;
+  var enters = void 0;
+  var exits = void 0;
 
   var fromState = fromStateWithParams && fromStateWithParams.state;
   var toState = toStateWithParams.state;
@@ -944,7 +949,7 @@ function runStep(state, stepFn, params, transition, acc, router, logger) {
 * or undefined if the two states are in distinct branches of the tree.
 */
 function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
-  var closestCommonParent = undefined;
+  var closestCommonParent = void 0;
 
   var parents = [fromState].concat(fromState.parents).reverse();
 
@@ -961,22 +966,22 @@ function transitionRoot(fromState, toState, isUpdate, paramsDiff) {
   }
 
   // Find the top-most parent owning some updated param(s) or bail if we first reach the closestCommonParent
-  for (var i = 0; i < parents.length; i++) {
-    var parent = parents[i];
+  for (var _i = 0; _i < parents.length; _i++) {
+    var _parent = parents[_i];
 
     for (var param in paramsDiff.all) {
-      if (parent.params[param] || parent.queryParams[param]) return { root: parent, inclusive: true };
+      if (_parent.params[param] || _parent.queryParams[param]) return { root: _parent, inclusive: true };
     }
 
-    if (parent === closestCommonParent) return { root: closestCommonParent, inclusive: false };
+    if (_parent === closestCommonParent) return { root: closestCommonParent, inclusive: false };
   }
 
   return closestCommonParent ? { root: closestCommonParent, inclusive: false } : { inclusive: true };
 }
 
 function transitionStates(state, _ref) {
-  var root = _ref.root;
-  var inclusive = _ref.inclusive;
+  var root = _ref.root,
+      inclusive = _ref.inclusive;
 
   root = root || state.root;
 
@@ -994,7 +999,7 @@ exports.default = Transition;
 exports.__esModule = true;
 exports.default = interceptAnchors;
 
-var router = undefined;
+var router = void 0;
 
 function onMouseDown(evt) {
   var href = hrefForEvent(evt);
@@ -1184,8 +1189,8 @@ function objectDiff(obj1, obj2) {
     if (!(name in obj2)) exit[name] = all[name] = true;else if (obj1[name] != obj2[name]) update[name] = all[name] = true;
   }
 
-  for (var name in obj2) {
-    if (!(name in obj1)) enter[name] = all[name] = true;
+  for (var _name in obj2) {
+    if (!(_name in obj1)) enter[_name] = all[_name] = true;
   }
 
   return { all: all, update: update, enter: enter, exit: exit };
@@ -1210,10 +1215,9 @@ function parsePaths(path) {
 
 function parseQueryParams(query) {
   return query ? query.split('&').reduce(function (res, paramValue) {
-    var _paramValue$split = paramValue.split('=');
-
-    var param = _paramValue$split[0];
-    var value = _paramValue$split[1];
+    var _paramValue$split = paramValue.split('='),
+        param = _paramValue$split[0],
+        value = _paramValue$split[1];
 
     res[param] = decodeURIComponent(value);
     return res;
