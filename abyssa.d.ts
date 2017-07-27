@@ -1,6 +1,4 @@
 
-type Obj<T> = { [key: string]: T }
-
 interface RouterCommon {
   on(eventName: 'started' | 'ended', handler?: (currentState: CurrentStateWithParams, previousState?: StateWithParams) => void): this
   addState(name: string, state: State): this
@@ -31,16 +29,16 @@ interface StateWithParams {
   params: Params
   name: string
   fullName: string
-  data: Obj<any>
+  data: Record<string, {}>
 
   isIn(fullName: string): boolean
 }
 
 interface ParamsDiff {
-  update: Obj<boolean>
-  enter: Obj<boolean>
-  exit: Obj<boolean>
-  all: Obj<boolean>
+  update: Record<string, boolean>
+  enter: Record<string, boolean>
+  exit: Record<string, boolean>
+  all: Record<string, boolean>
 }
 
 interface CurrentStateWithParams extends StateWithParams {
@@ -51,7 +49,7 @@ interface State {
   name: string
   fullName: string
   parent: State | void
-  data: Obj<any>
+  data: Record<string, {}>
 }
 
 interface ConfigOptions {
@@ -62,9 +60,9 @@ interface ConfigOptions {
   hashPrefix?: string
 }
 
-type StateMap = Obj<State>
+type StateMap = Record<string, State>
 
-type Params = Obj<string>
+type Params = Record<string, string | undefined>
 
 type LifeCycleCallback = (params: Params, value: {}, router: RouterAPI) => void
 
@@ -72,7 +70,7 @@ interface StateOptions {
   enter?: LifeCycleCallback
   exit?: LifeCycleCallback
   update?: LifeCycleCallback
-  data?: Obj<any>
+  data?: Record<string, {}>
 }
 
 interface RouterObject {

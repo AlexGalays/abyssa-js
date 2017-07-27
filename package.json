@@ -3,7 +3,7 @@
   "description": "Hierarchical router for single page applications",
   "keywords": ["routes", "routing", "router", "hierarchical", "stateful", "pushState", "typescript"],
   "homepage": "https://github.com/AlexGalays/abyssa-js/",
-  "version": "8.0.4",
+  "version": "8.0.5",
   "author": {
     "name": "Alexandre Galays",
     "url": "https://github.com/AlexGalays/"
@@ -12,8 +12,10 @@
     "type": "git",
     "url": "https://github.com/AlexGalays/abyssa-js.git"
   },
-  "main": "lib/main.js",
+  "main": "commonjs/main.js",
+  "module": "es/main.js",
   "typings": "abyssa.d.ts",
+
   "licenses": [{
     "type": "MIT",
     "url": "http://www.opensource.org/licenses/mit-license.php"
@@ -23,16 +25,17 @@
     "babelify": "7.2.0",
     "babel-cli": "6.4.5",
     "babel-preset-es2015": "6.24.0",
-    "babel-preset-es2015-loose": "7.0.0",
+    "babel-preset-es2015-no-commonjs": "0.0.2",
     "grunt": "0.4.5",
     "grunt-cli": "0.1.11",
     "grunt-contrib-connect": "0.8.0",
     "grunt-contrib-qunit": "1.3.0"
   },
   "scripts": {
-    "build": "npm run build-main & npm run build-browser",
-    "build-main": "node node_modules/babel-cli/bin/babel.js src --out-dir lib",
-    "build-browser": "node node_modules/browserify/bin/cmd.js src/main.js -s Abyssa -o target/abyssa.js -t babelify",
-    "test": "npm run build && grunt test"
+    "build": "npm run build-commonjs && npm run build-es && npm run build-global",
+    "build-es": "BABEL_ENV=es node node_modules/babel-cli/bin/babel.js src --out-dir es",
+    "build-commonjs": "BABEL_ENV=commonjs node node_modules/babel-cli/bin/babel.js src --out-dir commonjs",
+    "build-global": "BABEL_ENV=commonjs node node_modules/browserify/bin/cmd.js src/main.js -s Abyssa -o global/abyssa.js -t babelify",
+    "test": "npm run build-global && grunt test"
   }
 }

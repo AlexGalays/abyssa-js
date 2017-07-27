@@ -1,3 +1,12 @@
 {
-  "presets": ["es2015-loose"]
+  "env": {
+    "commonjs": {
+      "presets": ["es2015"]
+    },
+    "es": {
+      "presets": [
+        ["es2015-no-commonjs"]
+      ]
+    }
+  } 
 }

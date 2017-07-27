@@ -1,7 +1,9 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Abyssa = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
@@ -613,7 +615,9 @@ exports.default = Router;
 },{"./State":2,"./StateWithParams":3,"./Transition":4,"./anchors":5,"./api":6,"./util":8}],2:[function(require,module,exports){
 'use strict';
 
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 
 var _util = require('./util');
 
@@ -818,7 +822,9 @@ exports.default = State;
 },{"./util":8}],3:[function(require,module,exports){
 'use strict';
 
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.default = StateWithParams;
 /*
 * Creates a new StateWithParams instance.
@@ -870,7 +876,9 @@ function toString() {
 },{}],4:[function(require,module,exports){
 'use strict';
 
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 /*
 * Create a new Transition instance.
 */
@@ -996,7 +1004,9 @@ exports.default = Transition;
 },{}],5:[function(require,module,exports){
 'use strict';
 
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.default = interceptAnchors;
 
 var router = void 0;
@@ -1091,7 +1101,9 @@ function interceptAnchors(forRouter) {
 },{}],6:[function(require,module,exports){
 "use strict";
 
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 
 /* Represents the public API of the last instanciated router; Useful to break circular dependencies between router and its states */
 var api = {};
@@ -1100,7 +1112,9 @@ exports.default = api;
 },{}],7:[function(require,module,exports){
 'use strict';
 
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.util = exports.State = exports.api = exports.Router = undefined;
 
 var _util = require('./util');
@@ -1129,7 +1143,12 @@ exports.util = util;
 },{"./Router":1,"./api":6,"./util":8}],8:[function(require,module,exports){
 'use strict';
 
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 exports.noop = noop;
 exports.arrayToObject = arrayToObject;
 exports.objectToArray = objectToArray;
@@ -1220,8 +1239,9 @@ function parsePaths(path) {
 function parseQueryParams(query) {
   return query ? query.split('&').reduce(function (res, paramValue) {
     var _paramValue$split = paramValue.split('='),
-        param = _paramValue$split[0],
-        value = _paramValue$split[1];
+        _paramValue$split2 = _slicedToArray(_paramValue$split, 2),
+        param = _paramValue$split2[0],
+        value = _paramValue$split2[1];
 
     res[param] = decodeURIComponent(value);
     return res;
