@@ -73,7 +73,7 @@ function Router(declarativeStates) {
   * A successful transition will result in the URL being changed.
   * A failed transition will leave the router in its current state.
   */
-  function setState(state, params, acc) {
+  function setState(state, params) {
     var fromState = transition ? (0, _StateWithParams2.default)(transition.currentState, transition.toParams) : currentState;
 
     var diff = util.objectDiff(fromState && fromState.params, params);
@@ -93,19 +93,23 @@ function Router(declarativeStates) {
     currentState = toState;
     currentParamsDiff = diff;
 
-    transition = (0, _Transition2.default)(fromState, toState, diff, acc, router, logger);
+    var newTransition = transition = (0, _Transition2.default)(fromState, toState, diff, router, logger);
 
     startingTransition(fromState, toState);
 
     // In case of a redirect() called from 'startingTransition', the transition already ended.
-    if (transition) transition.run();
+    if (newTransition === transition) transition.run().then(function () {
+      // In case of a redirect() called from the transition itself, the transition already ended
+      if (transition) {
+        if (transition.cancelled) currentState = fromState;else endingTransition(fromState, toState);
+      }
 
-    // In case of a redirect() called from the transition itself, the transition already ended
-    if (transition) {
-      if (transition.cancelled) currentState = fromState;else endingTransition(fromState, toState);
-    }
-
-    transition = null;
+      transition = null;
+    }).catch(function (err) {
+      currentState = fromState;
+      eventCallbacks.error && eventCallbacks.error(err);
+      transition = null;
+    });
   }
 
   function cancelTransition() {
@@ -139,6 +143,7 @@ function Router(declarativeStates) {
 
     var from = fromState ? fromState.asPublic : null;
     var to = toState.asPublic;
+
     eventCallbacks.ended && eventCallbacks.ended(to, from);
   }
 
@@ -330,13 +335,12 @@ function Router(declarativeStates) {
   function transitionTo(pathQueryOrName) {
     var name = leafStates[pathQueryOrName];
     var params = (name ? arguments[1] : null) || {};
-    var acc = name ? arguments[2] : arguments[1];
 
     logger.log('Changing state to {0}', pathQueryOrName || '""');
 
     urlChanged = false;
 
-    if (name) setStateByName(name, params, acc);else setStateForPathQuery(pathQueryOrName, acc);
+    if (name) setStateByName(name, params);else setStateForPathQuery(pathQueryOrName);
   }
 
   /*
@@ -357,12 +361,12 @@ function Router(declarativeStates) {
   * Attempt to navigate to 'stateName' with its previous params or
   * fallback to the defaultParams parameter if the state was never entered.
   */
-  function backTo(stateName, defaultParams, acc) {
+  function backTo(stateName, defaultParams) {
     var params = leafStates[stateName].lastParams || defaultParams;
-    transitionTo(stateName, params, acc);
+    transitionTo(stateName, params);
   }
 
-  function setStateForPathQuery(pathQuery, acc) {
+  function setStateForPathQuery(pathQuery) {
     var state = void 0,
         params = void 0,
         _state = void 0,
@@ -387,16 +391,16 @@ function Router(declarativeStates) {
       }
     }
 
-    if (state) setState(state, params, acc);else notFound(currentPathQuery);
+    if (state) setState(state, params);else notFound(currentPathQuery);
   }
 
-  function setStateByName(name, params, acc) {
+  function setStateByName(name, params) {
     var state = leafStates[name];
 
     if (!state) return notFound(name);
 
     var pathQuery = interpolate(state, params);
-    setStateForPathQuery(pathQuery, acc);
+    setStateForPathQuery(pathQuery);
   }
 
   /*
@@ -644,6 +648,7 @@ function State(options) {
   state.enter = options.enter || util.noop;
   state.update = options.update;
   state.exit = options.exit || util.noop;
+  state.resolve = options.resolve;
 
   /*
   * Initialize and freeze this state.
@@ -882,7 +887,7 @@ Object.defineProperty(exports, "__esModule", {
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, router, logger) {
+function Transition(fromStateWithParams, toStateWithParams, paramsDiff, router, logger) {
   var root = { root: null, inclusive: true };
   var enters = void 0;
   var exits = void 0;
@@ -909,7 +914,21 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, rou
   enters = transitionStates(toState, root).reverse();
 
   function run() {
-    startTransition(enters, exits, params, transition, isUpdate, acc, router, logger);
+    var resolves = enters.map(function (state) {
+      return state.resolve ? state.resolve(params) : undefined;
+    });
+
+    var doRun = function doRun(resolves) {
+      return runTransition(enters, exits, params, transition, isUpdate, router, resolves, logger);
+    };
+
+    return resolves.some(function (r) {
+      return r;
+    }) ? Promise.all(resolves).then(doRun)
+    // For backward compatibility, run the transition synchronously if there are zero resolves
+    : new Promise(function (resolve) {
+      return resolve(doRun([]));
+    });
   }
 
   function cancel() {
@@ -919,23 +938,23 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, rou
   return transition;
 }
 
-function startTransition(enters, exits, params, transition, isUpdate, acc, router, logger) {
-  acc = acc || {};
-
+function runTransition(enters, exits, params, transition, isUpdate, router, resolves, logger) {
   transition.exiting = true;
+
   exits.forEach(function (state) {
     if (isUpdate && state.update) return;
-    runStep(state, 'exit', params, transition, acc, router, logger);
+    runStep(state, 'exit', params, transition, router, logger);
   });
+
   transition.exiting = false;
 
-  enters.forEach(function (state) {
+  enters.forEach(function (state, index) {
     var fn = isUpdate && state.update ? 'update' : 'enter';
-    runStep(state, fn, params, transition, acc, router, logger);
+    runStep(state, fn, params, transition, router, logger, resolves[index]);
   });
 }
 
-function runStep(state, stepFn, params, transition, acc, router, logger) {
+function runStep(state, stepFn, params, transition, router, logger, resolved) {
   if (transition.cancelled) return;
 
   if (logger.enabled) {
@@ -943,7 +962,14 @@ function runStep(state, stepFn, params, transition, acc, router, logger) {
     logger.log(capitalizedStep + ' ' + state.fullName);
   }
 
-  var result = state[stepFn](params, acc, router);
+  var stepParams = {
+    resolved: resolved,
+    state: transition.to,
+    params: params,
+    router: router
+  };
+
+  var result = state[stepFn](stepParams);
 
   if (transition.cancelled) return;
 

@@ -1,13 +1,18 @@
 {
 	"compilerOptions": {
 		"noEmit": true,
-		"noImplicitAny": true
+    "strict": true,
+    "lib": [
+      "dom",
+      "es2015"
+    ]
 	},
 	"compileOnSave": false,
 	"atom": {
 		"rewriteTsconfig": false
 	},
-	"filesGlob": [
-		"abyssa.d.ts"
+	"include": [
+    "abyssa.d.ts",
+    "test/typings.ts"
 	]
 }

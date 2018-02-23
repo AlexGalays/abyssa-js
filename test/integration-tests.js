@@ -23,8 +23,8 @@ asyncTest('Router initialization from initial URL', function() {
 
   router = Router({
 
-    index: State('initialState/:num', { enter: function(param) {
-      strictEqual(param.num, '36')
+    index: State('initialState/:num', { enter: function(enterParams) {
+      strictEqual(enterParams.params.num, '36')
       startLater()
     }})
 
@@ -42,8 +42,8 @@ asyncTest('Default anchor interception', function() {
 
     index: State(''),
 
-    articles: State('articles/:id', { enter: function(params) {
-      strictEqual(params.id, '33')
+    articles: State('articles/:id', { enter: function(enterParams) {
+      strictEqual(enterParams.params.id, '33')
       startLater()
     }})
 
@@ -63,8 +63,8 @@ asyncTest('Mousedown anchor interception', function() {
 
     index: State(''),
 
-    articles: State('articles/:id', { enter: function(params) {
-      strictEqual(params.id, '33')
+    articles: State('articles/:id', { enter: function(enterParams) {
+      strictEqual(enterParams.params.id, '33')
       startLater()
     }})
 
@@ -88,8 +88,10 @@ asyncTest('Redirect', function() {
 
   router.init('index')
 
-  equal(router.urlPathQuery(), '/articles')
-  startLater()
+  nextFrame().then(function() {
+    equal(router.urlPathQuery(), '/articles')
+    startLater()
+  })
 })
 
 
@@ -105,15 +107,21 @@ asyncTest('history.back()', function() {
 
 
   router.transitionTo('articles')
-  router.transitionTo('books')
-  equal(router.urlPathQuery(), '/books')
-  history.back()
 
-  Q.delay(60).then(function() {
-    equal(router.urlPathQuery(), '/articles')
-  })
-  .then(startLater)
-
+  nextFrame()
+    .then(function() {
+      router.transitionTo('books')
+    })
+    .then(nextFrame)
+    .then(function() {
+      equal(router.urlPathQuery(), '/books')
+      history.back()
+    })
+    .then(function() { return delay(60) })
+    .then(function() {
+      equal(router.urlPathQuery(), '/articles')
+      startLater()
+    })
 })
 
 
@@ -131,16 +139,22 @@ asyncTest('history.back() on the notFound state', function() {
 
   router.transitionTo('/wat')
   equal(router.current().name, 'notFound')
-  router.transitionTo('index')
-  history.back()
 
-  Q.delay(60).then(function() {
-    // TODO: This assertion should pass ideally uncomment after the biggest refactorings
-    //equal(router.urlPathQuery(), '/notFound')
-    equal(router.current().name, 'notFound')
-  })
-  .then(startLater)
-
+  nextFrame()
+    .then(function() {
+      router.transitionTo('index')
+    })
+    .then(nextFrame)
+    .then(function() {
+      history.back()
+    })
+    .then(function() { return delay(60) })
+    .then(function() {
+      // TODO: Fix this
+      //equal(router.urlPathQuery(), '/notFound')
+      equal(router.current().name, 'notFound')
+      startLater()
+    })
 })
 
 
@@ -159,8 +173,8 @@ asyncTest('hash mode switched on', function() {
       index: State(''),
 
       category1: State('category1', {}, {
-        detail: State(':id', { enter: function(params) {
-          lastParams = params
+        detail: State(':id', { enter: function(enterParams) {
+          lastParams = enterParams.params
         }})
       })
 
@@ -170,12 +184,15 @@ asyncTest('hash mode switched on', function() {
     })
     .init()
 
-    stateShouldBeCategoryDetail()
-    goToIndex()
-    stateShouldBeIndex()
-    goToCategoryDetail()
-    stateShouldBeCategoryDetail2()
-    startLater()
+    nextFrame()
+      .then(stateShouldBeCategoryDetail)
+      .then(goToIndex)
+      .then(nextFrame)
+      .then(stateShouldBeIndex)
+      .then(goToCategoryDetail)
+      .then(nextFrame)
+      .then(stateShouldBeCategoryDetail2)
+      .then(startLater)
 
     function stateShouldBeCategoryDetail() {
       strictEqual(router.current().fullName, 'category1.detail')
@@ -221,8 +238,8 @@ asyncTest('customize hashbang', function() {
       index: State(''),
 
       category1: State('category1', {}, {
-        detail: State(':id', { enter: function(params) {
-          lastParams = params
+        detail: State(':id', { enter: function(enterParams) {
+          lastParams = enterParams.params
         }})
       })
 
@@ -233,12 +250,15 @@ asyncTest('customize hashbang', function() {
     })
     .init()
 
-    stateShouldBeCategoryDetail()
-    goToIndex()
-    stateShouldBeIndex()
-    goToCategoryDetail()
-    stateShouldBeCategoryDetail2()
-    startLater()
+    nextFrame()
+      .then(stateShouldBeCategoryDetail)
+      .then(goToIndex)
+      .then(nextFrame)
+      .then(stateShouldBeIndex)
+      .then(goToCategoryDetail)
+      .then(nextFrame)
+      .then(stateShouldBeCategoryDetail2)
+      .then(startLater)
 
     function stateShouldBeCategoryDetail() {
       strictEqual(router.current().fullName, 'category1.detail')
@@ -336,9 +356,17 @@ function simulateMousedown(element) {
   element.dispatchEvent(event)
 }
 
+function delay(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms) })
+}
+
 // The hashchange event is dispatched asynchronously.
 // At the end of a test changing the hash, give the event enough time to be dispatched
 // so that the following test's router doesn't try to react to it.
 function startLater() {
-  Q.delay(80).then(start)
+  delay(80).then(start)
+}
+
+function nextFrame() {
+  return new Promise(function(resolve) { resolve() })
 }

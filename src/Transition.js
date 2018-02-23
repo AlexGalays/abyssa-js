@@ -1,7 +1,7 @@
 /*
 * Create a new Transition instance.
 */
-function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, router, logger) {
+function Transition(fromStateWithParams, toStateWithParams, paramsDiff, router, logger) {
   let root = { root: null, inclusive: true }
   let enters
   let exits
@@ -29,7 +29,14 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, rou
   enters = transitionStates(toState, root).reverse()
 
   function run() {
-    startTransition(enters, exits, params, transition, isUpdate, acc, router, logger)
+    const resolves = enters.map(state => state.resolve ? state.resolve(params) : undefined)
+
+    const doRun = resolves => runTransition(enters, exits, params, transition, isUpdate, router, resolves, logger)
+
+    return resolves.some(r => r)
+      ? Promise.all(resolves).then(doRun)
+      // For backward compatibility, run the transition synchronously if there are zero resolves
+      : new Promise(resolve => resolve(doRun([])))
   }
 
   function cancel() {
@@ -39,23 +46,23 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, acc, rou
   return transition
 }
 
-function startTransition(enters, exits, params, transition, isUpdate, acc, router, logger) {
-  acc = acc || {}
-
+function runTransition(enters, exits, params, transition, isUpdate, router, resolves, logger) {
   transition.exiting = true
+
   exits.forEach(state => {
     if (isUpdate && state.update) return
-    runStep(state, 'exit', params, transition, acc, router, logger)
+    runStep(state, 'exit', params, transition, router, logger)
   })
+
   transition.exiting = false
 
-  enters.forEach(state => {
+  enters.forEach((state, index) => {
     const fn = (isUpdate && state.update) ? 'update' : 'enter'
-    runStep(state, fn, params, transition, acc, router, logger)
+    runStep(state, fn, params, transition, router, logger, resolves[index])
   })
 }
 
-function runStep(state, stepFn, params, transition, acc, router, logger) {
+function runStep(state, stepFn, params, transition, router, logger, resolved) {
   if (transition.cancelled) return
 
   if (logger.enabled) {
@@ -63,7 +70,14 @@ function runStep(state, stepFn, params, transition, acc, router, logger) {
     logger.log(capitalizedStep + ' ' + state.fullName)
   }
 
-  const result = state[stepFn](params, acc, router)
+  const stepParams = {
+    resolved,
+    state: transition.to,
+    params,
+    router
+  }
+
+  const result = state[stepFn](stepParams)
 
   if (transition.cancelled) return
 

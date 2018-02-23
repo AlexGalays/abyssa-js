@@ -1,6 +1,7 @@
 
 interface RouterCommon {
   on(eventName: 'started' | 'ended', handler?: (currentState: CurrentStateWithParams, previousState?: StateWithParams) => void): this
+  on(eventName: 'error', handler?: (error: any) => void): this
   addState(name: string, state: State): this
 }
 
@@ -12,10 +13,10 @@ interface Router extends RouterCommon {
 
 /* The initialized router API */
 interface RouterAPI extends RouterCommon {
-  transitionTo(stateName: string, params?: Object, acc?: any): void
-  transitionTo(pathQuery: string, acc?: any): void
+  transitionTo(stateName: string, params?: Object): void
+  transitionTo(pathQuery: string): void
   replaceParams(newParams: {[ key: string ]: any }): void
-  backTo(stateName: string, defaultParams?: Object, acc?: any): void
+  backTo(stateName: string, defaultParams?: Object): void
   link(stateName: string, params?: Object): string
   previous(): StateWithParams | void
   current(): CurrentStateWithParams
@@ -64,12 +65,21 @@ type StateMap = Record<string, State>
 
 type Params = Record<string, string | undefined>
 
-type LifeCycleCallback = (params: Params, value: {}, router: RouterAPI) => void
+interface LifeCycleCallbackParams<R> {
+  state: CurrentStateWithParams
+  params: Params
+  router: RouterAPI
+  resolved: R
+}
 
-interface StateOptions {
-  enter?: LifeCycleCallback
-  exit?: LifeCycleCallback
-  update?: LifeCycleCallback
+type LifeCycleCallback<R> = (params: LifeCycleCallbackParams<R>) => void
+
+
+interface StateOptions<R> {
+  resolve?: (params: Params) => Promise<R>
+  enter?: LifeCycleCallback<R>
+  exit?: LifeCycleCallback<R>
+  update?: LifeCycleCallback<R>
   data?: Record<string, {}>
 }
 
@@ -80,5 +90,5 @@ interface RouterObject {
 
 
 export const Router: RouterObject
-export function State(uri: string, options: StateOptions, children?: StateMap): State
+export function State<R>(uri: string, options: StateOptions<R>, children?: StateMap): State
 export var api: RouterAPI

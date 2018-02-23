@@ -19,6 +19,7 @@ function State(options) {
   state.enter = options.enter || util.noop
   state.update = options.update
   state.exit = options.exit || util.noop
+  state.resolve = options.resolve
 
   /*
   * Initialize and freeze this state.

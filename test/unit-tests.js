@@ -6,6 +6,7 @@ State  = Abyssa.State
 stubHistory()
 
 QUnit.testDone(function() {
+  // Reset global state
   Abyssa.api.terminate()
 })
 
@@ -31,10 +32,11 @@ test('Simple states', function() {
     articles: {
       uri: 'articles/:id?filter',
 
-      enter: function(params) {
+      enter: function(enterParams) {
         events.push('articlesEnter')
-        lastArticleId = params.id
-        lastFilter = params.filter
+
+        lastArticleId = enterParams.params.id
+        lastFilter = enterParams.params.filter
       },
 
       exit: function() {
@@ -85,10 +87,10 @@ test('Simple states with shorthand function', function() {
     }),
 
     articles: State('articles/:id?filter', {
-      enter: function(params) {
+      enter: function(enterParams) {
         events.push('articlesEnter')
-        lastArticleId = params.id
-        lastFilter = params.filter
+        lastArticleId = enterParams.params.id
+        lastFilter = enterParams.params.filter
       },
 
       exit: function() {
@@ -143,10 +145,10 @@ test('Multiple dynamic paths', function() {
   Router({
     article: State('articles/:slug/:articleId', {}, {
       changeLogs: State('changelogs/:changeLogId', {
-        enter: function(params) {
-          equal(params.slug, 'le-roi-est-mort')
-          equal(params.articleId, 127)
-          equal(params.changeLogId, 5)
+        enter: function(enterParams) {
+          equal(enterParams.params.slug, 'le-roi-est-mort')
+          equal(enterParams.params.articleId, 127)
+          equal(enterParams.params.changeLogId, 5)
         }
       })
     })
@@ -380,7 +382,6 @@ test('No transition occurs when going to the same state', function() {
 
   router.transitionTo('articles/33/today')
   deepEqual(events, [])
-
 })
 
 
@@ -402,9 +403,9 @@ test('Param and query changes should trigger a transition', function() {
     }, {
 
       articles: State('articles/:id', {
-        enter: function(params) {
+        enter: function(enterParams) {
           events.push('articlesEnter')
-          lastArticleId = params.id
+          lastArticleId = enterParams.params.id
         },
 
         exit: function() {
@@ -463,9 +464,9 @@ test('Param changes in a leaf state should not trigger a parent transition', fun
       }
     }, {
       articles: State('articles/:id', {
-        enter: function(params) {
+        enter: function(enterParams) {
           events.push('articlesEnter')
-          lastArticleId = params.id
+          lastArticleId = enterParams.params.id
         },
 
         exit: function() {
@@ -617,20 +618,20 @@ test('The query string is provided to all states', function() {
 
   Router({
     one: State('one/:one', {
-      enter: function(param) {
-        assertions(param.one, 44, param)
+      enter: function(enterParams) {
+        assertions(enterParams.params.one, 44, enterParams.params)
       }
     }, {
 
       two: State('two/:two', {
-        enter: function(param) {
-          assertions(param.two, 'bla', param)
+        enter: function(enterParams) {
+          assertions(enterParams.params.two, 'bla', enterParams.params)
         }
       }, {
 
         three: State('three/:three', {
-          enter: function(param) {
-            assertions(param.three, 33, param)
+          enter: function(enterParams) {
+            assertions(enterParams.params.three, 33, enterParams.params)
           }
         })
       })
@@ -694,18 +695,18 @@ test('params should be decoded automatically', function() {
 
   var router = Router({
 
-    index: State('index/:id/:filter', { enter: function(params) {
-      passedParams = params
+    index: State('index/:id/:filter', { enter: function(enterParams) {
+      passedParams = enterParams
     }})
 
   }).init('index/The%20midget%20%40/a%20b%20c')
 
-  equal(passedParams.id, 'The midget @')
-  equal(passedParams.filter, 'a b c')
+  equal(passedParams.params.id, 'The midget @')
+  equal(passedParams.params.filter, 'a b c')
 })
 
 
-test('redirect', function() {
+asyncTest('redirect', function() {
   var oldRouteChildEntered
   var oldRouteExited
   var newRouteEntered
@@ -725,15 +726,21 @@ test('redirect', function() {
 
   })
 
-  pushedStates.length = 0
+  // Wait for tests than changes the history out of bound first.
+  nextFrame()
+    .then(function() {
+      pushedStates.length = 0
+      router.init('oldRoute.oldRouteChild')
+    })
+    .then(function() {
+      equal(pushedStates.length, 1, 'A redirection should push a single history entry')
 
-  router.init('oldRoute.oldRouteChild')
+      ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.')
+      ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered')
+      ok(newRouteEntered)
 
-  equal(pushedStates.length, 1, 'A redirection should push a single history entry')
-
-  ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.')
-  ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered')
-  ok(newRouteEntered)
+      start()
+    })
 })
 
 
@@ -770,27 +777,27 @@ test('rest params', function() {
 
   var router = Router({
     index: State(),
-    colors: State('colors/:rest*', { enter: function(params) {
-      lastParams = params
+    colors: State('colors/:rest*', { enter: function(enterParams) {
+      lastParams = enterParams
     }})
   }).init('')
 
 
   router.transitionTo('colors')
 
-  strictEqual(lastParams.rest, undefined)
+  strictEqual(lastParams.params.rest, undefined)
 
   router.transitionTo('colors/red')
 
-  strictEqual(lastParams.rest, 'red')
+  strictEqual(lastParams.params.rest, 'red')
 
   router.transitionTo('colors/red/blue')
 
-  strictEqual(lastParams.rest, 'red/blue')
+  strictEqual(lastParams.params.rest, 'red/blue')
 })
 
 
-test('backTo', function() {
+asyncTest('backTo', function() {
   var passedParams
 
   var router = Router({
@@ -806,17 +813,20 @@ test('backTo', function() {
 
   router.transitionTo('books')
 
-  passedParams = null
-  router.backTo('articles', { id: 1 })
-
-  strictEqual(passedParams.id, '33')
-  strictEqual(passedParams.filter, '66')
-
-  // We've never been to cart before, thus the default params we pass should be used
-  router.backTo('cart', { mode: 'default' })
-
-  strictEqual(passedParams.mode, 'default')
-
+  nextFrame().then(function() {
+    passedParams = null
+    router.backTo('articles', { id: 1 })
+  
+    strictEqual(passedParams.params.id, '33')
+    strictEqual(passedParams.params.filter, '66')
+  
+    // We've never been to cart before, thus the default params we pass should be used
+    router.backTo('cart', { mode: 'default' })
+  
+    strictEqual(passedParams.params.mode, 'default')
+    
+    start()
+  })
 
   function rememberParams(params) {
     passedParams = params
@@ -868,7 +878,7 @@ test('update', function() {
 
     if (withUpdate) state.update = function(params) {
       events.push(name + 'Update')
-      updateParams = params
+      updateParams = params.params
     }
 
     if (parent) parent.children[name] = state
@@ -877,6 +887,131 @@ test('update', function() {
   }
 
 })
+
+
+asyncTest('data can be accumulated before the transition ends', function() {
+
+  var enterArgs = []
+  var resolveCalls = []
+
+  var router = Router({
+
+    missions: State('missions/:id', {
+      resolve: function(params) {
+        resolveCalls.push('missions')
+        return okData({ id: params.id }, 20)
+      },
+      enter: function(arg) { enterArgs.push(arg) }
+    }, {
+      comments: State('comments', {
+        resolve: function(params) {
+          resolveCalls.push('comments')
+          return okData({ id: params.id, comments: true }, 40)
+        },
+        enter: function(arg) { enterArgs.push(arg) }
+      }),
+      chat: State('chat', {
+        resolve: function(params) {
+          resolveCalls.push('chat')
+          return okData({ id: params.id, chat: true }, 20)
+        },
+        enter: function(arg) { enterArgs.push(arg) }
+      })
+    }),
+
+    profile: State('me/profile', {
+
+    }),
+
+  }).init('me/profile')
+
+
+  nextFrame()
+    .then(function() {
+      router.transitionTo('missions.comments', { id: 33 })
+
+      deepEqual(resolveCalls, ['missions', 'comments'])
+    })
+    .then(function() {
+      return delay(45)
+    })
+    .then(function() {
+      deepEqual(enterArgs.map(function(a) { return a.resolved }), [
+        { id: '33' },
+        { id: '33', comments: true }
+      ])
+    })
+    .then(function() {
+      router.transitionTo('missions.chat', { id: 33 })
+      deepEqual(resolveCalls, ['missions', 'comments', 'chat'])
+    })
+    .then(function() {
+      return delay(25)
+    })
+    .then(function() {
+      deepEqual(enterArgs.map(function(a) { return a.resolved }), [
+        { id: '33' },
+        { id: '33', comments: true },
+        { id: '33', chat: true }
+      ])
+    })
+    .then(start)
+    .catch(function() {
+      console.log(err)
+      start()
+    })
+})
+
+
+asyncTest('if a resolve promise fails, an error is emitted', function() {
+
+  var router = Router({
+
+    missions: State('missions/:id', {
+      resolve: function(params) {
+        return okData({ id: params.id }, 20)
+      },
+      enter: function(arg) {}
+    }, {
+      comments: State('comments', {
+        resolve: function(params) {
+          return errorData('oh no', 40)
+        },
+        enter: function(arg) {}
+      })
+    }),
+
+    profile: State('me/profile', {
+
+    }),
+
+  }).init('me/profile')
+
+
+  var receivedError
+
+  nextFrame()
+    .then(function() {
+      router.on('error', function(err) {
+        receivedError = err
+      })
+
+      router.transitionTo('missions.comments', { id: 33 })
+    })
+    .then(function() {
+      return delay(45)
+    })
+    .then(function() {
+      strictEqual(receivedError, 'oh no')
+      strictEqual(router.current().fullName, 'profile')
+    })
+    .then(start)
+    .catch(function() {
+      console.log(err)
+      start()
+    })
+})
+
 
 
 function stateWithParamsAssertions(stateWithParams) {
@@ -1007,9 +1142,9 @@ test('router.findState', function() {
 test('urls can contain dots', function() {
 
   Router({
-    map: State('map/:lat/:lon', { enter: function(params) {
-      strictEqual(params.lat, '1.5441')
-      strictEqual(params.lon, '0.9986')
+    map: State('map/:lat/:lon', { enter: function(enterParams) {
+      strictEqual(enterParams.params.lat, '1.5441')
+      strictEqual(enterParams.params.lon, '0.9986')
     }})
   }).init('map/1.5441/0.9986')
 
@@ -1059,7 +1194,7 @@ test('util.normalizePathQuery', function() {
 })
 
 
-test('can prevent a transition by navigating to self from the exit handler', function() {
+asyncTest('can prevent a transition by navigating to self from the exit handler', function() {
 
   var events = []
 
@@ -1075,11 +1210,19 @@ test('can prevent a transition by navigating to self from the exit handler', fun
   })
   .init('uno')
 
-  router.transitionTo('dos')
-  // Only the initial event is here.
-  // Since the exit was interrupted, there's no reason to re-enter.
-  deepEqual(events, ['unoEnter'])
-  equal(router.current().name, 'uno')
+  nextFrame()
+    .then(function() {
+      router.transitionTo('dos')
+    })
+    .then(nextFrame)
+    .then(function() {
+      // Only the initial event is here.
+      // Since the exit was interrupted, there's no reason to re-enter.
+      deepEqual(events, ['unoEnter'])
+      equal(router.current().name, 'uno')
+
+      start()
+    })
 })
 
 
@@ -1103,7 +1246,7 @@ test('to break circular dependencies, the api object can be used instead of the 
     articles: {
       uri: 'articles/:id?filter',
 
-      enter: function(params) {
+      enter: function() {
         events.push('articlesEnter')
       },
 
@@ -1118,68 +1261,6 @@ test('to break circular dependencies, the api object can be used instead of the 
   router.transitionTo('articles/33')
 
   deepEqual(events, ['indexExit', 'articlesEnter'])
-})
-
-
-test('All state callbacks are passed an accumulator object and the router instance', function() {
-
-  var router = Abyssa.api
-
-  Router({
-
-    articles: {
-      uri: 'articles',
-      enter: function(params, acc, router) {
-        deepEqual(acc, {})
-        ok(router.link !== undefined)
-        acc.fromParent = 123
-      },
-
-      children: {
-        detail: {
-          uri: ':id',
-          enter: function(params, acc) {
-            deepEqual(acc, { fromParent: 123 })
-          }
-        }
-      }
-    }
-
-  }).init('articles/33')
-})
-
-
-test('a custom accumulator object can be passed to all states', function() {
-
-  var myAcc = {}
-
-  var router = Abyssa.api
-
-  Router({
-
-    index: State('', {}),
-
-    articles: {
-      uri: 'articles',
-      enter: function(params, acc) {
-        equal(myAcc, acc)
-        acc.fromParent = 123
-      },
-
-      children: {
-        detail: {
-          uri: ':id',
-          enter: function(params, acc) {
-            equal(myAcc, acc)
-            deepEqual(acc, { fromParent: 123 })
-          }
-        }
-      }
-    }
-
-  }).init('')
-
-  router.transitionTo('articles/33', myAcc)
 })
 
 
@@ -1210,6 +1291,24 @@ test('The public fullName of a _default_ state is the same as its parent', funct
   equal(router.current().fullName, 'articles.detail')
 })
 
+
+
+
+function delay(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms) })
+}
+
+function okData(data, delay) {
+  return new Promise(function(resolve) { setTimeout(function() { resolve(data) }, delay) })
+}
+
+function errorData(reason, delay) {
+  return new Promise(function(resolve, reject) { setTimeout(function() { reject(reason) }, delay) })
+}
+
+function nextFrame() {
+  return new Promise(function(resolve) { resolve() })
+}
 
 const pushedStates = []
 function stubHistory() {

@@ -44,7 +44,7 @@ function Router(declarativeStates) {
   * A successful transition will result in the URL being changed.
   * A failed transition will leave the router in its current state.
   */
-  function setState(state, params, acc) {
+  function setState(state, params) {
     const fromState = transition
       ? StateWithParams(transition.currentState, transition.toParams)
       : currentState
@@ -66,11 +66,10 @@ function Router(declarativeStates) {
     currentState = toState
     currentParamsDiff = diff
 
-    transition = Transition(
+    const newTransition = transition = Transition(
       fromState,
       toState,
       diff,
-      acc,
       router,
       logger
     )
@@ -78,15 +77,23 @@ function Router(declarativeStates) {
     startingTransition(fromState, toState)
 
     // In case of a redirect() called from 'startingTransition', the transition already ended.
-    if (transition) transition.run()
+    if (newTransition === transition) transition.run()
+      .then(() => {
+        // In case of a redirect() called from the transition itself, the transition already ended
+        if (transition) {
+          if (transition.cancelled)
+            currentState = fromState
+          else
+            endingTransition(fromState, toState)
+        }
 
-    // In case of a redirect() called from the transition itself, the transition already ended
-    if (transition) {
-      if (transition.cancelled) currentState = fromState
-      else endingTransition(fromState, toState)
-    }
-
-    transition = null
+        transition = null
+      })
+      .catch(err => {
+        currentState = fromState
+        eventCallbacks.error && eventCallbacks.error(err)
+        transition = null
+      })
   }
 
   function cancelTransition() {
@@ -121,6 +128,7 @@ function Router(declarativeStates) {
 
     const from = fromState ? fromState.asPublic : null
     const to = toState.asPublic
+
     eventCallbacks.ended && eventCallbacks.ended(to, from)
   }
 
@@ -316,16 +324,15 @@ function Router(declarativeStates) {
   function transitionTo(pathQueryOrName) {
     const name = leafStates[pathQueryOrName]
     const params = (name ? arguments[1] : null) || {}
-    const acc = name ? arguments[2] : arguments[1]
 
     logger.log('Changing state to {0}', pathQueryOrName || '""')
 
     urlChanged = false
 
     if (name)
-      setStateByName(name, params, acc)
+      setStateByName(name, params)
     else
-      setStateForPathQuery(pathQueryOrName, acc)
+      setStateForPathQuery(pathQueryOrName)
   }
 
   /*
@@ -346,12 +353,12 @@ function Router(declarativeStates) {
   * Attempt to navigate to 'stateName' with its previous params or
   * fallback to the defaultParams parameter if the state was never entered.
   */
-  function backTo(stateName, defaultParams, acc) {
+  function backTo(stateName, defaultParams) {
     const params = leafStates[stateName].lastParams || defaultParams
-    transitionTo(stateName, params, acc)
+    transitionTo(stateName, params)
   }
 
-  function setStateForPathQuery(pathQuery, acc) {
+  function setStateForPathQuery(pathQuery) {
     let state, params, _state, _params
 
     currentPathQuery = util.normalizePathQuery(pathQuery)
@@ -373,17 +380,17 @@ function Router(declarativeStates) {
       }
     }
 
-    if (state) setState(state, params, acc)
+    if (state) setState(state, params)
     else notFound(currentPathQuery)
   }
 
-  function setStateByName(name, params, acc) {
+  function setStateByName(name, params) {
     const state = leafStates[name]
 
     if (!state) return notFound(name)
 
     const pathQuery = interpolate(state, params)
-    setStateForPathQuery(pathQuery, acc)
+    setStateForPathQuery(pathQuery)
   }
 
   /*
