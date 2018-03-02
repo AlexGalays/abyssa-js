@@ -17,6 +17,51 @@ QUnit.testDone(function() {
 })
 
 
+asyncTest('history.back() on inital redirect state', function() {
+  // This test has to be first because it requires an empty hitory
+  equal(history.length, 1)
+
+  router = Router({
+
+    index: State('test', {
+      children: {
+        'integrationTests.html': State('integrationTests.html', {
+          enter: function() { router.transitionTo('/cart') }
+        }),
+      }
+    }),
+    articles: State('articles'),
+    books: State('books', {
+      enter: function() { router.transitionTo('/articles') }
+    }),
+    cart: State('cart'),
+
+  })
+
+  router.init()
+  equal(history.length, 1)
+
+  router.transitionTo('/cart')
+  equal(router.urlPathQuery(), '/cart')
+  equal(history.length, 1)
+
+  history.back()
+  Q.delay(60).then(function() {
+    equal(router.urlPathQuery(), '/cart')
+    equal(history.length, 1)
+  })
+  .then(function(){
+    router.transitionTo('/books')
+    equal(router.urlPathQuery(), '/articles')
+    equal(history.length, 2)
+
+    startLater()
+  })
+  .then(startLater)
+
+})
+
+
 asyncTest('Router initialization from initial URL', function() {
 
   changeURL('/initialState/36')
@@ -136,13 +181,36 @@ asyncTest('history.back() on the notFound state', function() {
 
   Q.delay(60).then(function() {
     // TODO: This assertion should pass ideally uncomment after the biggest refactorings
-    //equal(router.urlPathQuery(), '/notFound')
     equal(router.current().name, 'notFound')
   })
   .then(startLater)
 
 })
 
+asyncTest('history.back() when chained redirection', function() {
+
+  var api = Abyssa.api
+
+  const pageRedirect = { enter: function() { api.transitionTo('pageRedirectToPage1') }}
+  const pageRedirectToPage1 = { enter: function() { api.transitionTo('page1') }}
+
+  router = Router({
+    index: State('/test/integrationTests.html'),
+    page1: State('page1'),
+    pageRedirect: State('pageRedirect', pageRedirect),
+    pageRedirectToPage1: State('pageRedirectToPage1', pageRedirectToPage1)
+  }).init('index') //in the bug case the inialisation is init()
+
+  router.transitionTo('pageRedirect')
+  equal(router.current().name, 'page1')
+  history.back()
+
+  Q.delay(60).then(function() {
+    equal(router.current().name, 'index')
+  })
+  .then(startLater)
+
+})
 
 asyncTest('hash mode switched on', function() {
 
@@ -267,7 +335,6 @@ asyncTest('customize hashbang', function() {
   }
 
 })
-
 
 test('replaceParams', function() {
   var router = Abyssa.api

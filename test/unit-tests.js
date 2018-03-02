@@ -705,7 +705,7 @@ test('params should be decoded automatically', function() {
 })
 
 
-test('redirect', function() {
+test('Init with a redirect', function() {
   var oldRouteChildEntered
   var oldRouteExited
   var newRouteEntered
@@ -725,11 +725,45 @@ test('redirect', function() {
 
   })
 
-  pushedStates.length = 0
+  pushedStates.length = 1
 
   router.init('oldRoute.oldRouteChild')
 
-  equal(pushedStates.length, 1, 'A redirection should push a single history entry')
+  equal(pushedStates.length, 1, 'Initiating with a redirection should not push a new state in history')
+
+  ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.')
+  ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered')
+  ok(newRouteEntered)
+})
+
+
+test('redirect', function() {
+  var oldRouteChildEntered
+  var oldRouteExited
+  var newRouteEntered
+
+  var router = Router({
+    init: State('init'),
+
+    oldRoute: State('oldRoute', {
+      enter: function() {
+        router.transitionTo('newRoute')
+      },
+      exit: function() { oldRouteExited = true }
+    }, {
+      oldRouteChild: State('child', { enter: function() { oldRouteChildEntered = true } })
+    }),
+
+    newRoute: State('newRoute', { enter: function() { newRouteEntered = true } })
+
+  })
+
+  pushedStates.length = 1
+
+  router.init('init')
+  router.transitionTo('oldRoute.oldRouteChild')
+
+  equal(pushedStates.length, 2, 'A redirection should push a single history entry')
 
   ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.')
   ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered')
@@ -1211,9 +1245,17 @@ test('The public fullName of a _default_ state is the same as its parent', funct
 })
 
 
-const pushedStates = []
+const pushedStates = [{}]
 function stubHistory() {
   window.history.pushState = function(state, title, url) {
+    pushedStates.push({
+      state: state,
+      title: title,
+      url: url
+    })
+  }
+  window.history.replaceState = function(state, title, url) {
+    pushedStates.pop()
     pushedStates.push({
       state: state,
       title: title,
