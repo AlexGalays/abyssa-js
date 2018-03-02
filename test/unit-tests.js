@@ -3,6 +3,7 @@ Router = Abyssa.Router
 State  = Abyssa.State
 
 //Router.enableLogs()
+
 stubHistory()
 
 QUnit.testDone(function() {
@@ -724,9 +725,6 @@ test('Init with a redirect', function() {
     newRoute: State('newRoute', { enter: function() { newRouteEntered = true } })
 
   })
-
-  pushedStates.length = 1
-
   router.init('oldRoute.oldRouteChild')
 
   equal(pushedStates.length, 1, 'Initiating with a redirection should not push a new state in history')
@@ -757,8 +755,6 @@ test('redirect', function() {
     newRoute: State('newRoute', { enter: function() { newRouteEntered = true } })
 
   })
-
-  pushedStates.length = 1
 
   router.init('init')
   router.transitionTo('oldRoute.oldRouteChild')
@@ -1245,8 +1241,13 @@ test('The public fullName of a _default_ state is the same as its parent', funct
 })
 
 
-const pushedStates = [{}]
+const pushedStates = [{}] //contains initial state in history
+
 function stubHistory() {
+  QUnit.testStart(function(){
+    pushedStates.splice(0, pushedStates.length, {})
+  })  
+  
   window.history.pushState = function(state, title, url) {
     pushedStates.push({
       state: state,
