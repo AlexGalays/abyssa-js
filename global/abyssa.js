@@ -112,6 +112,8 @@ function Router(declarativeStates) {
     logger.log('Cancelling existing transition from {0} to {1}', transition.from, transition.to);
 
     transition.cancel();
+
+    firstTransition = false;
   }
 
   function startingTransition(fromState, toState) {
@@ -124,8 +126,7 @@ function Router(declarativeStates) {
   }
 
   function endingTransition(fromState, toState) {
-
-    if (!urlChanged) {
+    if (!urlChanged && !firstTransition) {
       logger.log('Updating URL: {0}', currentPathQuery);
       updateURLFromState(currentPathQuery, document.title, currentPathQuery);
     }
@@ -145,11 +146,9 @@ function Router(declarativeStates) {
     if (isHashMode()) {
       ignoreNextURLChange = true;
       location.hash = options.hashPrefix + url;
-    } else if (firstTransition) {
+    } else if (!initialized) {
       history.replaceState(state, title, url);
-    } else {
-      history.pushState(state, title, url);
-    }
+    } else history.pushState(state, title, url);
   }
 
   /*

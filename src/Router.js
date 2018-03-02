@@ -95,6 +95,7 @@ function Router(declarativeStates) {
 
     transition.cancel()
 
+    firstTransition = false
   }
 
   function startingTransition(fromState, toState) {
@@ -107,8 +108,8 @@ function Router(declarativeStates) {
   }
 
   function endingTransition(fromState, toState) {
-
-    if (!urlChanged) {
+    if (!urlChanged && !firstTransition) {
+      logger.log('Updating URL: {0}', currentPathQuery)
       updateURLFromState(currentPathQuery, document.title, currentPathQuery)
     }
 
@@ -125,18 +126,14 @@ function Router(declarativeStates) {
 
   function updateURLFromState(state, title, url) {
     if (isHashMode()) {
-      logger.log('Updating URL hash: {0}', currentPathQuery)
       ignoreNextURLChange = true
       location.hash = options.hashPrefix + url
-    }
-    else if (firstTransition) {
-      logger.log('Updating URL state: {0}', currentPathQuery)
+    } 
+    else if(!initialized) {
       history.replaceState(state, title, url)
     }
-    else {
-      logger.log('Pushing new URL state: {0}', currentPathQuery)
+    else
       history.pushState(state, title, url)
-    }
   }
 
   /*
