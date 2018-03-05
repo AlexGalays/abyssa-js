@@ -54,8 +54,6 @@ asyncTest('history.back() on inital redirect state', function() {
     router.transitionTo('/books')
     equal(router.urlPathQuery(), '/articles')
     equal(history.length, 2)
-
-    startLater()
   })
   .then(startLater)
 
