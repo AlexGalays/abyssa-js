@@ -3,6 +3,7 @@ Router = Abyssa.Router
 State  = Abyssa.State
 
 //Router.enableLogs()
+
 stubHistory()
 
 QUnit.testDone(function() {
@@ -705,8 +706,7 @@ test('params should be decoded automatically', function() {
   equal(passedParams.params.filter, 'a b c')
 })
 
-
-asyncTest('redirect', function() {
+asyncTest('Init with a redirect', function() {
   var oldRouteChildEntered
   var oldRouteExited
   var newRouteEntered
@@ -726,21 +726,53 @@ asyncTest('redirect', function() {
 
   })
 
-  // Wait for tests than changes the history out of bound first.
+  pushedStates.length = 1
+  router.init('oldRoute.oldRouteChild')
+
   nextFrame()
     .then(function() {
-      pushedStates.length = 0
-      router.init('oldRoute.oldRouteChild')
-    })
-    .then(function() {
-      equal(pushedStates.length, 1, 'A redirection should push a single history entry')
+      equal(pushedStates.length, 1, 'Initiating with a redirection should not push a new state in history')
 
       ok(!oldRouteExited, 'The state was not properly entered as it redirected immediately. Therefore, it should not exit.')
       ok(!oldRouteChildEntered, 'A child state of a redirected route should not be entered')
       ok(newRouteEntered)
-
-      start()
     })
+    .then(start)
+})
+
+
+asyncTest('redirect', function() {
+  var oldRouteChildEntered
+  var oldRouteExited
+  var newRouteEntered
+
+  var router = Router({
+    init: State('init'),
+
+    oldRoute: State('oldRoute', {
+      enter: function() {
+        router.transitionTo('newRoute')
+      },
+      exit: function() { oldRouteExited = true }
+    }, {
+      oldRouteChild: State('child', { enter: function() { oldRouteChildEntered = true } })
+    }),
+
+    newRoute: State('newRoute', { enter: function() { newRouteEntered = true } })
+
+  })
+
+  router.init('init')
+
+  nextFrame()
+    .then(function() {
+      router.transitionTo('oldRoute.oldRouteChild')
+    })
+    .then(nextFrame)
+    .then(function() {
+      equal(pushedStates.length, 2, 'A redirection should push a single history entry')
+    })
+    .then(start)
 })
 
 
@@ -1292,8 +1324,6 @@ test('The public fullName of a _default_ state is the same as its parent', funct
 })
 
 
-
-
 function delay(ms) {
   return new Promise(function(resolve) { setTimeout(resolve, ms) })
 }
@@ -1310,9 +1340,22 @@ function nextFrame() {
   return new Promise(function(resolve) { resolve() })
 }
 
-const pushedStates = []
+const pushedStates = [{}]
+
 function stubHistory() {
+  QUnit.testStart(function(){
+    pushedStates.splice(0, pushedStates.length, {})
+  })  
+  
   window.history.pushState = function(state, title, url) {
+    pushedStates.push({
+      state: state,
+      title: title,
+      url: url
+    })
+  }
+  window.history.replaceState = function(state, title, url) {
+    pushedStates.pop()
     pushedStates.push({
       state: state,
       title: title,
