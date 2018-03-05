@@ -128,6 +128,9 @@ function Router(declarativeStates) {
     if (isHashMode()) {
       ignoreNextURLChange = true
       location.hash = options.hashPrefix + url
+    } 
+    else if(!initialized) {
+      history.replaceState(state, title, url)
     }
     else
       history.pushState(state, title, url)
