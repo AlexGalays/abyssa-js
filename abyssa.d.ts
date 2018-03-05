@@ -1,6 +1,14 @@
 
+
+type TransitionHandlerParams = {
+  toState: CurrentStateWithParams
+  fromState?: StateWithParams
+  router: RouterAPI
+  isAsyncTransition: boolean
+}
+
 interface RouterCommon {
-  on(eventName: 'started' | 'ended', handler?: (currentState: CurrentStateWithParams, previousState?: StateWithParams) => void): this
+  on(eventName: 'started' | 'ended', handler?: (params: TransitionHandlerParams) => void): this
   on(eventName: 'error', handler?: (error: any) => void): this
   addState(name: string, state: State): this
 }

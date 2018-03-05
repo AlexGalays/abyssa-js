@@ -124,7 +124,12 @@ function Router(declarativeStates) {
     var from = fromState ? fromState.asPublic : null;
     var to = toState.asPublic;
 
-    eventCallbacks.started && eventCallbacks.started(to, from);
+    eventCallbacks.started && eventCallbacks.started({
+      fromState: from,
+      toState: to,
+      router: router,
+      isAsyncTransition: transition.isAsync
+    });
   }
 
   function endingTransition(fromState, toState) {
@@ -142,7 +147,12 @@ function Router(declarativeStates) {
     var from = fromState ? fromState.asPublic : null;
     var to = toState.asPublic;
 
-    eventCallbacks.ended && eventCallbacks.ended(to, from);
+    eventCallbacks.ended && eventCallbacks.ended({
+      fromState: from,
+      toState: to,
+      router: router,
+      isAsyncTransition: transition.isAsync
+    });
   }
 
   function updateURLFromState(state, title, url) {
@@ -889,13 +899,25 @@ Object.defineProperty(exports, "__esModule", {
 */
 function Transition(fromStateWithParams, toStateWithParams, paramsDiff, router, logger) {
   var root = { root: null, inclusive: true };
-  var enters = void 0;
-  var exits = void 0;
 
   var fromState = fromStateWithParams && fromStateWithParams.state;
   var toState = toStateWithParams.state;
   var params = toStateWithParams.params;
   var isUpdate = fromState == toState;
+
+  // The first transition has no fromState.
+  if (fromState) root = transitionRoot(fromState, toState, isUpdate, paramsDiff);
+
+  var exits = fromState ? transitionStates(fromState, root) : [];
+  var enters = transitionStates(toState, root).reverse();
+
+  var resolves = enters.map(function (state) {
+    return state.resolve ? state.resolve(params) : undefined;
+  });
+
+  var hasResolves = resolves.some(function (r) {
+    return r;
+  });
 
   var transition = {
     from: fromState,
@@ -904,27 +926,16 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, router, 
     cancel: cancel,
     run: run,
     cancelled: false,
-    currentState: fromState
+    currentState: fromState,
+    isAsync: hasResolves
   };
 
-  // The first transition has no fromState.
-  if (fromState) root = transitionRoot(fromState, toState, isUpdate, paramsDiff);
-
-  exits = fromState ? transitionStates(fromState, root) : [];
-  enters = transitionStates(toState, root).reverse();
-
   function run() {
-    var resolves = enters.map(function (state) {
-      return state.resolve ? state.resolve(params) : undefined;
-    });
-
     var doRun = function doRun(resolves) {
       return runTransition(enters, exits, params, transition, isUpdate, router, resolves, logger);
     };
 
-    return resolves.some(function (r) {
-      return r;
-    }) ? Promise.all(resolves).then(doRun)
+    return hasResolves ? Promise.all(resolves).then(doRun)
     // For backward compatibility, run the transition synchronously if there are zero resolves
     : new Promise(function (resolve) {
       return resolve(doRun([]));

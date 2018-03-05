@@ -3,13 +3,25 @@
 */
 function Transition(fromStateWithParams, toStateWithParams, paramsDiff, router, logger) {
   let root = { root: null, inclusive: true }
-  let enters
-  let exits
 
   const fromState = fromStateWithParams && fromStateWithParams.state
   const toState = toStateWithParams.state
   const params = toStateWithParams.params
   const isUpdate = (fromState == toState)
+
+  // The first transition has no fromState.
+  if (fromState)
+    root = transitionRoot(fromState, toState, isUpdate, paramsDiff)
+
+  const exits = fromState ? transitionStates(fromState, root) : []
+  const enters = transitionStates(toState, root).reverse()
+
+  const resolves = enters.map(state => state.resolve
+    ? state.resolve(params)
+    : undefined
+  )
+
+  const hasResolves = resolves.some(r => r)
 
   const transition = {
     from: fromState,
@@ -18,22 +30,14 @@ function Transition(fromStateWithParams, toStateWithParams, paramsDiff, router, 
     cancel,
     run,
     cancelled: false,
-    currentState: fromState
+    currentState: fromState,
+    isAsync: hasResolves
   }
 
-  // The first transition has no fromState.
-  if (fromState)
-    root = transitionRoot(fromState, toState, isUpdate, paramsDiff)
-
-  exits = fromState ? transitionStates(fromState, root) : []
-  enters = transitionStates(toState, root).reverse()
-
   function run() {
-    const resolves = enters.map(state => state.resolve ? state.resolve(params) : undefined)
-
     const doRun = resolves => runTransition(enters, exits, params, transition, isUpdate, router, resolves, logger)
 
-    return resolves.some(r => r)
+    return hasResolves
       ? Promise.all(resolves).then(doRun)
       // For backward compatibility, run the transition synchronously if there are zero resolves
       : new Promise(resolve => resolve(doRun([])))

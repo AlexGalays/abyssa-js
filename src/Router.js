@@ -109,7 +109,12 @@ function Router(declarativeStates) {
     const from = fromState ? fromState.asPublic : null
     const to = toState.asPublic
 
-    eventCallbacks.started && eventCallbacks.started(to, from)
+    eventCallbacks.started && eventCallbacks.started({
+      fromState: from,
+      toState: to,
+      router,
+      isAsyncTransition: transition.isAsync
+    })
   }
 
   function endingTransition(fromState, toState) {
@@ -127,7 +132,12 @@ function Router(declarativeStates) {
     const from = fromState ? fromState.asPublic : null
     const to = toState.asPublic
 
-    eventCallbacks.ended && eventCallbacks.ended(to, from)
+    eventCallbacks.ended && eventCallbacks.ended({
+      fromState: from,
+      toState: to,
+      router,
+      isAsyncTransition: transition.isAsync
+    })
   }
 
   function updateURLFromState(state, title, url) {

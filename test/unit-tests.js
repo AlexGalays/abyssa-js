@@ -957,9 +957,18 @@ asyncTest('data can be accumulated before the transition ends', function() {
 
   }).init('me/profile')
 
+  router.on('started', function(params) {
+    equal(params.isAsyncTransition, false)
+    router.on('started', null)
+  })
 
   nextFrame()
     .then(function() {
+      router.on('started', function(params) {
+        equal(params.isAsyncTransition, true)
+        router.on('started', null)
+      })
+
       router.transitionTo('missions.comments', { id: 33 })
 
       deepEqual(resolveCalls, ['missions', 'comments'])
@@ -974,6 +983,11 @@ asyncTest('data can be accumulated before the transition ends', function() {
       ])
     })
     .then(function() {
+      router.on('started', function(params) {
+        equal(params.isAsyncTransition, true)
+        router.on('started', null)
+      })
+
       router.transitionTo('missions.chat', { id: 33 })
       deepEqual(resolveCalls, ['missions', 'comments', 'chat'])
     })
@@ -1075,9 +1089,10 @@ test('event handlers are passed StateWithParams objects', function() {
     state2: State('state2/:country/:city')
   })
 
-  router.on('started', function(newState) {
+  router.on('started', function(params) {
     router.on('started', null)
-    stateWithParamsAssertions(newState)
+    equal(params.isAsyncTransition, false)
+    stateWithParamsAssertions(params.toState)
   })
 
   router.init('state1/33/misc?filter=true')
