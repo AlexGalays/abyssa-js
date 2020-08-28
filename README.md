@@ -1,3 +1,5 @@
+NOTE: Consider this project discontinued. It was created back when UI libs were terrible at replacing only part of the screen in a performant and maintenable manner. Nowadays, a simpler router with only top level routes is better.
+
 
 ![abyssa-logo](http://i171.photobucket.com/albums/u320/boubiyeah/abyssa-logo_zps745ae9eb.png)
 
